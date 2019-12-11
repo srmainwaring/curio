@@ -43,6 +43,6 @@ include_directories(
 # Install
 
 catkin_install_python(PROGRAMS
-    scripts/sawppy_servo_test.py
+    scripts/lewansoul_driver_test.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
