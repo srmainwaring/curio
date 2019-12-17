@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>sawppy_base</name>
+  <name>curio_base</name>
   <version>0.0.0</version>
-  <description>The sawppy_base package</description>
+  <description>The curio_base package</description>
   <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
   <license>BSD-3-Clause</license>
   <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
