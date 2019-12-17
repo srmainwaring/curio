@@ -45,12 +45,20 @@ import lewansoul_driver
 SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5140'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0
-SERVO_ID            = 111
+SERVO_ID            = 11
 
+# Current millis
+def millis():
+    return int(round(time.time() * 1000))
+
+# Convert LX-16A position to angle in deg
+def pos_to_deg(pos):
+    return pos * 240.0 / 1000.0
 
 if __name__ == '__main__':
     print('Lewansoul LX-16A driver test')
 
+    # Initialise servo driver
     servo_driver = lewansoul_driver.LewansoulDriver()
     servo_driver.set_port(SERVO_SERIAL_PORT)
     servo_driver.set_baudrate(SERVO_BAUDRATE)
@@ -63,6 +71,7 @@ if __name__ == '__main__':
     print('baudrate: {}'.format(servo_driver.get_baudrate()))
     print('timeout: {}'.format(servo_driver.get_timeout()))
 
+    # Display servo properties
     print('\nServo properties')
     angle_offset = servo_driver.angle_offset_read(SERVO_ID)
     print("angle_offset: {}".format(angle_offset))
@@ -73,24 +82,41 @@ if __name__ == '__main__':
     min_vin, max_vin = servo_driver.vin_limit_read(SERVO_ID)
     print("vin_limit: {}, {}".format(min_vin, max_vin))
 
+    temp_max_limit = servo_driver.temp_max_limit_read(SERVO_ID)
+    print("temp_max_limit: {}".format(temp_max_limit))
+
+    temp = servo_driver.temp_read(SERVO_ID)
+    print("temp: {}".format(temp))
+
+    vin = servo_driver.vin_read(SERVO_ID)
+    print("vin: {}".format(vin))
+
+    # load_or_unload = servo_driver.load_or_unload_read(SERVO_ID)
+    # print("load_or_unload: {}".format(load_or_unload))
+
+    # Run servo in motor (continuous) mode
     print('\nSet motor speed')
-    print("position: {}".format(servo_driver.pos_read(SERVO_ID)))
-    servo_driver.motor_mode_write(SERVO_ID, 500)
-    time.sleep(1)
-    print("position: {}".format(servo_driver.pos_read(SERVO_ID)))
+    speed = 800
+    run_time = 5000
+    pos = servo_driver.pos_read(SERVO_ID)
+    angle = pos_to_deg(pos)
+    print("position: {}, angle: {}".format(pos, angle))
+    servo_driver.motor_mode_write(SERVO_ID, speed)
+
+    start = millis()
+    while millis() < start + run_time:
+        pos = servo_driver.pos_read(SERVO_ID)
+        angle = pos_to_deg(pos)
+        print("position: {}, angle: {}".format(pos, angle))
+
 
     servo_driver.motor_mode_write(SERVO_ID, 0)
-    time.sleep(1)
-    print("position: {}".format(servo_driver.pos_read(SERVO_ID)))
+    pos = servo_driver.pos_read(SERVO_ID)
+    angle = pos_to_deg(pos)
+    print("position: {}, angle: {}".format(pos, angle))
 
-    servo_driver.motor_mode_write(SERVO_ID, -500)
-    time.sleep(1)
-    print("position: {}".format(servo_driver.pos_read(SERVO_ID)))
 
-    servo_driver.motor_mode_write(SERVO_ID, 0)
-    time.sleep(1)
-    print("position: {}".format(servo_driver.pos_read(SERVO_ID)))
-
+    # Shutdown
     servo_driver.close()
     print('\nClose connection to servo board')
     print('is_open: {}'.format(servo_driver.is_open()))

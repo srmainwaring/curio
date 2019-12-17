@@ -180,19 +180,40 @@ class LewansoulDriver(object):
             return -1, -1
         min_vin = data[0] + (data[1] << 8)
         max_vin = data[2] + (data[3] << 8)
+        min_vin = min_vin / 1000.0
+        max_vin = max_vin / 1000.0
         return min_vin, max_vin 
 
     def temp_max_limit_write(self, servo_id):
         pass
 
     def temp_max_limit_read(self, servo_id):
-        pass
+        self._serial.reset_input_buffer()
+        self.send_command(servo_id, 3, LewansoulDriver.SERVO_TEMP_MAX_LIMIT_READ)
+        data = self.read_response(servo_id, 4, LewansoulDriver.SERVO_TEMP_MAX_LIMIT_READ)
+        if data == -1:
+            return -1
+        temp_max_limit = data[0]
+        return temp_max_limit  
 
     def temp_read(self, servo_id):
-        pass
+        self._serial.reset_input_buffer()
+        self.send_command(servo_id, 3, LewansoulDriver.SERVO_TEMP_READ)
+        data = self.read_response(servo_id, 4, LewansoulDriver.SERVO_TEMP_READ)
+        if data == -1:
+            return -1
+        temp = data[0]
+        return temp  
 
     def vin_read(self, servo_id):
-        pass
+        self._serial.reset_input_buffer()
+        self.send_command(servo_id, 3, LewansoulDriver.SERVO_VIN_READ)
+        data = self.read_response(servo_id, 5, LewansoulDriver.SERVO_VIN_READ)
+        if data == -1:
+            return -1
+        vin = data[0] + (data[1] << 8)
+        vin = vin / 1000.0
+        return vin
 
     def pos_read(self, servo_id):
         self._serial.reset_input_buffer()
@@ -200,7 +221,8 @@ class LewansoulDriver(object):
         data = self.read_response(servo_id, 5, LewansoulDriver.SERVO_POS_READ)
         if data == -1:
             return -1
-        pos = data[0] + (data[1] << 8) 
+        # pos = data[0] + (data[1] << 8) 
+        pos = struct.unpack('h', data)[0]
         return pos
 
     def motor_mode_write(self, servo_id, speed):
@@ -218,7 +240,13 @@ class LewansoulDriver(object):
         pass
 
     def load_or_unload_read(self, servo_id):
-        pass
+        self._serial.reset_input_buffer()
+        self.send_command(servo_id, 3, LewansoulDriver.SERVO_LOAD_OR_UNLOAD_READ)
+        data = self.read_response(servo_id, 4, LewansoulDriver.SERVO_LOAD_OR_UNLOAD_READ)
+        if data == -1:
+            return -1
+        load_or_unload = data[0]
+        return load_or_unload  
 
     def led_ctrl_write(self, servo_id):
         pass
