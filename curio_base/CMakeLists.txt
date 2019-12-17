@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(sawppy_base)
+project(curio_base)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -43,6 +43,6 @@ include_directories(
 # Install
 
 catkin_install_python(PROGRAMS
-    scripts/sawppy_servo_test.py
+    scripts/lewansoul_driver_test.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
