@@ -49,6 +49,9 @@ def degree(rad):
 def radian(deg):
     return deg * math.pi / 180.0
 
+def map(x, in_min, in_max, out_min, out_max):
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
 class Servo(object):
 
     LEFT  = 0
@@ -99,7 +102,11 @@ class MotorController(object):
     def steer(self, angle):
         # Map steering angle (in radians) to servo position [0, 240] deg => [0, 1000]
         angle_deg = degree(angle)
-        servo_pos = int(1000 * angle_deg / 240)
+        ANGLE_MAX = 120.0
+        SERVO_POS_MIN = 0.0
+        SERVO_POS_MAX = 1000.0
+        angle_deg = degree(angle)
+        servo_pos = int(map(angle_deg, -ANGLE_MAX, ANGLE_MAX, SERVO_POS_MIN, SERVO_POS_MAX))
 
         for servo in self._steer_servos:
             dir = 1 if servo.side == Servo.LEFT else -1
@@ -107,14 +114,16 @@ class MotorController(object):
             self._servo_driver.servo_mode_write(servo.servo_id)
             self._servo_driver.move_time_write(servo.servo_id, servo_pos)
 
-    def move(self, lin_vel):
+    def move(self, speed):
         # Map lin_vel to servo command [-1000, 1000]
-        servo_vel = int(lin_vel * 1000)
-
+        VEL_MAX = 1.0
+        SERVO_SPEED_MAX = 1000.0
+        servo_speed = int(map(speed, -VEL_MAX, VEL_MAX, -SERVO_SPEED_MAX, SERVO_SPEED_MAX))
+        
         for servo in self._wheel_servos:
             dir = 1 if servo.side == Servo.LEFT else -1
-            rospy.loginfo('servo_id: {}, servo_vel: {}'.format(servo.servo_id, dir * servo_vel))
-            self._servo_driver.motor_mode_write(servo.servo_id, dir * servo_vel)
+            rospy.loginfo('servo_id: {}, servo_vel: {}'.format(servo.servo_id, dir * servo_speed))
+            self._servo_driver.motor_mode_write(servo.servo_id, dir * servo_speed)
 
     def stop(self):
         rospy.loginfo('Stopping servos')
@@ -125,6 +134,7 @@ class MotorController(object):
 def cmd_vel_callback(msg):
     rospy.loginfo('cmd_vel: lin_vel: {}, ang_vel: {}'.format(msg.linear.x, msg.angular.z))
     motor_controller.move(msg.linear.x)
+    motor_controller.steer(msg.angular.z)
 
 
 if __name__ == '__main__':
@@ -138,7 +148,7 @@ if __name__ == '__main__':
     baudrate = 115200
     timeout = 1.0
 
-    # Servo driver
+    # @TODO: move servo driver tests
     # servo_driver = curio_base.lx16a_driver.LX16ADriver()
     # servo_driver.set_port(port)
     # servo_driver.set_baudrate(baudrate)
@@ -160,18 +170,16 @@ if __name__ == '__main__':
 
     # Motor controller
     motor_controller = MotorController(port, baudrate, timeout)
-    motor_controller.steer(radian(0.0))
-    time.sleep(1)
-    motor_controller.steer(radian(120))
-    time.sleep(1)
-    motor_controller.steer(radian(240))
-    time.sleep(1)
-    motor_controller.steer(radian(0.0))
-    time.sleep(1)
-    motor_controller.steer(radian(120.0))
-    time.sleep(1)
-    # time.sleep(2)
-    # motor_controller.stop()
+
+    # @TODO: move steering tests.
+    # motor_controller.steer(radian(0.0))
+    # time.sleep(1)
+    # motor_controller.steer(radian(20))
+    # time.sleep(1)
+    # motor_controller.steer(radian(-20))
+    # time.sleep(1)
+    # motor_controller.steer(radian(0.0))
+    # time.sleep(1)
 
     # Subscribers
     cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, cmd_vel_callback)
