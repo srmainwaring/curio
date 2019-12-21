@@ -1,0 +1,181 @@
+#!/usr/bin/env python
+# 
+#   Software License Agreement (BSD-3-Clause)
+#    
+#   Copyright (c) 2019 Rhys Mainwaring
+#   All rights reserved
+#    
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions
+#   are met:
+# 
+#   1.  Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+# 
+#   2.  Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+# 
+#   3.  Neither the name of the copyright holder nor the names of its
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#  
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+#   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+#   COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+#   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+#   BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+#   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#   CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+#   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+# 
+
+import time
+import math
+import rospy
+from geometry_msgs.msg import Twist
+import curio_base.lx16a_driver
+
+motor_controller = None
+
+def degree(rad):
+    return rad * 180.0 / math.pi
+
+def radian(deg):
+    return deg * math.pi / 180.0
+
+class Servo(object):
+
+    LEFT  = 0
+    RIGHT = 1
+    FRONT = 2
+    MID   = 3
+    BACK  = 4
+
+    def __init__(self, servo_id, position, side):
+        self.servo_id = servo_id
+        self.position = position
+        self.side = side
+
+class MotorController(object):
+
+    def __init__(self, port, baudrate,  timeout):
+
+        # Configure servos
+        self._wheel_servos = [
+            Servo(11, Servo.FRONT, Servo.LEFT),
+            Servo(12, Servo.MID, Servo.LEFT),
+            Servo(13, Servo.BACK, Servo.LEFT),
+            Servo(21, Servo.FRONT, Servo.RIGHT),
+            Servo(22, Servo.MID, Servo.RIGHT),
+            Servo(23, Servo.BACK, Servo.RIGHT)
+        ]
+        self._steer_servos = [
+            Servo(111, Servo.FRONT, Servo.LEFT),
+            Servo(131, Servo.BACK, Servo.LEFT),
+            Servo(211, Servo.FRONT, Servo.RIGHT),
+            Servo(231, Servo.BACK, Servo.RIGHT)
+        ]
+
+        # LX-16A servo driver
+        self._servo_driver = curio_base.lx16a_driver.LX16ADriver()
+        self._servo_driver.set_port(port)
+        self._servo_driver.set_baudrate(baudrate)
+        self._servo_driver.set_timeout(timeout)
+        self._servo_driver.open()
+        
+        rospy.loginfo('Open connection to servo board')
+        rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
+        rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
+        rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
+        rospy.loginfo('timeout: {}'.format(self._servo_driver.get_timeout()))
+
+
+    def steer(self, angle):
+        # Map steering angle (in radians) to servo position [0, 240] deg => [0, 1000]
+        angle_deg = degree(angle)
+        servo_pos = int(1000 * angle_deg / 240)
+
+        for servo in self._steer_servos:
+            dir = 1 if servo.side == Servo.LEFT else -1
+            rospy.loginfo('servo_id: {}, servo_pos: {}'.format(servo.servo_id, servo_pos))
+            self._servo_driver.servo_mode_write(servo.servo_id)
+            self._servo_driver.move_time_write(servo.servo_id, servo_pos)
+
+    def move(self, lin_vel):
+        # Map lin_vel to servo command [-1000, 1000]
+        servo_vel = int(lin_vel * 1000)
+
+        for servo in self._wheel_servos:
+            dir = 1 if servo.side == Servo.LEFT else -1
+            rospy.loginfo('servo_id: {}, servo_vel: {}'.format(servo.servo_id, dir * servo_vel))
+            self._servo_driver.motor_mode_write(servo.servo_id, dir * servo_vel)
+
+    def stop(self):
+        rospy.loginfo('Stopping servos')
+        self._servo_driver.motor_mode_write(11, 0)
+
+
+# Add timeout to the control loop
+def cmd_vel_callback(msg):
+    rospy.loginfo('cmd_vel: lin_vel: {}, ang_vel: {}'.format(msg.linear.x, msg.angular.z))
+    motor_controller.move(msg.linear.x)
+
+
+if __name__ == '__main__':
+    global motor_controller
+
+    rospy.init_node('curio_base_motor_node')
+    rospy.loginfo('Starting curio base motor node')
+
+    # LX-16A serial driver config
+    port = '/dev/cu.wchusbserialfd5110'
+    baudrate = 115200
+    timeout = 1.0
+
+    # Servo driver
+    # servo_driver = curio_base.lx16a_driver.LX16ADriver()
+    # servo_driver.set_port(port)
+    # servo_driver.set_baudrate(baudrate)
+    # servo_driver.set_timeout(timeout)
+    # servo_driver.open()
+    
+    # rospy.loginfo('Open connection to servo board')
+    # rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))
+    # rospy.loginfo('port: {}'.format(servo_driver.get_port()))
+    # rospy.loginfo('baudrate: {}'.format(servo_driver.get_baudrate()))
+    # rospy.loginfo('timeout: {}'.format(servo_driver.get_timeout()))    
+
+    # Run servo in motor (continuous) mode
+    # rospy.loginfo('Set motor speed')
+    # speed = 0
+    # run_time = 2000
+    # pos = servo_driver.pos_read(11)
+    # servo_driver.motor_mode_write(11, speed)
+
+    # Motor controller
+    motor_controller = MotorController(port, baudrate, timeout)
+    motor_controller.steer(radian(0.0))
+    time.sleep(1)
+    motor_controller.steer(radian(120))
+    time.sleep(1)
+    motor_controller.steer(radian(240))
+    time.sleep(1)
+    motor_controller.steer(radian(0.0))
+    time.sleep(1)
+    motor_controller.steer(radian(120.0))
+    time.sleep(1)
+    # time.sleep(2)
+    # motor_controller.stop()
+
+    # Subscribers
+    cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, cmd_vel_callback)
+
+    # rate = rospy.Rate(10)
+    # rate.sleep()
+    rospy.spin()
