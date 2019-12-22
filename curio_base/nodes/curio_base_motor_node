@@ -55,11 +55,6 @@ def map(x, in_min, in_max, out_min, out_max):
 def clamp(x, lower, upper):
     return min(max(x, lower), upper)
 
-def millis():
-    ms = int(round(time.time() * 1000))
-    return ms
-
-
 # Calculate the turning radius and rate of turn about
 # the instantaneous centre of curvature (ICC).
 #
