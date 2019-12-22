@@ -39,10 +39,9 @@
 '''
 
 import time
-import lewansoul_driver
-# import lewansoul_wrapper
+import curio_base.lx16a_driver
 
-SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5140'
+SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0
 SERVO_ID            = 11
@@ -59,7 +58,7 @@ if __name__ == '__main__':
     print('Lewansoul LX-16A driver test')
 
     # Initialise servo driver
-    servo_driver = lewansoul_driver.LewansoulDriver()
+    servo_driver = curio_base.lx16a_driver.LX16ADriver()
     servo_driver.set_port(SERVO_SERIAL_PORT)
     servo_driver.set_baudrate(SERVO_BAUDRATE)
     servo_driver.set_timeout(SERVO_TIMEOUT)
@@ -97,7 +96,7 @@ if __name__ == '__main__':
     # Run servo in motor (continuous) mode
     print('\nSet motor speed')
     speed = 800
-    run_time = 5000
+    run_time = 2000
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
     print("position: {}, angle: {}".format(pos, angle))

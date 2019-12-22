@@ -45,7 +45,7 @@
 import serial
 import struct
 
-class LewansoulDriver(object):
+class LX16ADriver(object):
     '''
     LewanSoul Bus Servo Communication Protocol
     '''
@@ -116,9 +116,14 @@ class LewansoulDriver(object):
     def set_timeout(self, timeout):
         self._serial.timeout = timeout
 
-    # Commands 
-    def move_time_write(self, servo_id):
-        pass
+    # Commands
+    def move_time_write(self, servo_id, servo_pos):
+        pos_lsb = servo_pos & 0xff 
+        pos_hsb = (servo_pos >> 8) & 0xff
+        time_lsb = 0
+        time_hsb = 0
+        self.send_command(servo_id, 7, LX16ADriver.SERVO_MOVE_TIME_WRITE,
+            (pos_lsb, pos_hsb, time_lsb, time_hsb))
     
     def move_time_read(self, servo_id):
         pass
@@ -149,8 +154,8 @@ class LewansoulDriver(object):
 
     def angle_offset_read(self, servo_id):
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LewansoulDriver.SERVO_ANGLE_OFFSET_READ)
-        data = self.read_response(servo_id, 4, LewansoulDriver.SERVO_ANGLE_OFFSET_READ)
+        self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_OFFSET_READ)
+        data = self.read_response(servo_id, 4, LX16ADriver.SERVO_ANGLE_OFFSET_READ)
         if data == -1:
             return -1
         angle_offset = data[0]
@@ -161,8 +166,8 @@ class LewansoulDriver(object):
 
     def angle_limit_read(self, servo_id):
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LewansoulDriver.SERVO_ANGLE_LIMIT_READ)
-        data = self.read_response(servo_id, 7, LewansoulDriver.SERVO_ANGLE_LIMIT_READ)
+        self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_LIMIT_READ)
+        data = self.read_response(servo_id, 7, LX16ADriver.SERVO_ANGLE_LIMIT_READ)
         if data == -1:
             return -1, -1
         min_angle = data[0] + (data[1] << 8)
@@ -174,8 +179,8 @@ class LewansoulDriver(object):
 
     def vin_limit_read(self, servo_id):
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LewansoulDriver.SERVO_VIN_LIMIT_READ)
-        data = self.read_response(servo_id, 7, LewansoulDriver.SERVO_VIN_LIMIT_READ)
+        self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_LIMIT_READ)
+        data = self.read_response(servo_id, 7, LX16ADriver.SERVO_VIN_LIMIT_READ)
         if data == -1:
             return -1, -1
         min_vin = data[0] + (data[1] << 8)
@@ -189,8 +194,8 @@ class LewansoulDriver(object):
 
     def temp_max_limit_read(self, servo_id):
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LewansoulDriver.SERVO_TEMP_MAX_LIMIT_READ)
-        data = self.read_response(servo_id, 4, LewansoulDriver.SERVO_TEMP_MAX_LIMIT_READ)
+        self.send_command(servo_id, 3, LX16ADriver.SERVO_TEMP_MAX_LIMIT_READ)
+        data = self.read_response(servo_id, 4, LX16ADriver.SERVO_TEMP_MAX_LIMIT_READ)
         if data == -1:
             return -1
         temp_max_limit = data[0]
@@ -198,8 +203,8 @@ class LewansoulDriver(object):
 
     def temp_read(self, servo_id):
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LewansoulDriver.SERVO_TEMP_READ)
-        data = self.read_response(servo_id, 4, LewansoulDriver.SERVO_TEMP_READ)
+        self.send_command(servo_id, 3, LX16ADriver.SERVO_TEMP_READ)
+        data = self.read_response(servo_id, 4, LX16ADriver.SERVO_TEMP_READ)
         if data == -1:
             return -1
         temp = data[0]
@@ -207,8 +212,8 @@ class LewansoulDriver(object):
 
     def vin_read(self, servo_id):
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LewansoulDriver.SERVO_VIN_READ)
-        data = self.read_response(servo_id, 5, LewansoulDriver.SERVO_VIN_READ)
+        self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_READ)
+        data = self.read_response(servo_id, 5, LX16ADriver.SERVO_VIN_READ)
         if data == -1:
             return -1
         vin = data[0] + (data[1] << 8)
@@ -217,8 +222,8 @@ class LewansoulDriver(object):
 
     def pos_read(self, servo_id):
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LewansoulDriver.SERVO_POS_READ)
-        data = self.read_response(servo_id, 5, LewansoulDriver.SERVO_POS_READ)
+        self.send_command(servo_id, 3, LX16ADriver.SERVO_POS_READ)
+        data = self.read_response(servo_id, 5, LX16ADriver.SERVO_POS_READ)
         if data == -1:
             return -1
         # pos = data[0] + (data[1] << 8) 
@@ -228,10 +233,12 @@ class LewansoulDriver(object):
     def motor_mode_write(self, servo_id, speed):
         lsb = speed & 0xff 
         hsb = (speed >> 8) & 0xff 
-        self.send_command(servo_id, 7, LewansoulDriver.SERVO_OR_MOTOR_MODE_WRITE, (1, 0, lsb, hsb))
+        self.send_command(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_WRITE,
+            (1, 0, lsb, hsb))
 
     def servo_mode_write(self, servo_id):
-        pass
+        self.send_command(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_WRITE,
+            (0, 0, 0, 0))
 
     def mode_read(self, servo_id):
         pass
@@ -241,8 +248,8 @@ class LewansoulDriver(object):
 
     def load_or_unload_read(self, servo_id):
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LewansoulDriver.SERVO_LOAD_OR_UNLOAD_READ)
-        data = self.read_response(servo_id, 4, LewansoulDriver.SERVO_LOAD_OR_UNLOAD_READ)
+        self.send_command(servo_id, 3, LX16ADriver.SERVO_LOAD_OR_UNLOAD_READ)
+        data = self.read_response(servo_id, 4, LX16ADriver.SERVO_LOAD_OR_UNLOAD_READ)
         if data == -1:
             return -1
         load_or_unload = data[0]
@@ -283,13 +290,13 @@ class LewansoulDriver(object):
 
         # Read header (2 bytes)
         byte = self.read_byte()
-        if byte != LewansoulDriver.SERVO_BUS_HEADER:
-            print("Invalid 1st header byte: expecting: {}, got: {}".format(LewansoulDriver.SERVO_BUS_HEADER, byte))
+        if byte != LX16ADriver.SERVO_BUS_HEADER:
+            print("Invalid 1st header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
             return -1
 
         byte = self.read_byte()
-        if byte != LewansoulDriver.SERVO_BUS_HEADER:
-            print("Invalid 2nd header byte: expecting: {}, got: {}".format(LewansoulDriver.SERVO_BUS_HEADER, byte))
+        if byte != LX16ADriver.SERVO_BUS_HEADER:
+            print("Invalid 2nd header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
             return -1
 
         # Read id
@@ -334,10 +341,10 @@ class LewansoulDriver(object):
             return -1
 
         # Packet header [0x55, 0x55]
-        packet = [LewansoulDriver.SERVO_BUS_HEADER, LewansoulDriver.SERVO_BUS_HEADER]
+        packet = [LX16ADriver.SERVO_BUS_HEADER, LX16ADriver.SERVO_BUS_HEADER]
 
         # Check the servo id is in range
-        if servo_id < LewansoulDriver.SERVO_BUS_MIN_ID or servo_id > LewansoulDriver.SERVO_BUS_MAX_ID:
+        if servo_id < LX16ADriver.SERVO_BUS_MIN_ID or servo_id > LX16ADriver.SERVO_BUS_MAX_ID:
             return -1
         packet.append(servo_id)
 

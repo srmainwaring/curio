@@ -1,0 +1,14 @@
+<!-- Launch the base motor driver node -->
+<launch>
+    <arg name="port" default="/dev/ttyAMC1" />
+
+    <!-- Hardware driver -->
+    <node pkg="curio_base" type="curio_base_motor_node" name="curio_base_motor_node"
+        respawn="true" output="screen">
+        <rosparam command="load" file="$(find curio_base)/config/base_motor.yaml" />
+        <rosparam subst_value="true">
+            port: $(arg port)
+        </rosparam>
+    </node>
+
+</launch>

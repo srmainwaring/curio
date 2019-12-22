@@ -1,0 +1,405 @@
+#!/usr/bin/env python
+# 
+#   Software License Agreement (BSD-3-Clause)
+#    
+#   Copyright (c) 2019 Rhys Mainwaring
+#   All rights reserved
+#    
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions
+#   are met:
+# 
+#   1.  Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+# 
+#   2.  Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+# 
+#   3.  Neither the name of the copyright holder nor the names of its
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#  
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+#   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+#   COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+#   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+#   BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+#   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#   CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+#   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+# 
+
+import time
+import math
+import rospy
+from geometry_msgs.msg import Twist
+import curio_base.lx16a_driver
+
+motor_controller = None
+
+def degree(rad):
+    return rad * 180.0 / math.pi
+
+def radian(deg):
+    return deg * math.pi / 180.0
+
+def map(x, in_min, in_max, out_min, out_max):
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+def clamp(x, lower, upper):
+    return min(max(x, lower), upper)
+
+def millis():
+    ms = int(round(time.time() * 1000))
+    return ms
+
+
+# Calculate the turning radius and rate of turn about
+# the instantaneous centre of curvature (ICC).
+#
+# Conventions are specifiied according to ROS REP 103:
+# Standard Units of Measure and Coordinate Conventions
+# https://www.ros.org/reps/rep-0103.html
+# 
+# x forward
+# y left
+# z up
+# 
+# v_b >= 0, omega_b > 0 => r_p > 0    the turn is positive (anti-clockwise) 
+# v_b >= 0, omega_b < 0 => r_p < 0    the turn is negative (clockwise)
+# v_b >= 0, omega_b = 0 => r_p = inf  there is no turn
+# 
+# v_b       linear velocity of the base
+# omega_b   angular velocity of the base
+# d         distance between the fixed wheels 
+def turning_radius_and_rate(v_b, omega_b, d):
+    vl = v_b - d * omega_b / 2.0
+    vr = v_b + d * omega_b / 2.0
+    if vl == vr:
+        return float('Inf'), 0.0
+    else:
+        r_p = d * (vr + vl) / (vr - vl) / 2.0
+        omega_p = (vr - vl) / d
+        return r_p, omega_p
+
+class Servo(object):
+
+    LEFT  = 0
+    RIGHT = 1
+    FRONT = 2
+    MID   = 3
+    BACK  = 4
+
+    def __init__(self, id, position, side, orientation):
+        self.id = id
+        self.position = position
+        self.side = side
+        self.orientation = orientation
+
+class MotorController(object):
+
+    # Velocity limits
+    VEL_MAX = 1.0
+    SERVO_SPEED_MAX = 1000.0
+
+    # Steering angle limits
+    ANGLE_MAX = 120.0
+    SERVO_POS_MIN = 0.0
+    SERVO_POS_MAX = 1000.0
+
+    def __init__(self, port, baudrate,  timeout):
+
+        # Steering offsets (servo position units)
+        self._steer_offsets = [
+            {'id': 111, 'offset': 0},
+            {'id': 121, 'offset': 0},
+            {'id': 211, 'offset': 0},
+            {'id': 231, 'offset': 0},
+        ]
+        rospy.loginfo('Steering offsets')
+        for offset in self._steer_offsets:
+            rospy.loginfo('steer offset: id: {}, offset: {}'.format(offset['id'], offset['offset']))
+
+
+        # Wheel geometry on a flat surface
+        self._wheel_diameter          = 0.12
+        self._wheel_width             = 0.10
+        self._fixed_wheel_separation  = 0.52
+        self._front_wheel_separation  = 0.47 
+        self._back_wheel_separation   = 0.47
+        self._front_wheel_distance    = 0.28
+        self._back_wheel_distance     = 0.25
+        rospy.loginfo('Wheel geometry')
+        rospy.loginfo('wheel_diameter: {:.2f}'.format(self._wheel_diameter))
+        rospy.loginfo('wheel_width: {:.2f}'.format(self._wheel_width))
+        rospy.loginfo('fixed_wheel_separation: {:.2f}'.format(self._fixed_wheel_separation))
+        rospy.loginfo('front_wheel_separation: {:.2f}'.format(self._front_wheel_separation))
+        rospy.loginfo('back_wheel_separation: {:.2f}'.format(self._back_wheel_separation))
+        rospy.loginfo('front_wheel_distance: {:.2f}'.format(self._front_wheel_distance))
+        rospy.loginfo('back_wheel_distance: {:.2f}'.format(self._back_wheel_distance))
+
+        # Location of each wheel joint in the base link frame (x-forward, y-left, z-up)
+        self._wheel_joint_locations = [
+            {'id': 11, 'pos': [self._front_wheel_distance, self._front_wheel_separation/2.0]},
+            {'id': 12, 'pos': [0.0, self._fixed_wheel_separation/2.0]},
+            {'id': 13, 'pos': [-self._back_wheel_distance, self._back_wheel_separation/2.0]},
+            {'id': 21, 'pos': [self._front_wheel_distance, -self._front_wheel_separation/2.0]},
+            {'id': 22, 'pos': [0.0, -self._fixed_wheel_separation/2.0]},
+            {'id': 23, 'pos': [-self._back_wheel_distance, -self._back_wheel_separation/2.0]}
+        ]
+        rospy.loginfo('Wheel joint locations')
+        for location in self._wheel_joint_locations:
+            rospy.loginfo('wheel joint location: id: {}, pos: {}'.format(location['id'], location['pos']))
+
+        # Location of each steer joint in the base link frame (x-forward, y-left, z-up)
+        self._steer_joint_locations = [
+            {'id': 111, 'pos': [self._front_wheel_distance, self._front_wheel_separation/2.0]},
+            {'id': 131, 'pos': [-self._back_wheel_distance, self._back_wheel_separation/2.0]},
+            {'id': 211, 'pos': [self._front_wheel_distance, -self._front_wheel_separation/2.0]},
+            {'id': 231, 'pos': [-self._back_wheel_distance, -self._back_wheel_separation/2.0]}
+        ]
+        rospy.loginfo('Steer joint locations')
+        for location in self._steer_joint_locations:
+            rospy.loginfo('steer joint location: id: {}, pos: {}'.format(location['id'], location['pos']))
+
+        # Configure servos
+        self._wheel_servos = [
+            Servo(11, Servo.FRONT, Servo.LEFT, 1),
+            Servo(12, Servo.MID, Servo.LEFT, 1),
+            Servo(13, Servo.BACK, Servo.LEFT, 1),
+            Servo(21, Servo.FRONT, Servo.RIGHT, -1),
+            Servo(22, Servo.MID, Servo.RIGHT, -1),
+            Servo(23, Servo.BACK, Servo.RIGHT, -1)
+        ]
+        self._steer_servos = [
+            Servo(111, Servo.FRONT, Servo.LEFT, -1),
+            Servo(131, Servo.BACK, Servo.LEFT, -1),
+            Servo(211, Servo.FRONT, Servo.RIGHT, -1),
+            Servo(231, Servo.BACK, Servo.RIGHT, -1)
+        ]
+
+        # LX-16A servo driver
+        self._servo_driver = curio_base.lx16a_driver.LX16ADriver()
+        self._servo_driver.set_port(port)
+        self._servo_driver.set_baudrate(baudrate)
+        self._servo_driver.set_timeout(timeout)
+        self._servo_driver.open()
+        
+        rospy.loginfo('Open connection to servo board')
+        rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
+        rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
+        rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
+        rospy.loginfo('timeout: {:.2f}'.format(self._servo_driver.get_timeout()))
+
+        # Subscriber
+        self._cmd_vel_msg = Twist()
+        self._cmd_vel_sub =  rospy.Subscriber('/cmd_vel', Twist, self.cmd_vel_callback)
+
+
+
+
+    def move(self, lin_vel, ang_vel):
+        # Calculate the turning radius and rate 
+        r_p, omega_p = turning_radius_and_rate(lin_vel, ang_vel, self._front_wheel_separation)
+        rospy.loginfo('r_p: {:.2f}, omega_p: {:.2f}'.format(r_p, omega_p))
+
+        # Calculate turn radius and velocity for each wheel
+        v = []
+        a = []
+        if omega_p == 0:
+            # No rotation - set wheel velocity directly
+            for i in range(len(self._wheel_servos)):
+                joint = self._wheel_joint_locations[i]
+                servo = self._wheel_servos[i]
+                v.append(lin_vel)
+
+            for i in range(len(self._steer_servos)):
+                a.append(0.0)
+
+        else:
+            for joint in self._wheel_joint_locations:
+                # Wheel position
+                id = joint['id']
+                x = joint['pos'][0]
+                y = joint['pos'][1]
+
+                # Wheel turn radius
+                r = math.sqrt(x*x + (r_p - y)*(r_p - y))
+
+                # Wheel velocity
+                sgn = -1 if (r_p - y) < 0 else 1
+                vel = sgn * r * omega_p 
+                v.append(vel)
+                rospy.loginfo("id: {}, r: {:.2f}, v: {:.2f}".format(joint['id'], r, vel))
+
+            for joint in self._steer_joint_locations:
+                # Wheel position
+                id = joint['id']
+                x = joint['pos'][0]
+                y = joint['pos'][1]
+
+                # Wheel angle
+                angle = math.atan2(x, (r_p - y))
+                a.append(angle)
+                # rospy.loginfo("id: {}, angle: {:.2f}".format(joint['id'], degree(angle)))
+
+        # Update wheel servos
+        rospy.loginfo('Updating wheel servos')
+        for i in range(len(self._wheel_servos)):
+            servo = self._wheel_servos[i]
+
+            # Map speed to servo speed [-1000, 1000]
+            servo_speed = int(map(v[i] * servo.orientation,
+                -MotorController.VEL_MAX, MotorController.VEL_MAX, 
+                -MotorController.SERVO_SPEED_MAX, MotorController.SERVO_SPEED_MAX))
+
+            # Set servo speed
+            rospy.loginfo('id: {}, vel: {:.2f}, servo_vel: {}'.format(servo.id, v[i], servo_speed))
+            self._servo_driver.motor_mode_write(servo.id, servo_speed)
+
+        # Update steer servos
+        rospy.loginfo('Updating steer servos')
+        for i in range(len(self._steer_servos)):
+            servo = self._steer_servos[i]
+
+            # Input angles are in radians
+            angle_deg = degree(a[i])
+
+            # Transition from turning radius outside the base footprint to inside
+            # (i.e in-place turning) 
+            if angle_deg > 90:
+                angle_deg = 90 - angle_deg
+
+            if angle_deg < -90:
+                angle_deg = -90 - angle_deg
+
+            # Map steering angle degrees [-120, 120] to servo position [0, 1000]
+            servo_pos = int(map(angle_deg * servo.orientation,
+                -MotorController.ANGLE_MAX, MotorController.ANGLE_MAX,
+                MotorController.SERVO_POS_MIN, MotorController.SERVO_POS_MAX))
+
+            rospy.loginfo('id: {}, angle: {:.2f}, servo_pos: {}'.format(servo.id, angle_deg, servo_pos))
+            self._servo_driver.servo_mode_write(servo.id)
+            self._servo_driver.move_time_write(servo.id, servo_pos)
+
+    def move_forward_back(self, speed):
+        # Map speed to servo speed [-1000, 1000]
+        servo_speed = int(map(speed,
+            -MotorController.VEL_MAX, MotorController.VEL_MAX, 
+            -MotorController.SERVO_SPEED_MAX, MotorController.SERVO_SPEED_MAX))
+        
+        for servo in self._wheel_servos:
+            dir = 1 if servo.side == Servo.LEFT else -1
+            rospy.loginfo('id: {}, servo_vel: {}'.format(servo.id, dir * servo_speed))
+            self._servo_driver.motor_mode_write(servo.id, dir * servo_speed)
+
+    def steer(self, angle):
+        # Input angles are in radians
+        angle_deg = degree(angle)
+
+        # Map steering angle degrees [-120, 120] to servo position [0, 1000]
+        servo_pos = int(map(angle_deg,
+            -MotorController.ANGLE_MAX, MotorController.ANGLE_MAX,
+            MotorController.SERVO_POS_MIN, MotorController.SERVO_POS_MAX))
+
+        for servo in self._steer_servos:
+            dir = 1 if servo.side == Servo.LEFT else -1
+            rospy.loginfo('id: {}, servo_pos: {}'.format(servo.id, servo_pos))
+            self._servo_driver.servo_mode_write(servo.id)
+            self._servo_driver.move_time_write(servo.id, servo_pos)
+
+    def set_steer_offsets(self, offsets):
+        # Set the steering offsets to centre the corner wheels
+        pass
+        
+    def set_steer_centre(self):
+        ''' Centre the steering '''
+        # Map steering angle degrees [-120, 120] to servo position [0, 1000]
+        rospy.loginfo('Set steering to centre')
+        servo_pos = int(map(0,
+            -MotorController.ANGLE_MAX, MotorController.ANGLE_MAX,
+            MotorController.SERVO_POS_MIN, MotorController.SERVO_POS_MAX))
+
+        for servo in self._steer_servos:
+            dir = 1 if servo.side == Servo.LEFT else -1
+            rospy.loginfo('id: {}, servo_pos: {}'.format(servo.id, servo_pos))
+            self._servo_driver.servo_mode_write(servo.id)
+            self._servo_driver.move_time_write(servo.id, servo_pos)
+
+    def stop(self):
+        rospy.loginfo('Stopping all servos')
+        for servo in self._wheel_servos:
+            self._servo_driver.motor_mode_write(servo.id, 0)
+    
+    def cmd_vel_callback(self, msg):
+        rospy.loginfo('cmd_vel: linear: {}, angular: {}'.format(msg.linear.x, msg.angular.z))
+        self._cmd_vel_msg = msg
+
+    def control_loop(self, event):
+        ''' Control loop - to be called by a rospy.Timer'''
+        rospy.loginfo('control_loop: last_expected: {}, last_real: {}, current_expected: {}, current_real: {}, last_duration: {}'.format(
+            event.last_expected, event.last_real, event.current_expected, event.current_real, event.last_duration))
+        motor_controller.move(self._cmd_vel_msg.linear.x, self._cmd_vel_msg.angular.z)
+
+
+if __name__ == '__main__':
+    global motor_controller
+
+    rospy.init_node('curio_base_motor_node')
+    rospy.loginfo('Starting curio base motor node')
+
+    # LX-16A serial driver config
+    port = '/dev/cu.wchusbserialfd5110'
+    baudrate = 115200
+    timeout = 1.0
+
+    # @TODO: move servo driver tests
+    # servo_driver = curio_base.lx16a_driver.LX16ADriver()
+    # servo_driver.set_port(port)
+    # servo_driver.set_baudrate(baudrate)
+    # servo_driver.set_timeout(timeout)
+    # servo_driver.open()
+    
+    # rospy.loginfo('Open connection to servo board')
+    # rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))
+    # rospy.loginfo('port: {}'.format(servo_driver.get_port()))
+    # rospy.loginfo('baudrate: {}'.format(servo_driver.get_baudrate()))
+    # rospy.loginfo('timeout: {}'.format(servo_driver.get_timeout()))    
+
+    # Run servo in motor (continuous) mode
+    # rospy.loginfo('Set motor speed')
+    # speed = 0
+    # run_time = 2000
+    # pos = servo_driver.pos_read(11)
+    # servo_driver.motor_mode_write(11, speed)
+
+    # Motor controller
+    motor_controller = MotorController(port, baudrate, timeout)
+
+
+    # Stop and centre steering
+    # motor_controller.stop()
+    # motor_controller.set_steer_centre()
+
+
+    # @TODO: move steering tests.
+    # motor_controller.steer(radian(0.0))
+    # time.sleep(1)
+    # motor_controller.steer(radian(20))
+    # time.sleep(1)
+    # motor_controller.steer(radian(-20))
+    # time.sleep(1)
+    # motor_controller.steer(radian(0.0))
+    # time.sleep(1)
+
+    # Start the motor control loop
+    control_frequency = 10.0
+    control_timer = rospy.Timer(rospy.Duration(1.0 / control_frequency), motor_controller.control_loop)
+
+    rospy.spin()

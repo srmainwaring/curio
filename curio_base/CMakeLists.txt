@@ -10,7 +10,8 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
     rospy
     # serial
-    # std_msgs
+    geometry_msgs
+    std_msgs
 )
 
 ################################################################################
@@ -27,7 +28,8 @@ catkin_package(
     CATKIN_DEPENDS
         rospy
         # serial
-        # std_msgs
+        geometry_msgs
+        std_msgs
 )
 
 ################################################################################
@@ -43,6 +45,7 @@ include_directories(
 # Install
 
 catkin_install_python(PROGRAMS
-    scripts/lewansoul_driver_test.py
+    nodes/curio_base_motor_node
+    scripts/lx16a_driver_test.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

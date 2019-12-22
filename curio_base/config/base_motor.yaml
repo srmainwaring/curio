@@ -1,0 +1,18 @@
+# Curio base parameters
+
+# Update frequencies: control loop
+
+
+# Robot dimensions and limits
+
+max_linear_speed: 1.0
+max_linear_accel: 1.0
+
+wheel_diameter: 0.600
+
+
+
+# Motor driver settings
+port: /dev/ttyACM1
+baudrate: 115200
+timeout: 100
