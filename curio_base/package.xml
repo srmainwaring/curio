@@ -1,17 +1,16 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>curio_base</name>
-  <version>0.0.0</version>
-  <description>The curio_base package</description>
-  <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
-  <license>BSD-3-Clause</license>
-  <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
+    <name>curio_base</name>
+    <version>0.0.0</version>
+    <description>Hardware controllers for Curio, a Swappy Rover robot</description>
+    <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
+    <license>BSD-3-Clause</license>
+    <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>rospy</depend>
-  <!-- <depend>serial</depend> -->
-  <depend>geometry_msgs</depend>
-  <depend>std_msgs</depend>
-
+    <depend>rospy</depend>
+    <!-- <depend>serial</depend> -->
+    <depend>geometry_msgs</depend>
+    <depend>std_msgs</depend>
 </package>

@@ -1,0 +1,60 @@
+<!-- Radio control tele-operation
+
+    - wild1_rosserial_rc_channels: 
+        A rosserial_python / rosserial_arduino node capturing RC receiver pulses
+
+        Publish:
+            - wild1_msgs/Channels to radio_ctrl/channels
+
+    - wild1_teleop_rc_node
+        Subscribe to a wild1_msgs/Channel message and calculate an appropriate
+        geometry_msgs/Twist to publish to cmd_vel.
+
+        Subscribe:
+            - wild1_msgs/Channels from channels
+
+        Publish:
+            - geometry_msgs/Twist to cmd_vel
+ -->
+<launch>
+    <arg name="port" default="/dev/ttyACM1"/>
+    <arg name="robot_name" default=""/>
+
+    <!-- ROS serial node connected to Arduino Uno for radio control -->
+    <node pkg="rosserial_python" type="serial_node.py" name="wild1_rosserial_rc_channels"
+        respawn="true" output="screen">
+        <param name="port" value="$(arg port)"/>
+        <param name="baud" value="57600"/>
+    </node>
+
+    <!-- Launch RC teleoperation -->
+    <node pkg="wild1_teleop" type="wild1_teleop_rc_node" name="wild1_teleop_rc"
+        respawn="true" output="screen">
+        <rosparam command="load" file="$(find wild1_teleop)/config/teleop_rc.yaml" />
+        <!-- <rosparam>
+            linear:
+                channel: 1
+                offset: 0
+                x:
+                    max_velocity: 0.5
+            angular:
+                channel: 2
+                offset: -92
+                z:
+                    max_velocity: 8.0
+            rc_off:
+                channel: 5
+        </rosparam> -->
+        <remap from="channels" to="radio_ctrl/channels" />
+    </node>
+
+    <!-- Throttled RC teleoperation node for monitoring on robot gui -->
+    <node pkg="topic_tools" type="throttle" name="wild1_teleop_rc_throttle"
+        args="messages
+            radio_ctrl/channels
+            5
+            radio_ctrl/channels/throttled
+            "
+        respawn="true" output="screen">
+    </node>
+</launch>
