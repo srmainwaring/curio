@@ -8,11 +8,37 @@
 max_linear_speed: 1.0
 max_linear_accel: 1.0
 
-wheel_diameter: 0.600
+wheel_width: 0.10
+wheel_diameter: 0.12
+wheel_width: 0.10
+mid_wheel_separation: 0.52
+front_wheel_separation: 0.47 
+front_wheel_distance: 0.28
+back_wheel_separation: 0.47
+back_wheel_distance: 0.25
 
-
+# Servo configuration
+steer_servos: [
+    {   
+        id: 111,
+        offset: 0,
+    },
+    {   
+        id: 121,
+        offset: 0,
+    },
+    {   
+        id: 211,
+        offset: 0,
+    },
+    {   
+        id: 231,
+        offset: 0,
+    }
+]
 
 # Motor driver settings
-port: /dev/ttyACM1
+# port: /dev/cu.wchusbserialfd5110
+port: /dev/ttyUSB1
 baudrate: 115200
-timeout: 100
+timeout: 1.0

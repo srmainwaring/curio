@@ -125,27 +125,27 @@ class MotorController(object):
         # Wheel geometry on a flat surface
         self._wheel_diameter          = 0.12
         self._wheel_width             = 0.10
-        self._fixed_wheel_separation  = 0.52
+        self._mid_wheel_separation  = 0.52
         self._front_wheel_separation  = 0.47 
-        self._back_wheel_separation   = 0.47
         self._front_wheel_distance    = 0.28
+        self._back_wheel_separation   = 0.47
         self._back_wheel_distance     = 0.25
         rospy.loginfo('Wheel geometry')
         rospy.loginfo('wheel_diameter: {:.2f}'.format(self._wheel_diameter))
         rospy.loginfo('wheel_width: {:.2f}'.format(self._wheel_width))
-        rospy.loginfo('fixed_wheel_separation: {:.2f}'.format(self._fixed_wheel_separation))
+        rospy.loginfo('mid_wheel_separation: {:.2f}'.format(self._mid_wheel_separation))
         rospy.loginfo('front_wheel_separation: {:.2f}'.format(self._front_wheel_separation))
-        rospy.loginfo('back_wheel_separation: {:.2f}'.format(self._back_wheel_separation))
         rospy.loginfo('front_wheel_distance: {:.2f}'.format(self._front_wheel_distance))
+        rospy.loginfo('back_wheel_separation: {:.2f}'.format(self._back_wheel_separation))
         rospy.loginfo('back_wheel_distance: {:.2f}'.format(self._back_wheel_distance))
 
         # Location of each wheel joint in the base link frame (x-forward, y-left, z-up)
         self._wheel_joint_locations = [
             {'id': 11, 'pos': [self._front_wheel_distance, self._front_wheel_separation/2.0]},
-            {'id': 12, 'pos': [0.0, self._fixed_wheel_separation/2.0]},
+            {'id': 12, 'pos': [0.0, self._mid_wheel_separation/2.0]},
             {'id': 13, 'pos': [-self._back_wheel_distance, self._back_wheel_separation/2.0]},
             {'id': 21, 'pos': [self._front_wheel_distance, -self._front_wheel_separation/2.0]},
-            {'id': 22, 'pos': [0.0, -self._fixed_wheel_separation/2.0]},
+            {'id': 22, 'pos': [0.0, -self._mid_wheel_separation/2.0]},
             {'id': 23, 'pos': [-self._back_wheel_distance, -self._back_wheel_separation/2.0]}
         ]
         rospy.loginfo('Wheel joint locations')
@@ -256,6 +256,7 @@ class MotorController(object):
 
             # Set servo speed
             rospy.loginfo('id: {}, vel: {:.2f}, servo_vel: {}'.format(servo.id, v[i], servo_speed))
+            # @TODO undo temporary disable 
             self._servo_driver.motor_mode_write(servo.id, servo_speed)
 
         # Update steer servos
@@ -269,10 +270,10 @@ class MotorController(object):
             # Transition from turning radius outside the base footprint to inside
             # (i.e in-place turning) 
             if angle_deg > 90:
-                angle_deg = 90 - angle_deg
+                angle_deg = angle_deg - 180
 
             if angle_deg < -90:
-                angle_deg = -90 - angle_deg
+                angle_deg = 180 + angle_deg
 
             # Map steering angle degrees [-120, 120] to servo position [0, 1000]
             servo_pos = int(map(angle_deg * servo.orientation,
@@ -280,6 +281,7 @@ class MotorController(object):
                 MotorController.SERVO_POS_MIN, MotorController.SERVO_POS_MAX))
 
             rospy.loginfo('id: {}, angle: {:.2f}, servo_pos: {}'.format(servo.id, angle_deg, servo_pos))
+            # @TODO undo temporary disable 
             self._servo_driver.servo_mode_write(servo.id)
             self._servo_driver.move_time_write(servo.id, servo_pos)
 
@@ -350,9 +352,16 @@ if __name__ == '__main__':
     rospy.loginfo('Starting curio base motor node')
 
     # LX-16A serial driver config
-    port = '/dev/cu.wchusbserialfd5110'
+    port = '/dev/ttyUSB1'
     baudrate = 115200
     timeout = 1.0
+
+    if rospy.has_param('~port'):
+        port = rospy.get_param('~port')
+    if rospy.has_param('~baudrate'):
+        baudrate = rospy.get_param('~baudrate')
+    if rospy.has_param('~timeout'):
+        timeout = rospy.get_param('~timeout')
 
     # @TODO: move servo driver tests
     # servo_driver = curio_base.lx16a_driver.LX16ADriver()

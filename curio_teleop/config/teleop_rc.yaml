@@ -25,7 +25,7 @@ linear:
 angular:
     z:
         channel: 1  # Assigned to right horizontal stick. Ch2 when using PWM, Ch1 when using SUMD
-        max_velocity: 1.0
+        max_velocity: 1.5
 
 # Toggle the RC teleoperation on/off. 
 # 
