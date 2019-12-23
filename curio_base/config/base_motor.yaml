@@ -1,13 +1,25 @@
 # Curio base parameters
 
 # Update frequencies: control loop
-
+control_frequency: 10.0
 
 # Robot dimensions and limits
-
 max_linear_speed: 1.0
 max_linear_accel: 1.0
 
+# Wheel geometry / servo location
+#     <- front wheel separation ->
+#    11 / 111 |-----|-----| 21 / 212   ---
+#                   |                   ^
+#                   |             front wheel distance
+#       <- mid wheel separation ->      v
+#        12 |-------|-------| 22       ---
+#                   |                   ^
+#                   |             back wheel distance
+#                   |                   v
+#   13 / 131 |------|------| 23 / 233  ---
+#      <- back wheel separation ->
+# 
 wheel_width: 0.10
 wheel_diameter: 0.12
 wheel_width: 0.10
@@ -18,22 +30,23 @@ back_wheel_separation: 0.47
 back_wheel_distance: 0.25
 
 # Servo configuration
-steer_servos: [
+
+steer_servo_offsets: [
     {   
         id: 111,
-        offset: 0,
+        offset: -10,
     },
     {   
         id: 121,
-        offset: 0,
+        offset: -5,
     },
     {   
         id: 211,
-        offset: 0,
+        offset: 40,
     },
     {   
         id: 231,
-        offset: 0,
+        offset: 20,
     }
 ]
 

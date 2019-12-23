@@ -37,11 +37,12 @@
 
 ''' Lewansoul LX-16A servo driver.
 
-    Based on Roger Chens lewansould_wrapper.py
+    Based on Roger Chen's lewansoul_wrapper.py
     https://github.com/Roger-random/SGVHAK_Rover/blob/master/SGVHAK_Rover/lewansoul_wrapper.py
 
 '''
 
+import rospy
 import serial
 import struct
 
@@ -118,7 +119,8 @@ class LX16ADriver(object):
 
     # Commands
     def move_time_write(self, servo_id, servo_pos):
-        pos_lsb = servo_pos & 0xff 
+        # @TODO test
+        pos_lsb = servo_pos & 0xff
         pos_hsb = (servo_pos >> 8) & 0xff
         time_lsb = 0
         time_hsb = 0
@@ -126,33 +128,47 @@ class LX16ADriver(object):
             (pos_lsb, pos_hsb, time_lsb, time_hsb))
     
     def move_time_read(self, servo_id):
+        # @TODO implement
         pass
 
     def move_time_wait_write(self, servo_id):
+        # @TODO implement
         pass
 
     def move_time_wait_read(self, servo_id):
+        # @TODO implement
         pass
 
     def move_start(self, servo_id):
+        # @TODO implement
         pass
 
     def move_stop(self, servo_id):
+        # @TODO implement
         pass
 
     def id_write(self, servo_id):
+        # @TODO implement
         pass
 
     def id_read(self, servo_id):
+        # @TODO implement
         pass
 
-    def angle_offset_adjust(self, servo_id):
-        pass
+    def angle_offset_adjust(self, servo_id, deviation):
+        # @TODO test
+        deviation_lsb = deviation & 0xff 
+        if self.send_command(servo_id, 4, LX16ADriver.SERVO_ANGLE_OFFSET_ADJUST,
+            (deviation_lsb,)) == -1:
+            rospy.logwarn('Servo command error: angle_offset_adjust')
 
     def angle_offset_write(self, servo_id):
-        pass
+        # @TODO test
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_OFFSET_WRITE) == -1:
+            rospy.logwarn('Servo command error: angle_offset_write')
 
     def angle_offset_read(self, servo_id):
+        # @TODO test
         self._serial.reset_input_buffer()
         self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_OFFSET_READ)
         data = self.read_response(servo_id, 4, LX16ADriver.SERVO_ANGLE_OFFSET_READ)
@@ -162,9 +178,11 @@ class LX16ADriver(object):
         return angle_offset
 
     def angle_limit_write(self, servo_id):
+        # @TODO implement
         pass
 
     def angle_limit_read(self, servo_id):
+        # @TODO test
         self._serial.reset_input_buffer()
         self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_LIMIT_READ)
         data = self.read_response(servo_id, 7, LX16ADriver.SERVO_ANGLE_LIMIT_READ)
@@ -175,9 +193,11 @@ class LX16ADriver(object):
         return min_angle, max_angle 
 
     def vin_limit_write(self, servo_id):
+        # @TODO implement
         pass
 
     def vin_limit_read(self, servo_id):
+        # @TODO test
         self._serial.reset_input_buffer()
         self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_LIMIT_READ)
         data = self.read_response(servo_id, 7, LX16ADriver.SERVO_VIN_LIMIT_READ)
@@ -190,9 +210,11 @@ class LX16ADriver(object):
         return min_vin, max_vin 
 
     def temp_max_limit_write(self, servo_id):
+        # @TODO implement
         pass
 
     def temp_max_limit_read(self, servo_id):
+        # @TODO test
         self._serial.reset_input_buffer()
         self.send_command(servo_id, 3, LX16ADriver.SERVO_TEMP_MAX_LIMIT_READ)
         data = self.read_response(servo_id, 4, LX16ADriver.SERVO_TEMP_MAX_LIMIT_READ)
@@ -202,6 +224,7 @@ class LX16ADriver(object):
         return temp_max_limit  
 
     def temp_read(self, servo_id):
+        # @TODO test
         self._serial.reset_input_buffer()
         self.send_command(servo_id, 3, LX16ADriver.SERVO_TEMP_READ)
         data = self.read_response(servo_id, 4, LX16ADriver.SERVO_TEMP_READ)
@@ -211,6 +234,7 @@ class LX16ADriver(object):
         return temp  
 
     def vin_read(self, servo_id):
+        # @TODO test
         self._serial.reset_input_buffer()
         self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_READ)
         data = self.read_response(servo_id, 5, LX16ADriver.SERVO_VIN_READ)
@@ -221,6 +245,7 @@ class LX16ADriver(object):
         return vin
 
     def pos_read(self, servo_id):
+        # @TODO test
         self._serial.reset_input_buffer()
         self.send_command(servo_id, 3, LX16ADriver.SERVO_POS_READ)
         data = self.read_response(servo_id, 5, LX16ADriver.SERVO_POS_READ)
@@ -231,22 +256,27 @@ class LX16ADriver(object):
         return pos
 
     def motor_mode_write(self, servo_id, speed):
+        # @TODO test
         lsb = speed & 0xff 
         hsb = (speed >> 8) & 0xff 
         self.send_command(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_WRITE,
             (1, 0, lsb, hsb))
 
     def servo_mode_write(self, servo_id):
+        # @TODO test
         self.send_command(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_WRITE,
             (0, 0, 0, 0))
 
     def mode_read(self, servo_id):
+        # @TODO implement
         pass
 
     def load_or_unload_write(self, servo_id):
+        # @TODO implement
         pass
 
     def load_or_unload_read(self, servo_id):
+        # @TODO test
         self._serial.reset_input_buffer()
         self.send_command(servo_id, 3, LX16ADriver.SERVO_LOAD_OR_UNLOAD_READ)
         data = self.read_response(servo_id, 4, LX16ADriver.SERVO_LOAD_OR_UNLOAD_READ)
@@ -256,12 +286,15 @@ class LX16ADriver(object):
         return load_or_unload  
 
     def led_ctrl_write(self, servo_id):
+        # @TODO implement
         pass
 
     def led_ctrl_read(self, servo_id):
+        # @TODO implement
         pass
 
     def led_error_write(self, servo_id):
+        # @TODO implement
         pass
 
     def led_error_read(self, servo_id):
@@ -285,42 +318,42 @@ class LX16ADriver(object):
     def read_response(self, servo_id, length, command):
         # Check port is open
         if not self.is_open():
-            print("Serial port not open")
+            rospy.logwarn("Serial port not open")
             return -1
 
         # Read header (2 bytes)
         byte = self.read_byte()
         if byte != LX16ADriver.SERVO_BUS_HEADER:
-            print("Invalid 1st header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
+            rospy.logwarn("Invalid 1st header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
             return -1
 
         byte = self.read_byte()
         if byte != LX16ADriver.SERVO_BUS_HEADER:
-            print("Invalid 2nd header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
+            rospy.logwarn("Invalid 2nd header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
             return -1
 
         # Read id
         byte = self.read_byte()
         if byte != servo_id:
-            print("Invalid servo_id: expecting: {}, got: {}".format(servo_id, byte))
+            rospy.logwarn("Invalid servo_id: expecting: {}, got: {}".format(servo_id, byte))
             return -1
 
         # Read length
         byte = self.read_byte()
         if byte != length:
-            print("Invalid length: expecting: {}, got: {}".format(length, byte))
+            rospy.logwarn("Invalid length: expecting: {}, got: {}".format(length, byte))
             return -1
 
         # Read command
         byte = self.read_byte()
         if byte != command:
-            print("Invalid command: expecting: {}, got: {}".format(command, byte))
+            rospy.logwarn("Invalid command: expecting: {}, got: {}".format(command, byte))
             return -1
 
         # Read data. There should be length - 3 parameters in the data block
         data = self.read_bytearray(length - 3)
         if len(data) != length - 3:
-            print("Invalid len(data): expecting: {}, got: {}".format(length - 3, len(data)))
+            rospy.logwarn("Invalid len(data): expecting: {}, got: {}".format(length - 3, len(data)))
             return -1
 
         # Calculate checksum
@@ -329,7 +362,7 @@ class LX16ADriver(object):
         # Read checksum
         byte = self.read_byte()
         if byte != checksum:
-            print("Invalid checksum: expecting: {}, got: ".format(checksum, byte))
+            rospy.logwarn("Invalid checksum: expecting: {}, got: ".format(checksum, byte))
             return -1
 
         # Read OK - return data (bytearray)
@@ -370,7 +403,7 @@ class LX16ADriver(object):
         num_bytes = self._serial.write(packet_bytes)
 
         # DEBUG INFO
-        # print("servo_id: {}, commmand: {}, data: {}".format(servo_id, command, data))
-        # print("checksum: {}".format(checksum))
-        # print("packet: {}".format(packet))
-        # print("sent: {} bytes".format(num_bytes))
+        # rospy.logdebug("servo_id: {}, commmand: {}, data: {}".format(servo_id, command, data))
+        # rospy.logdebug("checksum: {}".format(checksum))
+        # rospy.logdebug("packet: {}".format(packet))
+        # rospy.logdebug("sent: {} bytes".format(num_bytes))
