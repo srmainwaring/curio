@@ -35,7 +35,7 @@
     POSSIBILITY OF SUCH DAMAGE.
 -->
 
-<!-- Robot definition for Curio, a Sawppy Rover robot.
+<!-- Robot description for Curio, a Sawppy Rover robot.
 
  -->
 <robot name="curio" xmlns:xacro="http://ros.org/wiki/xacro">
@@ -43,6 +43,45 @@
     <xacro:include filename="$(find curio_description)/urdf/curio_materials.xacro"/>
     <xacro:include filename="$(find curio_description)/urdf/curio_inertials.xacro"/>
 
+    <!-- Gazebo plugins -->
+    <gazebo>
+        <!-- ROS Control 
+
+            Resources:
+                https://answers.ros.org/question/292444/gazebo_ros_control-plugin-gazeboroscontrolplugin-missing-legacymodens-defaultrobothwsim/
+        -->
+
+        <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+            <robotNamespace>/</robotNamespace>
+            <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+            <legacyModeNS>false</legacyModeNS>
+        </plugin>
+
+        <!-- Publish state of passive joints
+        
+            Resources:
+                http://answers.gazebosim.org/question/13844/getting-joint-angles-for-passive-urdf-model/
+         -->
+        <plugin name="gazebo_ros_joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+            <robotNamespace>/</robotNamespace>
+            <jointName>
+                left_rocker_joint, right_rocker_joint,
+                front_left_corner_joint, front_right_corner_joint,
+                front_left_wheel_joint, front_right_wheel_joint,
+                left_bogie_joint, right_bogie_joint,
+                mid_left_wheel_joint, mid_right_wheel_joint,
+                back_left_corner_joint, back_right_corner_joint,
+                back_left_wheel_joint, back_right_wheel_joint,
+                back_left_turnbuckle_socket_joint, back_right_turnbuckle_socket_joint,
+                back_left_turnbuckle_joint, back_right_turnbuckle_joint,
+                front_left_turnbuckle_socket_joint, front_right_turnbuckle_socket_joint,
+                front_left_turnbuckle_joint, front_right_turnbuckle_joint,
+                left_turnbuckle_joint, right_turnbuckle_joint
+            </jointName>
+            <updateRate>50</updateRate>
+            <alwaysOn>true</alwaysOn>
+        </plugin>
+    </gazebo>
 
     <!-- Chassis -->
     <xacro:property name="makerbeam_width" value="0.015" />
@@ -89,6 +128,10 @@
         </inertial>
     </link>
 
+    <gazebo reference="base_link">
+        <material>Gazebo/Orange</material>
+    </gazebo>
+
     <link name="body_box_link">
         <visual>
             <origin rpy="0 0 0" xyz="0 0 0" />
@@ -109,17 +152,28 @@
             x="${body_box_length}" y="${body_box_width}" z="${body_box_depth}" />
     </link>
 
+    <gazebo reference="body_box_link">
+        <material>Gazebo/DarkGray</material>
+    </gazebo>
+
     <joint name="body_box_joint" type="fixed">
         <origin rpy="0 0 0" xyz="0 0 0"/>
         <parent link="base_link" />
         <child link="body_box_link" />
     </joint>
 
-    <!-- TODO: Implementing the differential is tricky
+    <gazebo reference="body_box_joint">
+        <disableFixedJointLumping>true</disableFixedJointLumping> 
+        <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+
+    <!-- Differential 
+        
+        TODO: Implementing the differential is tricky
     
         URDF does not support closed loops in the robot description,
         on the other hand SDF for Gazebo does.
-
+    -->
     <link name="diff_brace_link">
         <visual>
             <origin rpy="0 0 ${math_pi_over_2}" xyz="0 0 0" />
@@ -128,7 +182,21 @@
             </geometry>
             <material name="dark_gray" />
         </visual>
-    </link>    
+        <collision>
+            <origin rpy="0 0 ${math_pi_over_2}" xyz="0 0 0" />
+            <geometry>
+                <box size="0.200 0.015 0.015"/>
+            </geometry>
+        </collision>
+        <xacro:solid_cuboid_inertial 
+            rpy="0 0 ${math_pi_over_2}" xyz="0 0 0"
+            mass="0.1"
+            x="0.2" y="0.015" z="0.015" />
+    </link>
+
+    <gazebo reference="diff_brace_link">
+        <material>Gazebo/DarkGray</material>
+    </gazebo>
 
     <joint name="diff_brace_joint" type="continuous">
         <origin rpy="0 0 0" xyz="0 0 0.0681"/>
@@ -137,40 +205,210 @@
         <child link="diff_brace_link" />
     </joint>
 
-    <link name="diff_ball_joint_link">
-        <visual>
-            <origin rpy="0 0 0" xyz="0 0 0" />
-            <geometry>
-                <box size="0.01 0.01 0.01"/>
-            </geometry>
-            <material name="dark_gray" />
-        </visual>
-    </link>
+    <gazebo reference="diff_brace_joint">
+        <provideFeedback>true</provideFeedback>
+        <implicitSpringDamper>true</implicitSpringDamper>
+        <springStiffness>100.0</springStiffness>
+        <springReference>0.0</springReference>
+    </gazebo>
 
-    <joint name="diff_ball_joint_joint" type="continuous">
-        <origin rpy="0 0 0" xyz="0 0 0"/>
-        <axis xyz="0 1 0" />
-        <parent link="diff_brace_link" />
-        <child link="diff_ball_joint_link" />
-    </joint>
+    <!-- Turnbuckles -->
+    <xacro:macro name="turnbuckle_socket_link" params="lon_label lat_label reflect">
+        <link name="${lon_label}_${lat_label}_turnbuckle_socket_link">
+            <visual>
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <geometry>
+                    <box size="0.005 0.005 0.005"/>
+                </geometry>
+                <material name="dark_gray" />
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <geometry>
+                    <box size="0.005 0.005 0.005"/>
+                </geometry>
+            </collision>
+            <xacro:solid_cuboid_inertial 
+                rpy="0 0 0" xyz="0 0 0"
+                mass="0.01"
+                x="0.005" y="0.005" z="0.005" />
+        </link>
 
-    <link name="diff_turnbuckle_link">
-        <visual>
-            <origin rpy="0 0 0" xyz="0 0 0" />
-            <geometry>
-                <box size="0.100 0.015 0.015"/>
-            </geometry>
-            <material name="dark_gray" />
-        </visual>
-    </link>
+        <gazebo reference="${lon_label}_${lat_label}_turnbuckle_socket_link">
+            <material>Gazebo/Red</material>
+        </gazebo>
+    </xacro:macro>
+    <xacro:turnbuckle_socket_link lon_label="back" lat_label="left" reflect="1"/>
+    <xacro:turnbuckle_socket_link lon_label="back" lat_label="right" reflect="-1"/>
+    <xacro:turnbuckle_socket_link lon_label="front" lat_label="left" reflect="1"/>
+    <xacro:turnbuckle_socket_link lon_label="front" lat_label="right" reflect="-1"/>
 
-    <joint name="diff_turnbuckle_joint" type="continuous">
-        <origin rpy="0 0 0" xyz="0 0.167 0"/>
-        <axis xyz="0 0 1" />
-        <parent link="diff_ball_joint_link" />
-        <child link="diff_turnbuckle_link" />
-    </joint>
-    -->
+    <xacro:macro name="back_turnbuckle_link" params="lat_label reflect">
+        <link name="back_${lat_label}_turnbuckle_link">
+            <visual>
+                <origin rpy="0 0 0" xyz="0.02 0 0" />
+                <geometry>
+                    <box size="0.04 0.005 0.005"/>
+                </geometry>
+                <material name="dark_gray" />
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <geometry>
+                    <box size="0.04 0.005 0.005"/>
+                </geometry>
+            </collision>
+            <xacro:solid_cuboid_inertial 
+                rpy="0 0 0" xyz="0 0 0"
+                mass="0.01"
+                x="0.04" y="0.005" z="0.005" />
+        </link>
+
+        <gazebo reference="back_${lat_label}_turnbuckle_link">
+            <material>Gazebo/Blue</material>
+        </gazebo>
+    </xacro:macro>
+    <xacro:back_turnbuckle_link lat_label="left" reflect="1"/>
+    <xacro:back_turnbuckle_link lat_label="right" reflect="-1"/>
+
+    <xacro:macro name="front_turnbuckle_link" params="lat_label reflect">
+        <link name="front_${lat_label}_turnbuckle_link">
+            <visual>
+                <origin rpy="0 0 0" xyz="-0.02 0 0" />
+                <geometry>
+                    <box size="0.04 0.005 0.005"/>
+                </geometry>
+                <material name="dark_gray" />
+            </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <geometry>
+                    <box size="0.04 0.005 0.005"/>
+                </geometry>
+            </collision>
+            <xacro:solid_cuboid_inertial 
+                rpy="0 0 0" xyz="0 0 0"
+                mass="0.01"
+                x="0.04" y="0.005" z="0.005" />
+        </link>
+
+        <gazebo reference="front_${lat_label}_turnbuckle_link">
+            <material>Gazebo/Blue</material>
+        </gazebo>
+    </xacro:macro>
+    <xacro:front_turnbuckle_link lat_label="left" reflect="1"/>
+    <xacro:front_turnbuckle_link lat_label="right" reflect="-1"/>
+
+    <xacro:macro name="back_turnbuckle_socket_joint" params="lat_label reflect">
+        <joint name="back_${lat_label}_turnbuckle_socket_joint" type="continuous">
+            <origin rpy="0 0 0" xyz="0 ${reflect * 0.16} 0"/>
+            <axis xyz="0 1 0" />
+            <parent link="diff_brace_link" />
+            <child link="back_${lat_label}_turnbuckle_socket_link" />
+        </joint>
+
+        <gazebo reference="back_${lat_label}_turnbuckle_socket_joint">
+            <provideFeedback>true</provideFeedback>
+            <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>100.0</springStiffness>
+            <springReference>0.0</springReference>
+        </gazebo>
+    </xacro:macro>
+    <xacro:back_turnbuckle_socket_joint lat_label="left" reflect="1"/>
+    <xacro:back_turnbuckle_socket_joint lat_label="right" reflect="-1"/>
+
+    <xacro:macro name="back_turnbuckle_joint" params="lat_label reflect">
+        <joint name="back_${lat_label}_turnbuckle_joint" type="continuous">
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <axis xyz="0 0 1" />
+            <parent link="back_${lat_label}_turnbuckle_socket_link" />
+            <child link="back_${lat_label}_turnbuckle_link" />
+        </joint>
+
+        <gazebo reference="back_${lat_label}_turnbuckle_joint">
+            <provideFeedback>true</provideFeedback>
+            <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>100.0</springStiffness>
+            <springReference>0.0</springReference>
+        </gazebo>
+    </xacro:macro>
+    <xacro:back_turnbuckle_joint lat_label="left" reflect="1"/>
+    <xacro:back_turnbuckle_joint lat_label="right" reflect="-1"/>
+
+    <xacro:macro name="front_turnbuckle_joint" params="lat_label reflect">
+        <joint name="front_${lat_label}_turnbuckle_joint" type="continuous">
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <axis xyz="0 1 0" />
+            <parent link="front_${lat_label}_turnbuckle_socket_link" />
+            <child link="front_${lat_label}_turnbuckle_link" />
+        </joint>
+
+        <gazebo reference="front_${lat_label}_turnbuckle_joint">
+            <provideFeedback>true</provideFeedback>
+            <implicitSpringDamper>true</implicitSpringDamper>
+        </gazebo>
+    </xacro:macro>
+    <xacro:front_turnbuckle_joint lat_label="left" reflect="1"/>
+    <xacro:front_turnbuckle_joint lat_label="right" reflect="-1"/>
+
+    <xacro:macro name="front_turnbuckle_socket_joint" params="lat_label reflect">
+        <joint name="front_${lat_label}_turnbuckle_socket_joint" type="continuous">
+            <origin rpy="0 0 0" xyz="0 0 0.07"/>
+            <axis xyz="0 0 1" />
+            <parent link="${lat_label}_rocker_link" />
+            <child link="front_${lat_label}_turnbuckle_socket_link" />
+        </joint>
+
+        <gazebo reference="front_${lat_label}_turnbuckle_joint">
+            <provideFeedback>true</provideFeedback>
+            <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>100.0</springStiffness>
+            <springReference>0.0</springReference>
+        </gazebo>
+    </xacro:macro>
+    <xacro:front_turnbuckle_socket_joint lat_label="left" reflect="1"/>
+    <xacro:front_turnbuckle_socket_joint lat_label="right" reflect="-1"/>
+
+    <!-- Gazebo only fixed link to close differential linkage loop -->
+    <gazebo>
+        <joint name="left_turnbuckle_joint" type="revolute">
+            <pose>-0.04 0 0 0 0 0</pose>
+            <axis>
+                <xyz>1 0 0</xyz>
+            </axis>
+            <parent>back_left_turnbuckle_link</parent> 
+            <child>front_left_turnbuckle_link</child> 
+            <dynamics>
+                <spring_stiffness>100.0</spring_stiffness>
+                <spring_reference>0</spring_reference>
+            </dynamics>
+            <physics>
+                <ode>
+                    <implicit_spring_damper>1</implicit_spring_damper>
+                </ode>
+            </physics>
+        </joint>
+
+        <joint name="right_turnbuckle_joint" type="revolute">
+            <pose>-0.04 0 0 0 0 0</pose>
+            <axis>
+                <xyz>1 0 0</xyz>
+            </axis>
+            <parent>back_right_turnbuckle_link</parent> 
+            <child>front_right_turnbuckle_link</child> 
+            <dynamics>
+                <spring_stiffness>100.0</spring_stiffness>
+                <spring_reference>0</spring_reference>
+            </dynamics>
+            <physics>
+                <ode>
+                    <implicit_spring_damper>1</implicit_spring_damper>
+                </ode>
+            </physics>
+        </joint>
+    </gazebo>
+
+    <!-- Rocker -->
     <xacro:macro name="rocker_link" params="lat_label reflect">
         <link name="${lat_label}_rocker_link">
             <visual>
@@ -180,7 +418,22 @@
                 </geometry>
                 <material name="dark_gray" />
             </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <geometry>
+                    <box size="0.1 0.015 0.015"/>
+                </geometry>
+            </collision>
+            <xacro:solid_cuboid_inertial 
+                rpy="0 0 0" xyz="0 0 0"
+                mass="0.1"
+                x="0.1" y="0.015" z="0.015" />
         </link> 
+
+        <gazebo reference="${lat_label}_rocker_link">
+            <material>Gazebo/DarkGray</material>
+        </gazebo>
+
     </xacro:macro>
     <xacro:rocker_link lat_label="left" reflect="1"/>
     <xacro:rocker_link lat_label="right" reflect="-1"/>
@@ -192,6 +445,13 @@
             <parent link="base_link" />
             <child link="${lat_label}_rocker_link" />
         </joint>
+
+        <gazebo reference="${lat_label}_rocker_joint">
+            <provideFeedback>true</provideFeedback>
+            <!-- <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>0.0</springStiffness>
+            <springReference>0.0</springReference> -->
+        </gazebo>
     </xacro:macro>
     <xacro:rocker_joint lat_label="left" reflect="1"/>
     <xacro:rocker_joint lat_label="right" reflect="-1"/>
@@ -205,7 +465,21 @@
                 </geometry>
                 <material name="dark_gray" />
             </visual>
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <geometry>
+                    <box size="0.1 0.1 0.1"/>
+                </geometry>
+            </collision>
+            <xacro:solid_cuboid_inertial 
+                rpy="0 0 0" xyz="0 0 0"
+                mass="0.1"
+                x="0.1" y="0.1" z="0.1" />
         </link> 
+
+        <gazebo reference="${lon_label}_${lat_label}_corner_link">
+            <material>Gazebo/DarkGray</material>
+        </gazebo>
     </xacro:macro>
     <xacro:corner_link lon_label="front" lat_label="left" reflect="1"/>
     <xacro:corner_link lon_label="front" lat_label="right" reflect="-1"/>
@@ -217,6 +491,13 @@
             <parent link="${lat_label}_rocker_link" />
             <child link="front_${lat_label}_corner_link" />
         </joint>
+
+        <gazebo reference="front_${lat_label}_corner_joint">
+            <provideFeedback>true</provideFeedback>
+            <!-- <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>0.0</springStiffness>
+            <springReference>0.0</springReference> -->
+        </gazebo>
     </xacro:macro>
     <xacro:front_corner_joint lat_label="left" reflect="1"/>
     <xacro:front_corner_joint lat_label="right" reflect="-1"/>
@@ -236,7 +517,15 @@
                     <cylinder length="${wheel_width}" radius="${wheel_radius}" />
                 </geometry>
             </collision>
+            <xacro:solid_cylinder_inertial
+                rpy="0 0 0" xyz="0 0 0"
+                mass="0.1"
+                radius="${wheel_radius}" length="${wheel_width}" />
         </link>    
+
+        <gazebo reference="${lon_label}_${lat_label}_wheel_link">
+            <material>Gazebo/DarkGray</material>
+        </gazebo>
     </xacro:macro>
     <xacro:wheel_link lon_label="front" lat_label="left" reflect="1"/>
     <xacro:wheel_link lon_label="front" lat_label="right" reflect="-1"/>
@@ -248,20 +537,42 @@
             <parent link="${lon_label}_${lat_label}_corner_link" />
             <child link="${lon_label}_${lat_label}_wheel_link" />
         </joint>
+
+        <gazebo reference="${lon_label}_${lat_label}_wheel_joint">
+            <provideFeedback>true</provideFeedback>
+            <!-- <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>0.0</springStiffness>
+            <springReference>0.0</springReference> -->
+        </gazebo>
     </xacro:macro>
     <xacro:corner_wheel_joint lon_label="front" lat_label="left" reflect="1"/>
     <xacro:corner_wheel_joint lon_label="front" lat_label="right" reflect="-1"/>
 
+    <!-- Bogie -->
     <xacro:macro name="bogie_link" params="lat_label reflect">
         <link name="${lat_label}_bogie_link">
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0" />
                 <geometry>
-                    <box size="0.1 ${reflect * 0.015} 0.015"/>
+                    <box size="0.1 0.015 0.015"/>
                 </geometry>
                 <material name="dark_gray" />
             </visual>
-        </link>    
+            <collision>
+                <origin rpy="0 0 0" xyz="0 0 0" />
+                <geometry>
+                    <box size="0.1 0.015 0.015"/>
+                </geometry>
+            </collision>
+            <xacro:solid_cuboid_inertial 
+                rpy="0 0 0" xyz="0 0 0"
+                mass="0.1"
+                x="0.1" y="0.015" z="0.015" />
+        </link>
+
+        <gazebo reference="${lat_label}_bogie_link">
+            <material>Gazebo/DarkGray</material>
+        </gazebo>
     </xacro:macro>
     <xacro:bogie_link lat_label="left" reflect="1"/>
     <xacro:bogie_link lat_label="right" reflect="-1"/>
@@ -273,6 +584,13 @@
             <parent link="${lat_label}_rocker_link" />
             <child link="${lat_label}_bogie_link" />
         </joint>
+
+        <gazebo reference="${lat_label}_bogie_joint">
+            <provideFeedback>true</provideFeedback>
+            <!-- <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>0.0</springStiffness>
+            <springReference>0.0</springReference> -->
+        </gazebo>
     </xacro:macro>
     <xacro:bogie_joint lat_label="left" reflect="1"/>
     <xacro:bogie_joint lat_label="right" reflect="-1"/>
@@ -287,6 +605,13 @@
             <parent link="${lat_label}_bogie_link" />
             <child link="mid_${lat_label}_wheel_link" />
         </joint>
+
+        <gazebo reference="mid_${lat_label}_wheel_joint">
+            <provideFeedback>true</provideFeedback>
+            <!-- <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>0.0</springStiffness>
+            <springReference>0.0</springReference> -->
+        </gazebo>
     </xacro:macro>
     <xacro:mid_wheel_joint lat_label="left" reflect="1"/>
     <xacro:mid_wheel_joint lat_label="right" reflect="-1"/>
@@ -301,6 +626,13 @@
             <parent link="${lat_label}_bogie_link" />
             <child link="back_${lat_label}_corner_link" />
         </joint>
+
+        <gazebo reference="back_${lat_label}_corner_joint">
+            <provideFeedback>true</provideFeedback>
+            <!-- <implicitSpringDamper>true</implicitSpringDamper>
+            <springStiffness>0.0</springStiffness>
+            <springReference>0.0</springReference> -->
+        </gazebo>
     </xacro:macro>
     <xacro:back_corner_joint lat_label="left" reflect="1"/>
     <xacro:back_corner_joint lat_label="right" reflect="-1"/>
