@@ -387,7 +387,16 @@ class MotorController(object):
         #         event.current_expected,
         #         event.current_real,
         #         event.last_duration))
+        
+        # Read
+
+        # Update (PID control etc.)
+
+        # Write
         motor_controller.move(self._cmd_vel_msg.linear.x, self._cmd_vel_msg.angular.z)
+
+
+
 
 if __name__ == '__main__':
     rospy.init_node('curio_base_motor_node')
