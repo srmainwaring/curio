@@ -256,11 +256,14 @@
     <xacro:macro name="back_turnbuckle_link" params="lat_label reflect">
         <link name="back_${lat_label}_turnbuckle_link">
             <visual>
-                <origin rpy="0 ${math_pi_over_2} 0" xyz="0.02 0 0" />
+                <!-- <origin rpy="0 -0.1 ${-reflect * 0.15}" xyz="0.037 ${-reflect * 0.005} 0.002" /> -->
+                <origin rpy="0 0 0" xyz="0.035 0 0" />
+                <!-- <origin rpy="0 ${math_pi_over_2} 0" xyz="0.02 0 0" /> -->
                 <geometry>
-                    <cylinder length="0.04" radius="0.0025" />
+                    <mesh filename="package://curio_description/meshes/bases/turnbuckle.stl" />
+                    <!-- <cylinder length="0.04" radius="0.0025" /> -->
                 </geometry>
-                <material name="dark_gray" />
+                <material name="blue" />
             </visual>
             <collision>
                 <origin rpy="0 ${math_pi_over_2} 0" xyz="0.02 0 0" />
@@ -283,13 +286,13 @@
 
     <xacro:macro name="front_turnbuckle_link" params="lat_label reflect">
         <link name="front_${lat_label}_turnbuckle_link">
-            <visual>
+            <!-- <visual>
                 <origin rpy="0 ${math_pi_over_2} 0" xyz="-0.015 0 0" />
                 <geometry>
                     <cylinder length="0.03" radius="0.0025" />
                 </geometry>
                 <material name="dark_gray" />
-            </visual>
+            </visual> -->
             <collision>
                 <origin rpy="0 ${math_pi_over_2} 0" xyz="-0.015 0 0" />
                 <geometry>
@@ -401,7 +404,7 @@
     <xacro:front_turnbuckle_socket_joint lat_label="left" reflect="1"/>
     <xacro:front_turnbuckle_socket_joint lat_label="right" reflect="-1"/>
 
-    <!-- Gazebo only §link to close differential linkage loop -->
+    <!-- Gazebo only link to close differential linkage loop -->
     <gazebo>
         <joint name="left_turnbuckle_joint" type="revolute">
             <pose>-0.03 0 0 0 0 0</pose>
@@ -552,7 +555,7 @@
             <visual>
                 <origin rpy="${reflect * math_pi_over_2} 0 0" xyz="0 0 0" />
                 <geometry>
-                    <mesh filename="package://curio_description/meshes/wheels/wheel.stl" />
+                    <mesh filename="package://curio_description/meshes/wheels/wheel_asm.stl" />
                 </geometry>
                 <material name="dark_gray" />
             </visual>
