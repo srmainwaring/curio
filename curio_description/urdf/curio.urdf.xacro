@@ -61,6 +61,9 @@
         
             Resources:
                 http://answers.gazebosim.org/question/13844/getting-joint-angles-for-passive-urdf-model/
+
+            Gazebo only joints
+                left_turnbuckle_joint, right_turnbuckle_joint
          -->
         <plugin name="gazebo_ros_joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
             <robotNamespace>/</robotNamespace>
@@ -75,8 +78,7 @@
                 back_left_turnbuckle_socket_joint, back_right_turnbuckle_socket_joint,
                 back_left_turnbuckle_joint, back_right_turnbuckle_joint,
                 front_left_turnbuckle_socket_joint, front_right_turnbuckle_socket_joint,
-                front_left_turnbuckle_joint, front_right_turnbuckle_joint,
-                left_turnbuckle_joint, right_turnbuckle_joint
+                front_left_turnbuckle_joint, front_right_turnbuckle_joint
             </jointName>
             <updateRate>50</updateRate>
             <alwaysOn>true</alwaysOn>
@@ -136,7 +138,8 @@
         <visual>
             <origin rpy="0 0 0" xyz="0 0 0" />
             <geometry>
-                <box size="${body_box_length} ${body_box_width} ${body_box_depth}"/>
+                <mesh filename="package://curio_description/meshes/bases/body_box.stl" />
+                <!-- <box size="${body_box_length} ${body_box_width} ${body_box_depth}"/> -->
             </geometry>
             <material name="dark_gray" />
         </visual>
@@ -176,9 +179,11 @@
     -->
     <link name="diff_brace_link">
         <visual>
-            <origin rpy="0 0 ${math_pi_over_2}" xyz="0 0 0" />
+            <origin rpy="0 0 0" xyz="0 0 0" />
+            <!-- <origin rpy="0 0 ${math_pi_over_2}" xyz="0 0 0" /> -->
             <geometry>
-                <box size="0.200 0.015 0.015"/>
+                <mesh filename="package://curio_description/meshes/bases/differential.stl" />
+                <!-- <box size="0.200 0.015 0.015"/> -->
             </geometry>
             <material name="dark_gray" />
         </visual>
@@ -223,14 +228,14 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0" />
                 <geometry>
-                    <box size="0.005 0.005 0.005"/>
+                    <sphere radius="0.0025"/>
                 </geometry>
                 <material name="dark_gray" />
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="0 0 0" />
                 <geometry>
-                    <box size="0.005 0.005 0.005"/>
+                    <sphere radius="0.0025"/>
                 </geometry>
             </collision>
             <xacro:solid_cuboid_inertial 
@@ -251,22 +256,22 @@
     <xacro:macro name="back_turnbuckle_link" params="lat_label reflect">
         <link name="back_${lat_label}_turnbuckle_link">
             <visual>
-                <origin rpy="0 0 0" xyz="0.02 0 0" />
+                <origin rpy="0 ${math_pi_over_2} 0" xyz="0.02 0 0" />
                 <geometry>
-                    <box size="0.04 0.005 0.005"/>
+                    <cylinder length="0.04" radius="0.0025" />
                 </geometry>
                 <material name="dark_gray" />
             </visual>
             <collision>
-                <origin rpy="0 0 0" xyz="0 0 0" />
+                <origin rpy="0 ${math_pi_over_2} 0" xyz="0.02 0 0" />
                 <geometry>
-                    <box size="0.04 0.005 0.005"/>
+                    <cylinder length="0.04" radius="0.0025" />
                 </geometry>
             </collision>
-            <xacro:solid_cuboid_inertial 
+            <xacro:solid_cylinder_inertial 
                 rpy="0 0 0" xyz="0 0 0"
                 mass="0.01"
-                x="0.04" y="0.005" z="0.005" />
+                length="0.04" radius="0.0025" />
         </link>
 
         <gazebo reference="back_${lat_label}_turnbuckle_link">
@@ -279,22 +284,22 @@
     <xacro:macro name="front_turnbuckle_link" params="lat_label reflect">
         <link name="front_${lat_label}_turnbuckle_link">
             <visual>
-                <origin rpy="0 0 0" xyz="-0.02 0 0" />
+                <origin rpy="0 ${math_pi_over_2} 0" xyz="-0.015 0 0" />
                 <geometry>
-                    <box size="0.04 0.005 0.005"/>
+                    <cylinder length="0.03" radius="0.0025" />
                 </geometry>
                 <material name="dark_gray" />
             </visual>
             <collision>
-                <origin rpy="0 0 0" xyz="0 0 0" />
+                <origin rpy="0 ${math_pi_over_2} 0" xyz="-0.015 0 0" />
                 <geometry>
-                    <box size="0.04 0.005 0.005"/>
+                    <cylinder length="0.03" radius="0.0025" />
                 </geometry>
             </collision>
-            <xacro:solid_cuboid_inertial 
+            <xacro:solid_cylinder_inertial 
                 rpy="0 0 0" xyz="0 0 0"
                 mass="0.01"
-                x="0.04" y="0.005" z="0.005" />
+                length="0.03" radius="0.0025" />
         </link>
 
         <gazebo reference="front_${lat_label}_turnbuckle_link">
@@ -375,7 +380,7 @@
 
     <xacro:macro name="front_turnbuckle_socket_joint" params="lat_label reflect">
         <joint name="front_${lat_label}_turnbuckle_socket_joint" type="continuous">
-            <origin rpy="0 0 0" xyz="0 ${reflect * 0.02} 0.0565"/>
+            <origin rpy="0 0 0" xyz="0.0 ${reflect * 0.0146} 0.0565"/>
             <axis xyz="0 0 1" />
             <limit 
                 lower="${-math_pi_over_4}"
@@ -399,7 +404,7 @@
     <!-- Gazebo only §link to close differential linkage loop -->
     <gazebo>
         <joint name="left_turnbuckle_joint" type="revolute">
-            <pose>-0.04 0 0 0 0 0</pose>
+            <pose>-0.03 0 0 0 0 0</pose>
             <axis>
                 <xyz>1 0 0</xyz>
             </axis>
@@ -413,7 +418,7 @@
         </joint>
 
         <joint name="right_turnbuckle_joint" type="revolute">
-            <pose>-0.04 0 0 0 0 0</pose>
+            <pose>-0.03 0 0 0 0 0</pose>
             <axis>
                 <xyz>1 0 0</xyz>
             </axis>
@@ -433,7 +438,8 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0" />
                 <geometry>
-                    <box size="0.1 0.015 0.015"/>
+                    <mesh filename="package://curio_description/meshes/bases/${lat_label}_rocker_asm.stl" />
+                    <!-- <box size="0.1 0.015 0.015"/> -->
                 </geometry>
                 <material name="dark_gray" />
             </visual>
@@ -460,7 +466,7 @@
     <!-- Continuous Rocker Joint  -->
     <xacro:macro name="rocker_joint" params="lat_label reflect">
         <joint name="${lat_label}_rocker_joint" type="continuous">
-            <origin rpy="0 0 0" xyz="0.071 ${reflect * 0.15} 0.0118"/>
+            <origin rpy="0 0 0" xyz="0.071 ${reflect * 0.155} 0.0118"/>
             <axis xyz="0 1 0" />
             <limit 
                 lower="${-math_pi_over_4}"
@@ -499,7 +505,8 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0" />
                 <geometry>
-                    <box size="0.1 0.1 0.1"/>
+                    <mesh filename="package://curio_description/meshes/bases/${lon_label}_${lat_label}_steering_asm.stl" />
+                    <!-- <box size="0.1 0.1 0.1"/> -->
                 </geometry>
                 <material name="dark_gray" />
             </visual>
@@ -524,7 +531,7 @@
 
     <xacro:macro name="front_corner_joint" params="lat_label reflect">
         <joint name="front_${lat_label}_corner_joint" type="continuous">
-            <origin rpy="0 0 0" xyz="0.2116 ${reflect * 0.081} -0.0279"/>
+            <origin rpy="0 0 0" xyz="0.2116 ${reflect * 0.075} -0.0279"/>
             <axis xyz="0 0 1" />
             <parent link="${lat_label}_rocker_link" />
             <child link="front_${lat_label}_corner_link" />
@@ -592,7 +599,8 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0" />
                 <geometry>
-                    <box size="0.1 0.015 0.015"/>
+                    <mesh filename="package://curio_description/meshes/bases/${lat_label}_bogie_asm.stl" />
+                    <!-- <box size="0.1 0.015 0.015"/> -->
                 </geometry>
                 <material name="dark_gray" />
             </visual>
@@ -618,7 +626,7 @@
     <!-- Continuous Bogie Joint  -->
     <xacro:macro name="bogie_joint" params="lat_label reflect">
         <joint name="${lat_label}_bogie_joint" type="revolute">
-            <origin rpy="0 0 0" xyz="-0.181 ${reflect * 0.0675} -0.062"/>
+            <origin rpy="0 0 0" xyz="-0.181 ${reflect * 0.025} -0.062"/>
             <axis xyz="0 1 0" />
             <limit 
                 lower="${-math_pi_over_4}"
@@ -678,7 +686,7 @@
 
     <xacro:macro name="back_corner_joint" params="lat_label reflect">
         <joint name="back_${lat_label}_corner_joint" type="continuous">
-            <origin rpy="0 0 0" xyz="-0.149 ${reflect * 0.0136} 0.0338"/>
+            <origin rpy="0 0 0" xyz="-0.149 ${reflect * 0.05} 0.0338"/>
             <axis xyz="0 0 1" />
             <parent link="${lat_label}_bogie_link" />
             <child link="back_${lat_label}_corner_link" />
