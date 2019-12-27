@@ -7,6 +7,7 @@
     <arg name="use_sim_time" default="true"/>
     <arg name="headless" default="false"/>
     <arg name="physics" default="ode"/>
+    <!-- <arg name="physics" default="simbody"/> -->
  
     <!-- Launch Gazebo -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
