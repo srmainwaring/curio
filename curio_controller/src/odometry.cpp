@@ -39,7 +39,7 @@
  * Author: Paul Mathieu
  */
 
-#include <curio_controller/odometry.h>
+#include "curio_controller/odometry.h"
 
 #include <boost/bind.hpp>
 

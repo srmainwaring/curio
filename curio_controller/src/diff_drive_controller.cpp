@@ -36,11 +36,12 @@
  * Author: Bence Magyar, Enrique Fernández
  */
 
-#include <cmath>
-#include <curio_controller/diff_drive_controller.h>
+#include "curio_controller/diff_drive_controller.h"
+
 #include <tf/transform_datatypes.h>
 #include <urdf/urdfdom_compatibility.h>
 #include <urdf_parser/urdf_parser.h>
+#include <cmath>
 
 static double euclideanOfVectors(const urdf::Vector3& vec1, const urdf::Vector3& vec2)
 {

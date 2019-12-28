@@ -36,10 +36,11 @@
  * Author: Bence Magyar, Enrique Fernández
  */
 
+#include "curio_controller/DiffDriveControllerConfig.h"
+#include "curio_controller/odometry.h"
+
 #include <control_msgs/JointTrajectoryControllerState.h>
 #include <controller_interface/controller.h>
-#include <curio_controller/DiffDriveControllerConfig.h>
-#include <curio_controller/odometry.h>
 #include <curio_controller/speed_limiter.h>
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/TwistStamped.h>

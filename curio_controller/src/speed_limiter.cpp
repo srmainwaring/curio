@@ -36,9 +36,9 @@
  * Author: Enrique Fernández
  */
 
-#include <algorithm>
+#include "curio_controller/speed_limiter.h"
 
-#include <curio_controller/speed_limiter.h>
+#include <algorithm>
 
 template<typename T>
 T clamp(T x, T min, T max)
