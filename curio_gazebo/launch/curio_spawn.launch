@@ -25,15 +25,15 @@
     </include>
 
     <!-- Load controller configuration parameters -->
-    <!-- <rosparam command="load" file="$(find curio_control)/config/control_diff_drive.yaml" /> -->
+    <rosparam command="load" file="$(find curio_control)/config/control_diff_drive.yaml" />
     <rosparam command="load" file="$(find curio_control)/config/control_joint_state.yaml" />
     <!-- <rosparam command="load" file="$(find curio_control)/config/control_joint_pid.yaml" /> -->
 
     <!-- Spawn the controllers  -->
-    <!-- <node name="curio_controller_spawner" pkg="controller_manager" type="spawner"
-        args="joint_state_publisher diff_drive_controller" /> -->
     <node name="curio_controller_spawner" pkg="controller_manager" type="spawner"
-        args="joint_state_publisher" />
+        args="joint_state_publisher curio_controller" />
+    <!-- <node name="curio_controller_spawner" pkg="controller_manager" type="spawner"
+        args="joint_state_publisher" /> -->
 
     <!-- Launch EKF for localization
     
@@ -53,9 +53,9 @@
     <!-- END CONTROL -->
 
     <!-- Launch a rqt steering GUI for publishing to /diff_drive_controller/cmd_vel -->
-    <!-- <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
+    <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
         <param name="default_topic" value="/diff_drive_controller/cmd_vel"/>
-    </node> -->
+    </node>
 
     <!--  Launch rviz-->
     <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" /> -->
