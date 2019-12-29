@@ -39,6 +39,7 @@ include_directories(
 )
 
 add_library(curio_controller
+    src/ackermann_drive_controller.cpp
     src/diff_drive_controller.cpp
     src/odometry.cpp
     src/speed_limiter.cpp

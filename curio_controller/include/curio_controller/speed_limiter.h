@@ -36,8 +36,8 @@
  * Author: Enrique Fernández
  */
 
-#ifndef SPEED_LIMITER_H
-#define SPEED_LIMITER_H
+#ifndef CURIO_CONTROLLER_SPEED_LIMITER_H
+#define CURIO_CONTROLLER_SPEED_LIMITER_H
 
 namespace curio_controller
 {
@@ -128,4 +128,4 @@ namespace curio_controller
 
 } // namespace curio_controller
 
-#endif // SPEED_LIMITER_H
+#endif // CURIO_CONTROLLER_SPEED_LIMITER_H

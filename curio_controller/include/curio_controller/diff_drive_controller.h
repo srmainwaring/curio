@@ -36,6 +36,9 @@
  * Author: Bence Magyar, Enrique Fernández
  */
 
+#ifndef CURIO_CONTROLLER_DIFF_DRIVE_CONTROLLER_H_
+#define CURIO_CONTROLLER_DIFF_DRIVE_CONTROLLER_H_
+
 #include "curio_controller/DiffDriveControllerConfig.h"
 #include "curio_controller/odometry.h"
 
@@ -310,3 +313,5 @@ namespace curio_controller{
 
   PLUGINLIB_EXPORT_CLASS(curio_controller::DiffDriveController, controller_interface::ControllerBase);
 } // namespace curio_controller
+
+#endif // CURIO_CONTROLLER_DIFF_DRIVE_CONTROLLER_H_

@@ -256,10 +256,12 @@ class MotorController(object):
         rospy.logdebug('r_p: {:.2f}, omega_p: {:.2f}'.format(r_p, omega_p))
 
         # Calculate velocity and steering angle for each wheel
+        wheel_vel_max = 0.0
         wheel_vel = []
         steer_angle = []
         if omega_p == 0:
             # No rotation - set wheel velocity directly
+            wheel_vel_max = math.fabs(lin_vel)
             for i in range(len(self._wheel_servos)):
                 joint = self._wheel_joint_locations[i]
                 servo = self._wheel_servos[i]
@@ -281,6 +283,7 @@ class MotorController(object):
                 # Wheel velocity
                 sgn = -1 if (r_p - y) < 0 else 1
                 vel = sgn * r * omega_p 
+                wheel_vel_max = max(wheel_vel_max, math.fabs(vel))
                 wheel_vel.append(vel)
                 rospy.logdebug("id: {}, r: {:.2f}, wheel_vel: {:.2f}".format(joint['id'], r, vel))
 
@@ -295,19 +298,11 @@ class MotorController(object):
                 steer_angle.append(angle)
                 # rospy.loginfo("id: {}, angle: {:.2f}".format(joint['id'], degree(angle)))
 
-        # Update wheel servos
-        rospy.logdebug('Updating wheel servos')
-        for i in range(len(self._wheel_servos)):
-            servo = self._wheel_servos[i]
-
-            # Map speed to servo speed [-1000, 1000]
-            servo_speed = int(map(wheel_vel[i] * servo.orientation,
-                -MotorController.VEL_MAX, MotorController.VEL_MAX, 
-                -MotorController.SERVO_SPEED_MAX, MotorController.SERVO_SPEED_MAX))
-
-            # Set servo speed
-            rospy.logdebug('id: {}, vel: {:.2f}, servo_vel: {}'.format(servo.id, wheel_vel[i], servo_speed))
-            self._servo_driver.motor_mode_write(servo.id, servo_speed)
+        # Apply speed limiter - preserving turning radius
+        if wheel_vel_max > MotorController.VEL_MAX:
+            speed_limiter_sf = MotorController.VEL_MAX / wheel_vel_max
+            for i in range(len(self._wheel_servos)):
+                wheel_vel[i] = wheel_vel[i] * speed_limiter_sf
 
         # Update steer servos
         rospy.logdebug('Updating steer servos')
@@ -333,6 +328,20 @@ class MotorController(object):
             rospy.logdebug('id: {}, angle: {:.2f}, servo_pos: {}'.format(servo.id, angle_deg, servo_pos))
             self._servo_driver.servo_mode_write(servo.id)
             self._servo_driver.move_time_write(servo.id, servo_pos)
+
+        # Update wheel servos
+        rospy.logdebug('Updating wheel servos')
+        for i in range(len(self._wheel_servos)):
+            servo = self._wheel_servos[i]
+
+            # Map speed to servo speed [-1000, 1000]
+            servo_speed = int(map(wheel_vel[i] * servo.orientation,
+                -MotorController.VEL_MAX, MotorController.VEL_MAX, 
+                -MotorController.SERVO_SPEED_MAX, MotorController.SERVO_SPEED_MAX))
+
+            # Set servo speed
+            rospy.logdebug('id: {}, vel: {:.2f}, servo_vel: {}'.format(servo.id, wheel_vel[i], servo_speed))
+            self._servo_driver.motor_mode_write(servo.id, servo_speed)
 
     def set_steer_servo_offsets(self):
         ''' Set angle offsets for the steering servos.

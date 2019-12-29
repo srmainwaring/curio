@@ -39,8 +39,8 @@
  * Author: Paul Mathieu
  */
 
-#ifndef ODOMETRY_H_
-#define ODOMETRY_H_
+#ifndef CURIO_CONTROLLER_ODOMETRY_H_
+#define CURIO_CONTROLLER_ODOMETRY_H_
 
 #include <ros/time.h>
 #include <boost/accumulators/accumulators.hpp>
@@ -209,4 +209,4 @@ namespace curio_controller
   };
 }
 
-#endif /* ODOMETRY_H_ */
+#endif /* CURIO_CONTROLLER_ODOMETRY_H_ */
