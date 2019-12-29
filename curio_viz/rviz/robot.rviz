@@ -414,7 +414,7 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.019999999552965164
             Value: Arrow
-          Topic: /curio_controller/odom
+          Topic: /ackermann_drive_controller/odom
           Unreliable: false
           Value: true
         - Angle Tolerance: 0.10000000149011612

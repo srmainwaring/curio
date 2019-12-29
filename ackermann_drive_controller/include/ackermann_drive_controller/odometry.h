@@ -39,8 +39,8 @@
  * Author: Paul Mathieu
  */
 
-#ifndef CURIO_CONTROLLER_ODOMETRY_H_
-#define CURIO_CONTROLLER_ODOMETRY_H_
+#ifndef ACKERMANN_DRIVE_CONTROLLER_ODOMETRY_H_
+#define ACKERMANN_DRIVE_CONTROLLER_ODOMETRY_H_
 
 #include <ros/time.h>
 #include <boost/accumulators/accumulators.hpp>
@@ -48,7 +48,7 @@
 #include <boost/accumulators/statistics/rolling_mean.hpp>
 #include <boost/function.hpp>
 
-namespace curio_controller
+namespace ackermann_drive_controller
 {
   namespace bacc = boost::accumulators;
 
@@ -207,6 +207,7 @@ namespace curio_controller
     /// Integration funcion, used to integrate the odometry:
     IntegrationFunction integrate_fun_;
   };
-}
 
-#endif /* CURIO_CONTROLLER_ODOMETRY_H_ */
+} // namespace ackermann_drive_controller
+
+#endif /* ACKERMANN_DRIVE_CONTROLLER_ODOMETRY_H_ */

@@ -192,7 +192,7 @@ Visualization Manager:
         Shaft Length: 0.5
         Shaft Radius: 0.019999999552965164
         Value: Arrow
-      Topic: /diff_drive_controller/odom
+      Topic: /ackermann_drive_controller/odom
       Unreliable: false
       Value: true
     - Alpha: 1

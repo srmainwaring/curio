@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(curio_controller)
+project(ackermann_drive_controller)
 
 
 # Compile as C++11, supported in ROS Kinetic and newer
@@ -21,13 +21,13 @@ find_package(catkin REQUIRED COMPONENTS
     urdf
 )
 
-generate_dynamic_reconfigure_options(config/DiffDriveController.cfg)
+generate_dynamic_reconfigure_options(config/AckermannDriveController.cfg)
 
 ################################################################################
 # Declare catkin configuration
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES curio_controller
+    LIBRARIES ackermann_drive_controller
 )
 
 ################################################################################
@@ -38,19 +38,18 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-add_library(curio_controller
+add_library(ackermann_drive_controller
     src/ackermann_drive_controller.cpp
-    src/diff_drive_controller.cpp
     src/odometry.cpp
     src/speed_limiter.cpp
 )
-target_link_libraries(curio_controller ${catkin_LIBRARIES})
-add_dependencies(curio_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
+target_link_libraries(ackermann_drive_controller ${catkin_LIBRARIES})
+add_dependencies(ackermann_drive_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
 
 ################################################################################
 # Install
 
-install(TARGETS curio_controller
+install(TARGETS ackermann_drive_controller
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
@@ -58,10 +57,10 @@ install(TARGETS curio_controller
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
-install(FILES curio_controller_plugins.xml
+install(FILES ackermann_drive_controller_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-install(DIRECTORY launch worlds
+install(DIRECTORY config
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

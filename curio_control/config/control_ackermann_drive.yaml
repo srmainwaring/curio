@@ -1,11 +1,7 @@
-# Configuration for the diff drive controller
+# Configuration for the ackermann drive controller
 # 
-diff_drive_controller:
-  # Resources
-  #   ROS diff_drive_controller wiki
-  #     http://wiki.ros.org/diff_drive_controller
-  # 
-  type: 'diff_drive_controller/DiffDriveController'
+ackermann_drive_controller:
+  type: 'ackermann_drive_controller/AckermannDriveController'
   publish_rate: 50
 
   # Joints
@@ -15,7 +11,7 @@ diff_drive_controller:
   # Geometry
   wheel_radius: 0.060
   wheel_separation: 0.52
-  wheel_radius_multiplier: 1.0        # defalt: 1.0
+  wheel_radius_multiplier: 1.0        # default: 1.0
   wheel_separation_multiplier: 1.0    # default 1.0
 
   # Odometry covariances for the encoder output of the robot. These values should

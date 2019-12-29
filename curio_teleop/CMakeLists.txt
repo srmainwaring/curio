@@ -7,11 +7,11 @@ add_compile_options(-std=c++11)
 ################################################################################
 # Find dependent catkin packages
 find_package(catkin REQUIRED COMPONENTS
-    geometry_msgs
-    roslaunch
-    roscpp
-    std_msgs
     curio_msgs
+    geometry_msgs
+    roscpp
+    roslaunch
+    std_msgs
 )
 
 ################################################################################
@@ -19,12 +19,11 @@ find_package(catkin REQUIRED COMPONENTS
 
 catkin_package(
     INCLUDE_DIRS include
-    LIBRARIES wild1_base
     CATKIN_DEPENDS
+        curio_msgs
         geometry_msgs
         roscpp
         std_msgs
-        curio_msgs
 )
 
 ################################################################################

@@ -25,13 +25,13 @@
     </include>
 
     <!-- Load controller configuration parameters -->
-    <rosparam command="load" file="$(find curio_control)/config/control_diff_drive.yaml" />
+    <rosparam command="load" file="$(find curio_control)/config/control_ackermann_drive.yaml" />
     <rosparam command="load" file="$(find curio_control)/config/control_joint_state.yaml" />
     <!-- <rosparam command="load" file="$(find curio_control)/config/control_joint_pid.yaml" /> -->
 
     <!-- Spawn the controllers  -->
     <node name="curio_controller_spawner" pkg="controller_manager" type="spawner"
-        args="joint_state_publisher curio_controller" />
+        args="joint_state_publisher ackermann_drive_controller" />
     <!-- <node name="curio_controller_spawner" pkg="controller_manager" type="spawner"
         args="joint_state_publisher" /> -->
 
@@ -52,9 +52,9 @@
 
     <!-- END CONTROL -->
 
-    <!-- Launch a rqt steering GUI for publishing to /diff_drive_controller/cmd_vel -->
+    <!-- Launch a rqt steering GUI for publishing to /ackermann_drive_controller/cmd_vel -->
     <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
-        <param name="default_topic" value="/curio_controller/cmd_vel"/>
+        <param name="default_topic" value="/ackermann_drive_controller/cmd_vel"/>
     </node>
 
     <!--  Launch rviz-->

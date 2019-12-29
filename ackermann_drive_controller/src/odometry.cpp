@@ -39,11 +39,11 @@
  * Author: Paul Mathieu
  */
 
-#include "curio_controller/odometry.h"
+#include "ackermann_drive_controller/odometry.h"
 
 #include <boost/bind.hpp>
 
-namespace curio_controller
+namespace ackermann_drive_controller
 {
   namespace bacc = boost::accumulators;
 
@@ -173,4 +173,4 @@ namespace curio_controller
     angular_acc_ = RollingMeanAcc(RollingWindow::window_size = velocity_rolling_window_size_);
   }
 
-} // namespace curio_controller
+} // namespace ackermann_drive_controller

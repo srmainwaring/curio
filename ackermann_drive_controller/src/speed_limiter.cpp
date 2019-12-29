@@ -36,7 +36,7 @@
  * Author: Enrique Fernández
  */
 
-#include "curio_controller/speed_limiter.h"
+#include "ackermann_drive_controller/speed_limiter.h"
 
 #include <algorithm>
 
@@ -46,7 +46,7 @@ T clamp(T x, T min, T max)
   return std::min(std::max(min, x), max);
 }
 
-namespace curio_controller
+namespace ackermann_drive_controller
 {
 
   SpeedLimiter::SpeedLimiter(
@@ -134,4 +134,4 @@ namespace curio_controller
     return tmp != 0.0 ? v / tmp : 1.0;
   }
 
-} // namespace curio_controller
+} // namespace ackermann_drive_controller

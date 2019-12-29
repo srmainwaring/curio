@@ -62,7 +62,7 @@
             Resources:
                 http://answers.gazebosim.org/question/13844/getting-joint-angles-for-passive-urdf-model/
 
-            Wheel joints controlled by ros_control diff_drive_controller:
+            Wheel joints controlled by ros_control ackermann_drive_controller:
                 front_left_wheel_joint, front_right_wheel_joint,
                 mid_left_wheel_joint, mid_right_wheel_joint,
                 back_left_wheel_joint, back_right_wheel_joint

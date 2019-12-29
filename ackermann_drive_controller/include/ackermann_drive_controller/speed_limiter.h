@@ -36,10 +36,10 @@
  * Author: Enrique Fernández
  */
 
-#ifndef CURIO_CONTROLLER_SPEED_LIMITER_H
-#define CURIO_CONTROLLER_SPEED_LIMITER_H
+#ifndef ACKERMANN_DRIVE_CONTROLLER_SPEED_LIMITER_H
+#define ACKERMANN_DRIVE_CONTROLLER_SPEED_LIMITER_H
 
-namespace curio_controller
+namespace ackermann_drive_controller
 {
 
   class SpeedLimiter
@@ -126,6 +126,6 @@ namespace curio_controller
     double max_jerk;
   };
 
-} // namespace curio_controller
+} // namespace ackermann_drive_controller
 
-#endif // CURIO_CONTROLLER_SPEED_LIMITER_H
+#endif // ACKERMANN_DRIVE_CONTROLLER_SPEED_LIMITER_H
