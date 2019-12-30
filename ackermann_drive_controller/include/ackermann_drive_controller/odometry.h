@@ -1,3 +1,7 @@
+// Adapted from the original source code for diff_drive_controller
+// and ackermann_steering_controller from the ros_controllers
+// package: https://github.com/ros-controls/ros_controllers
+
 /*********************************************************************
  * Software License Agreement (BSD License)
  *

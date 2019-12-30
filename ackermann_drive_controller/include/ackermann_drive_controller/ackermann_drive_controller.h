@@ -33,6 +33,10 @@
 //  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //  POSSIBILITY OF SUCH DAMAGE.
 //
+ 
+// Adapted from the original source code for diff_drive_controller
+// and ackermann_steering_controller from the ros_controllers
+// package: https://github.com/ros-controls/ros_controllers
 
 /*********************************************************************
  * Software License Agreement (BSD License)
@@ -98,21 +102,16 @@
 namespace ackermann_drive_controller
 {
     class AckermannDriveController :
-        public controller_interface::Controller<hardware_interface::VelocityJointInterface>
-        // public controller_interface::MultiInterfaceController<
-        //     hardware_interface::PositionJointInterface,
-        //     hardware_interface::VelocityJointInterface>
+        public controller_interface::MultiInterfaceController<
+            hardware_interface::PositionJointInterface,
+            hardware_interface::VelocityJointInterface>
     {
     public:
         AckermannDriveController();
 
-        bool init(hardware_interface::VelocityJointInterface* hw,
+        bool init(hardware_interface::RobotHW* robot_hw,
             ros::NodeHandle& root_nh,
             ros::NodeHandle &controller_nh);
-
-        // bool init(hardware_interface::RobotHW* robot_hw,
-        //     ros::NodeHandle& root_nh,
-        //     ros::NodeHandle &controller_nh);
 
         void update(const ros::Time& time, const ros::Duration& period);
 
@@ -129,8 +128,8 @@ namespace ackermann_drive_controller
         bool open_loop_;
 
         /// Hardware handles:
-        std::vector<hardware_interface::JointHandle> left_wheel_joints_;
-        std::vector<hardware_interface::JointHandle> right_wheel_joints_;
+        // std::vector<hardware_interface::JointHandle> left_wheel_joints_;
+        // std::vector<hardware_interface::JointHandle> right_wheel_joints_;
         std::vector<hardware_interface::JointHandle> wheel_joints_;
         std::vector<hardware_interface::JointHandle> steer_joints_;
 
@@ -138,21 +137,25 @@ namespace ackermann_drive_controller
         ros::Time time_previous_;
 
         /// Previous velocities from the encoders:
-        std::vector<double> vel_left_previous_;
-        std::vector<double> vel_right_previous_;
+        // std::vector<double> vel_left_previous_;
+        // std::vector<double> vel_right_previous_;
+        std::vector<double> vel_previous_;
+        std::vector<double> ang_previous_;
 
         /// Previous velocities from the encoders:
-        double vel_left_desired_previous_;
-        double vel_right_desired_previous_;
+        // double vel_left_desired_previous_;
+        // double vel_right_desired_previous_;
+        double vel_desired_previous_;
+        double ang_desired_previous_;
 
         /// Velocity command related:
         struct Commands
         {
-        double lin;
-        double ang;
-        ros::Time stamp;
+            double lin;
+            double ang;
+            ros::Time stamp;
 
-        Commands() : lin(0.0), ang(0.0), stamp(0.0) {}
+            Commands() : lin(0.0), ang(0.0), stamp(0.0) {}
         };
         realtime_tools::RealtimeBuffer<Commands> command_;
         Commands command_struct_;
@@ -170,15 +173,32 @@ namespace ackermann_drive_controller
         std::shared_ptr<realtime_tools::RealtimePublisher<control_msgs::JointTrajectoryControllerState> > controller_state_pub_;
 
         /// Wheel separation, wrt the midpoint of the wheel width:
-        double wheel_separation_;
+        // double wheel_separation_;
 
         /// Wheel radius (assuming it's the same for the left and right wheels):
         double wheel_radius_;
+        double mid_wheel_lat_separation_;
+        double front_wheel_lat_separation_; 
+        double front_wheel_lon_separation_;
+        double back_wheel_lat_separation_;
+        double back_wheel_lon_separation_;
+
+        struct Pos
+        {
+            Pos(double x, double y) : x(x), y(y) {}
+            double x = 0.0;
+            double y = 0.0;
+        };
+        // Joint geometric positions
+        std::vector<Pos> wheel_positions_, steer_positions_;
+
+        // Workspace for velocity and angle calculations
+        std::vector<double> wheel_vel_, steer_ang_;
 
         /// Wheel separation and radius calibration multipliers:
-        double wheel_separation_multiplier_;
-        double left_wheel_radius_multiplier_;
-        double right_wheel_radius_multiplier_;
+        // double wheel_separation_multiplier_;
+        // double left_wheel_radius_multiplier_;
+        // double right_wheel_radius_multiplier_;
 
         /// Timeout to consider cmd_vel commands old:
         double cmd_vel_timeout_;
@@ -213,8 +233,10 @@ namespace ackermann_drive_controller
         /// Publish wheel data:
         bool publish_wheel_joint_controller_state_;    
 
+        // @TODO: enable dynamic reconfig
         // A struct to hold dynamic parameters
         // set from dynamic_reconfigure server
+        /*
         struct DynamicParams
         {
             bool update;
@@ -228,13 +250,13 @@ namespace ackermann_drive_controller
             double publish_rate;
             bool enable_odom_tf;
 
-            DynamicParams()
-                : left_wheel_radius_multiplier(1.0)
-                , right_wheel_radius_multiplier(1.0)
-                , wheel_separation_multiplier(1.0)
-                , publish_cmd(false)
-                , publish_rate(50)
-                , enable_odom_tf(true)
+            DynamicParams() :
+                left_wheel_radius_multiplier(1.0),
+                right_wheel_radius_multiplier(1.0),
+                wheel_separation_multiplier(1.0),
+                publish_cmd(false),
+                publish_rate(50),
+                enable_odom_tf(true)
             {}
 
             friend std::ostream& operator<<(std::ostream& os, const DynamicParams& params)
@@ -261,6 +283,7 @@ namespace ackermann_drive_controller
         typedef dynamic_reconfigure::Server<AckermannDriveControllerConfig> ReconfigureServer;
         
         std::shared_ptr<ReconfigureServer> dyn_reconf_server_;
+        */
 
     private:
 
@@ -268,30 +291,40 @@ namespace ackermann_drive_controller
 
         void cmdVelCallback(const geometry_msgs::Twist& command);
 
-
+        // @TOOD: probably not required unless we extend to more than 6 wheels...
+        /*
         bool getWheelNames(ros::NodeHandle& controller_nh,
-                        const std::string& wheel_param,
-                        std::vector<std::string>& wheel_names);
+            const std::string& wheel_param,
+            std::vector<std::string>& wheel_names);
+        */
 
-
+        // @TODO: enable setting params from URDF
+        /*
         bool setOdomParamsFromUrdf(ros::NodeHandle& root_nh,
-                                const std::string& left_wheel_name,
-                                const std::string& right_wheel_name,
-                                bool lookup_wheel_separation,
-                                bool lookup_wheel_radius);
+            const std::string& left_wheel_name,
+            const std::string& right_wheel_name,
+            bool lookup_wheel_separation,
+            bool lookup_wheel_radius);
+        */
 
         void setOdomPubFields(ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh);
 
         void reconfCallback(AckermannDriveControllerConfig& config, uint32_t /*level*/);
 
+        // @TODO: enable dynamic reconfig
+        /*
         void updateDynamicParams();
-    
+        */
+
+        // @TODO: enable publishing wheel and steer joint info.    
+        /*
         void publishWheelData(const ros::Time& time,
-                            const ros::Duration& period,
-                            Commands& curr_cmd,
-                            double wheel_separation,
-                            double left_wheel_radius,
-                            double right_wheel_radius);
+            const ros::Duration& period,
+            Commands& curr_cmd,
+            double wheel_separation,
+            double left_wheel_radius,
+            double right_wheel_radius);
+        */
     };
 
     PLUGINLIB_EXPORT_CLASS(ackermann_drive_controller::AckermannDriveController, controller_interface::ControllerBase);

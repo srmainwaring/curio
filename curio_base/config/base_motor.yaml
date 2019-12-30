@@ -8,26 +8,25 @@ max_linear_speed: 1.0
 max_linear_accel: 1.0
 
 # Wheel geometry / servo location
-#     <- front wheel separation ->
+#     <- front wheel lat separation ->
 #    11 / 111 |-----|-----| 21 / 212   ---
 #                   |                   ^
-#                   |             front wheel distance
-#       <- mid wheel separation ->      v
+#                   |             front wheel lon separation
+#       <- mid wheel lat separation ->      v
 #        12 |-------|-------| 22       ---
 #                   |                   ^
-#                   |             back wheel distance
+#                   |             back wheel lon separation
 #                   |                   v
 #   13 / 131 |------|------| 23 / 233  ---
-#      <- back wheel separation ->
+#      <- back wheel lat separation ->
 # 
 wheel_width: 0.10
-wheel_diameter: 0.12
-wheel_width: 0.10
-mid_wheel_separation: 0.52
-front_wheel_separation: 0.47 
-front_wheel_distance: 0.28
-back_wheel_separation: 0.47
-back_wheel_distance: 0.25
+wheel_radius: 0.060
+mid_wheel_lat_separation: 0.52
+front_wheel_lat_separation: 0.47 
+front_wheel_lon_separation: 0.28
+back_wheel_lat_separation: 0.47
+back_wheel_lon_separation: 0.25
 
 # Servo configuration
 

@@ -34,6 +34,10 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
+// Adapted from the original source code for diff_drive_controller
+// and ackermann_steering_controller from the ros_controllers
+// package: https://github.com/ros-controls/ros_controllers
+
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
@@ -81,6 +85,7 @@
 #include <urdf/urdfdom_compatibility.h>
 #include <urdf_parser/urdf_parser.h>
 #include <cmath>
+#include <limits>
 
 static double euclideanOfVectors(const urdf::Vector3& vec1, const urdf::Vector3& vec2)
 {
@@ -181,46 +186,119 @@ static bool getWheelRadius(const urdf::LinkConstSharedPtr& wheel_link, double& w
   return false;
 }
 
+void turningRadiusAndRate(double v_b, double omega_b, double d, double &r_p, double &omega_p)
+{
+    /*
+    Calculate the turning radius and rate of turn about
+    the instantaneous centre of curvature (ICC).
+
+    Conventions are specifiied according to ROS REP 103:
+    Standard Units of Measure and Coordinate Conventions
+    https://www.ros.org/reps/rep-0103.html.
+
+    x forward
+    y left
+    z up
+
+    Example:
+    v_b >= 0, omega_b > 0 => r_p > 0    the turn is positive (anti-clockwise),
+    v_b >= 0, omega_b < 0 => r_p < 0    the turn is negative (clockwise),
+    v_b >= 0, omega_b = 0 => r_p = inf  there is no turn.
+
+    Parameters
+    v_b       linear velocity of the base (m/s).
+    omega_b   angular velocity of the base (rad/s).
+    d         distance between the fixed wheels (m).
+
+    Returns
+    r_p, omega_p  turning radius (m) and rate of turn (rad/s).
+    */
+
+    double vl = v_b - d * omega_b / 2.0;
+    double vr = v_b + d * omega_b / 2.0;
+    if (vl == vr)
+    {
+        r_p = std::numeric_limits<double>::infinity();
+        omega_p = 0.0;
+    }
+    else
+    {
+        r_p = d * (vr + vl) / (vr - vl) / 2.0;
+        omega_p = (vr - vl) / d;
+    }
+}
+
 namespace ackermann_drive_controller
 {
     AckermannDriveController::AckermannDriveController():
         open_loop_(false),
         command_struct_(),
-        wheel_separation_(0.0),
+        // wheel_separation_(0.0),
         wheel_radius_(0.0),
-        wheel_separation_multiplier_(1.0),
-        left_wheel_radius_multiplier_(1.0),
-        right_wheel_radius_multiplier_(1.0),
+        mid_wheel_lat_separation_(0.0),
+        front_wheel_lat_separation_(0.0),
+        front_wheel_lon_separation_(0.0),
+        back_wheel_lat_separation_(0.0),
+        back_wheel_lon_separation_(0.0),
+        // wheel_separation_multiplier_(1.0),
+        // left_wheel_radius_multiplier_(1.0),
+        // right_wheel_radius_multiplier_(1.0),
         cmd_vel_timeout_(0.5),
         allow_multiple_cmd_vel_publishers_(true),
         base_frame_id_("base_link"),
         odom_frame_id_("odom"),
         enable_odom_tf_(true),
         wheel_joints_size_(0),
+        steer_joints_size_(0),
         publish_cmd_(false),
         publish_wheel_joint_controller_state_(false)
     {
     }
 
-
+    // @TODO: CHANGE
     bool AckermannDriveController::init(
-        // hardware_interface::RobotHW* robot_hw,
-        hardware_interface::VelocityJointInterface* hw,
+        hardware_interface::RobotHW* robot_hw,
+        // hardware_interface::VelocityJointInterface* hw,
         ros::NodeHandle& root_nh,
         ros::NodeHandle &controller_nh)
     {
+        typedef hardware_interface::VelocityJointInterface VelIface;
+        typedef hardware_interface::PositionJointInterface PosIface;
+        typedef hardware_interface::JointStateInterface StateIface; 
+
+        // get multiple types of hardware_interface
+        VelIface *vel_joint_if = robot_hw->get<VelIface>(); // vel for wheels
+        PosIface *pos_joint_if = robot_hw->get<PosIface>(); // pos for steers
+
         const std::string complete_ns = controller_nh.getNamespace();
         std::size_t id = complete_ns.find_last_of("/");
         name_ = complete_ns.substr(id + 1);
 
         // Get joint names from the parameter server
+        /*
         std::vector<std::string> left_wheel_names, right_wheel_names;
         if (!getWheelNames(controller_nh, "left_wheel", left_wheel_names) ||
             !getWheelNames(controller_nh, "right_wheel", right_wheel_names))
         {
             return false;
         }
+        */
 
+        wheel_joints_size_ = 6;
+        steer_joints_size_ = 4;
+        std::vector<std::string> wheel_names(wheel_joints_size_), steer_names(steer_joints_size_);
+        controller_nh.param("front_left_wheel",  wheel_names[0], std::string("front_left_wheel_joint"));
+        controller_nh.param("front_right_wheel", wheel_names[1], std::string("front_right_wheel_joint"));
+        controller_nh.param("mid_left_wheel",    wheel_names[2], std::string("mid_left_wheel_joint"));
+        controller_nh.param("mid_right_wheel",   wheel_names[3], std::string("mid_right_wheel_joint"));
+        controller_nh.param("back_left_wheel",   wheel_names[4], std::string("back_left_wheel_joint"));
+        controller_nh.param("back_right_wheel",  wheel_names[5], std::string("back_right_wheel_joint"));
+        controller_nh.param("front_left_steer",  steer_names[0], std::string("front_left_steer_joint"));
+        controller_nh.param("front_right_steer", steer_names[1], std::string("front_right_steer_joint"));
+        controller_nh.param("back_left_steer",   steer_names[2], std::string("back_left_steer_joint"));
+        controller_nh.param("back_right_steer",  steer_names[3], std::string("back_right_steer_joint"));
+
+        /*
         if (left_wheel_names.size() != right_wheel_names.size())
         {
             ROS_ERROR_STREAM_NAMED(name_,
@@ -235,54 +313,57 @@ namespace ackermann_drive_controller
             left_wheel_joints_.resize(wheel_joints_size_);
             right_wheel_joints_.resize(wheel_joints_size_);
         }
+        */
+       wheel_joints_.resize(wheel_joints_size_);
+       steer_joints_.resize(steer_joints_size_);
 
         // Odometry related:
         double publish_rate;
         controller_nh.param("publish_rate", publish_rate, 50.0);
         ROS_INFO_STREAM_NAMED(name_, "Controller state will be published at "
-                                << publish_rate << "Hz.");
+                              << publish_rate << "Hz.");
         publish_period_ = ros::Duration(1.0 / publish_rate);
 
         controller_nh.param("open_loop", open_loop_, open_loop_);
 
-        controller_nh.param("wheel_separation_multiplier", wheel_separation_multiplier_, wheel_separation_multiplier_);
-        ROS_INFO_STREAM_NAMED(name_, "Wheel separation will be multiplied by "
-                                << wheel_separation_multiplier_ << ".");
+        // controller_nh.param("wheel_separation_multiplier", wheel_separation_multiplier_, wheel_separation_multiplier_);
+        // ROS_INFO_STREAM_NAMED(name_, "Wheel separation will be multiplied by "
+        //                       << wheel_separation_multiplier_ << ".");
 
-        if (controller_nh.hasParam("wheel_radius_multiplier"))
-        {
-            double wheel_radius_multiplier;
-            controller_nh.getParam("wheel_radius_multiplier", wheel_radius_multiplier);
+        // if (controller_nh.hasParam("wheel_radius_multiplier"))
+        // {
+        //     double wheel_radius_multiplier;
+        //     controller_nh.getParam("wheel_radius_multiplier", wheel_radius_multiplier);
 
-            left_wheel_radius_multiplier_  = wheel_radius_multiplier;
-            right_wheel_radius_multiplier_ = wheel_radius_multiplier;
-        }
-        else
-        {
-            controller_nh.param("left_wheel_radius_multiplier", left_wheel_radius_multiplier_, left_wheel_radius_multiplier_);
-            controller_nh.param("right_wheel_radius_multiplier", right_wheel_radius_multiplier_, right_wheel_radius_multiplier_);
-        }
+        //     left_wheel_radius_multiplier_  = wheel_radius_multiplier;
+        //     right_wheel_radius_multiplier_ = wheel_radius_multiplier;
+        // }
+        // else
+        // {
+        //     controller_nh.param("left_wheel_radius_multiplier", left_wheel_radius_multiplier_, left_wheel_radius_multiplier_);
+        //     controller_nh.param("right_wheel_radius_multiplier", right_wheel_radius_multiplier_, right_wheel_radius_multiplier_);
+        // }
 
-        ROS_INFO_STREAM_NAMED(name_, "Left wheel radius will be multiplied by "
-                                << left_wheel_radius_multiplier_ << ".");
-        ROS_INFO_STREAM_NAMED(name_, "Right wheel radius will be multiplied by "
-                                << right_wheel_radius_multiplier_ << ".");
+        // ROS_INFO_STREAM_NAMED(name_, "Left wheel radius will be multiplied by "
+        //                       << left_wheel_radius_multiplier_ << ".");
+        // ROS_INFO_STREAM_NAMED(name_, "Right wheel radius will be multiplied by "
+        //                       << right_wheel_radius_multiplier_ << ".");
 
         int velocity_rolling_window_size = 10;
         controller_nh.param("velocity_rolling_window_size", velocity_rolling_window_size, velocity_rolling_window_size);
         ROS_INFO_STREAM_NAMED(name_, "Velocity rolling window size of "
-                                << velocity_rolling_window_size << ".");
+                              << velocity_rolling_window_size << ".");
 
         odometry_.setVelocityRollingWindowSize(velocity_rolling_window_size);
 
         // Twist command related:
         controller_nh.param("cmd_vel_timeout", cmd_vel_timeout_, cmd_vel_timeout_);
         ROS_INFO_STREAM_NAMED(name_, "Velocity commands will be considered old if they are older than "
-                                << cmd_vel_timeout_ << "s.");
+                              << cmd_vel_timeout_ << "s.");
 
         controller_nh.param("allow_multiple_cmd_vel_publishers", allow_multiple_cmd_vel_publishers_, allow_multiple_cmd_vel_publishers_);
         ROS_INFO_STREAM_NAMED(name_, "Allow mutiple cmd_vel publishers is "
-                                << (allow_multiple_cmd_vel_publishers_?"enabled":"disabled"));
+                              << (allow_multiple_cmd_vel_publishers_?"enabled":"disabled"));
 
         controller_nh.param("base_frame_id", base_frame_id_, base_frame_id_);
         ROS_INFO_STREAM_NAMED(name_, "Base frame_id set to " << base_frame_id_);
@@ -321,37 +402,71 @@ namespace ackermann_drive_controller
         controller_nh.param("publish_wheel_joint_controller_state", publish_wheel_joint_controller_state_, publish_wheel_joint_controller_state_);
 
         // If either parameter is not available, we need to look up the value in the URDF
-        bool lookup_wheel_separation = !controller_nh.getParam("wheel_separation", wheel_separation_);
-        bool lookup_wheel_radius = !controller_nh.getParam("wheel_radius", wheel_radius_);
+        // bool lookup_wheel_separation = !controller_nh.getParam("wheel_separation", wheel_separation_);
+        // bool lookup_wheel_radius = !controller_nh.getParam("wheel_radius", wheel_radius_);
+        controller_nh.param("wheel_radius", wheel_radius_, wheel_radius_);
+        controller_nh.param("mid_wheel_lat_separation", mid_wheel_lat_separation_, mid_wheel_lat_separation_);
+        controller_nh.param("front_wheel_lat_separation", front_wheel_lat_separation_, front_wheel_lat_separation_);
+        controller_nh.param("front_wheel_lon_separation", front_wheel_lon_separation_, front_wheel_lon_separation_);
+        controller_nh.param("back_wheel_lat_separation", back_wheel_lat_separation_, back_wheel_lat_separation_);
+        controller_nh.param("back_wheel_lon_separation", back_wheel_lon_separation_, back_wheel_lon_separation_);
 
-        if (!setOdomParamsFromUrdf(root_nh,
-                                    left_wheel_names[0],
-                                    right_wheel_names[0],
-                                    lookup_wheel_separation,
-                                    lookup_wheel_radius))
+        // Set up positions of wheels and steering joints
+        // wheels: front left, front right, mid left, mid right, back leftm back right
+        // steers: front left, front right, back leftm back right
+        wheel_positions_.push_back(Pos(front_wheel_lon_separation_, front_wheel_lat_separation_/2.0));
+        wheel_positions_.push_back(Pos(front_wheel_lon_separation_, -front_wheel_lat_separation_/2.0));
+        wheel_positions_.push_back(Pos(0.0, mid_wheel_lat_separation_/2.0));
+        wheel_positions_.push_back(Pos(0.0, -mid_wheel_lat_separation_/2.0));
+        wheel_positions_.push_back(Pos(-back_wheel_lon_separation_, back_wheel_lat_separation_/2.0));
+        wheel_positions_.push_back(Pos(-back_wheel_lon_separation_, -back_wheel_lat_separation_/2.0));
+
+        steer_positions_.push_back(Pos(front_wheel_lon_separation_, front_wheel_lat_separation_/2.0));
+        steer_positions_.push_back(Pos(front_wheel_lon_separation_, -front_wheel_lat_separation_/2.0));
+        steer_positions_.push_back(Pos(-back_wheel_lon_separation_, back_wheel_lat_separation_/2.0));
+        steer_positions_.push_back(Pos(-back_wheel_lon_separation_, -back_wheel_lat_separation_/2.0));
+
+        // Velocity and angle calculation workspace.
+        wheel_vel_.resize(wheel_joints_size_);
+        steer_ang_.resize(steer_joints_size_);
+
+        // @TODO: enable setting params from URDF
+        /*
+        if (!setOdomParamsFromUrdf(
+            root_nh,
+            left_wheel_names[0],
+            right_wheel_names[0],
+            lookup_wheel_separation,
+            lookup_wheel_radius))
         {
             return false;
         }
+        */
 
+        // @TODO: enable odometry
         // Regardless of how we got the separation and radius, use them
         // to set the odometry parameters
+        /*
         const double ws  = wheel_separation_multiplier_   * wheel_separation_;
         const double lwr = left_wheel_radius_multiplier_  * wheel_radius_;
         const double rwr = right_wheel_radius_multiplier_ * wheel_radius_;
         odometry_.setWheelParams(ws, lwr, rwr);
         ROS_INFO_STREAM_NAMED(name_,
-                                "Odometry params : wheel separation " << ws
-                                << ", left wheel radius "  << lwr
-                                << ", right wheel radius " << rwr);
+                              "Odometry params : wheel separation " << ws
+                              << ", left wheel radius "  << lwr
+                              << ", right wheel radius " << rwr);
 
         setOdomPubFields(root_nh, controller_nh);
+        */
 
         if (publish_cmd_)
         {
             cmd_vel_pub_.reset(new realtime_tools::RealtimePublisher<geometry_msgs::TwistStamped>(controller_nh, "cmd_vel_out", 100));
         }
 
+        // @TODO: enable publishing wheel and steer joint info.
         // Wheel joint controller state:
+        /*
         if (publish_wheel_joint_controller_state_)
         {
             controller_state_pub_.reset(new realtime_tools::RealtimePublisher<control_msgs::JointTrajectoryControllerState>(controller_nh, "wheel_joint_controller_state", 100));
@@ -377,26 +492,37 @@ namespace ackermann_drive_controller
 
             for (size_t i = 0; i < wheel_joints_size_; ++i)
             {
-            controller_state_pub_->msg_.joint_names[i] = left_wheel_names[i];
-            controller_state_pub_->msg_.joint_names[i + wheel_joints_size_] = right_wheel_names[i];
+                controller_state_pub_->msg_.joint_names[i] = left_wheel_names[i];
+                controller_state_pub_->msg_.joint_names[i + wheel_joints_size_] = right_wheel_names[i];
             }
 
             vel_left_previous_.resize(wheel_joints_size_, 0.0);
             vel_right_previous_.resize(wheel_joints_size_, 0.0);
         }
+        */
 
         // Get the joint object to use in the realtime loop
         for (size_t i = 0; i < wheel_joints_size_; ++i)
         {
-            ROS_INFO_STREAM_NAMED(name_,
-                                "Adding left wheel with joint name: " << left_wheel_names[i]
-                                << " and right wheel with joint name: " << right_wheel_names[i]);
-            left_wheel_joints_[i] = hw->getHandle(left_wheel_names[i]);  // throws on failure
-            right_wheel_joints_[i] = hw->getHandle(right_wheel_names[i]);  // throws on failure
+            // ROS_INFO_STREAM_NAMED(name_,
+            //                       "Adding left wheel with joint name: " << left_wheel_names[i]
+            //                       << " and right wheel with joint name: " << right_wheel_names[i]);
+            // left_wheel_joints_[i]  = vel_joint_if->getHandle(left_wheel_names[i]);   // throws on failure
+            // right_wheel_joints_[i] = vel_joint_if->getHandle(right_wheel_names[i]);  // throws on failure
+            ROS_INFO_STREAM_NAMED(name_, "Adding wheel with joint name: " << wheel_names[i]);
+            wheel_joints_[i] = vel_joint_if->getHandle(wheel_names[i]);  // throws on failure
+        }
+
+        for (size_t i = 0; i < steer_joints_size_; ++i)
+        {
+            ROS_INFO_STREAM_NAMED(name_, "Adding steer with joint name: " << steer_names[i]);
+            steer_joints_[i] = pos_joint_if->getHandle(steer_names[i]);  // throws on failure
         }
 
         sub_command_ = controller_nh.subscribe("cmd_vel", 1, &AckermannDriveController::cmdVelCallback, this);
 
+        // @TODO: enable dynamic reconfig
+        /*
         // Initialize dynamic parameters
         DynamicParams dynamic_params;
         dynamic_params.left_wheel_radius_multiplier  = left_wheel_radius_multiplier_;
@@ -420,16 +546,21 @@ namespace ackermann_drive_controller
         dyn_reconf_server_ = std::make_shared<ReconfigureServer>(controller_nh);
         dyn_reconf_server_->updateConfig(config);
         dyn_reconf_server_->setCallback(boost::bind(&AckermannDriveController::reconfCallback, this, _1, _2));
+        */
 
         return true;
     }
 
+    // @TODO: CHANGE
     void AckermannDriveController::update(const ros::Time& time, const ros::Duration& period)
     {
+        // @TODO: enable dynamic reconfig
         // update parameter from dynamic reconf
-        updateDynamicParams();
+        // updateDynamicParams();
 
+        // @TODO: enable odometry
         // Apply (possibly new) multipliers:
+        /*
         const double ws  = wheel_separation_multiplier_   * wheel_separation_;
         const double lwr = left_wheel_radius_multiplier_  * wheel_radius_;
         const double rwr = right_wheel_radius_multiplier_ * wheel_radius_;
@@ -447,13 +578,13 @@ namespace ackermann_drive_controller
             double right_pos = 0.0;
             for (size_t i = 0; i < wheel_joints_size_; ++i)
             {
-            const double lp = left_wheel_joints_[i].getPosition();
-            const double rp = right_wheel_joints_[i].getPosition();
-            if (std::isnan(lp) || std::isnan(rp))
-                return;
+                const double lp = left_wheel_joints_[i].getPosition();
+                const double rp = right_wheel_joints_[i].getPosition();
+                if (std::isnan(lp) || std::isnan(rp))
+                    return;
 
-            left_pos  += lp;
-            right_pos += rp;
+                left_pos  += lp;
+                right_pos += rp;
             }
             left_pos  /= wheel_joints_size_;
             right_pos /= wheel_joints_size_;
@@ -473,26 +604,27 @@ namespace ackermann_drive_controller
             // Populate odom message and publish
             if (odom_pub_->trylock())
             {
-            odom_pub_->msg_.header.stamp = time;
-            odom_pub_->msg_.pose.pose.position.x = odometry_.getX();
-            odom_pub_->msg_.pose.pose.position.y = odometry_.getY();
-            odom_pub_->msg_.pose.pose.orientation = orientation;
-            odom_pub_->msg_.twist.twist.linear.x  = odometry_.getLinear();
-            odom_pub_->msg_.twist.twist.angular.z = odometry_.getAngular();
-            odom_pub_->unlockAndPublish();
+                odom_pub_->msg_.header.stamp = time;
+                odom_pub_->msg_.pose.pose.position.x = odometry_.getX();
+                odom_pub_->msg_.pose.pose.position.y = odometry_.getY();
+                odom_pub_->msg_.pose.pose.orientation = orientation;
+                odom_pub_->msg_.twist.twist.linear.x  = odometry_.getLinear();
+                odom_pub_->msg_.twist.twist.angular.z = odometry_.getAngular();
+                odom_pub_->unlockAndPublish();
             }
 
             // Publish tf /odom frame
             if (enable_odom_tf_ && tf_odom_pub_->trylock())
             {
-            geometry_msgs::TransformStamped& odom_frame = tf_odom_pub_->msg_.transforms[0];
-            odom_frame.header.stamp = time;
-            odom_frame.transform.translation.x = odometry_.getX();
-            odom_frame.transform.translation.y = odometry_.getY();
-            odom_frame.transform.rotation = orientation;
-            tf_odom_pub_->unlockAndPublish();
+                geometry_msgs::TransformStamped& odom_frame = tf_odom_pub_->msg_.transforms[0];
+                odom_frame.header.stamp = time;
+                odom_frame.transform.translation.x = odometry_.getX();
+                odom_frame.transform.translation.y = odometry_.getY();
+                odom_frame.transform.rotation = orientation;
+                tf_odom_pub_->unlockAndPublish();
             }
         }
+        */
 
         // MOVE ROBOT
         // Retreive current velocity command and time step:
@@ -524,18 +656,86 @@ namespace ackermann_drive_controller
             cmd_vel_pub_->unlockAndPublish();
         }
 
-        // Compute wheels velocities:
-        const double vel_left  = (curr_cmd.lin - curr_cmd.ang * ws / 2.0)/lwr;
-        const double vel_right = (curr_cmd.lin + curr_cmd.ang * ws / 2.0)/rwr;
+        // BEGIN ACKERMAN DRIVE LOGIC
+        // Note the output velocity command for this controller is the angular velocity
+        // for the wheel (not the linear velocity of the wheel rim).
+        // This is the same behaviour as the diff_drive_controller.
 
-        // Set wheels velocities:
-        for (size_t i = 0; i < wheel_joints_size_; ++i)
+        // Calculate the turning radius and rate
+        double r_p, omega_p;
+        turningRadiusAndRate(curr_cmd.lin, curr_cmd.ang, mid_wheel_lat_separation_, r_p, omega_p);
+        // rospy.logdebug('r_p: {:.2f}, omega_p: {:.2f}'.format(r_p, omega_p))
+        // ROS_INFO_STREAM_NAMED(name_, "r_p: " << r_p << ": omega_p: " << omega_p);
+
+        // Calculate velocity and steering angle for each wheel
+        if (omega_p == 0)
         {
-            left_wheel_joints_[i].setCommand(vel_left);
-            right_wheel_joints_[i].setCommand(vel_right);
+            // No rotation - set wheel velocity directly
+            for (int i=0; i<wheel_joints_size_; ++i)
+            {
+                wheel_vel_[i] = curr_cmd.lin / wheel_radius_;
+            }
+
+            for (int i=0; i<steer_joints_size_; ++i)
+            {
+                steer_ang_[i] = 0.0;
+            }
+        }
+        else
+        {
+            for (int i=0; i<wheel_joints_size_; ++i)
+            {
+                // Wheel position
+                auto pos = wheel_positions_[i];
+                double x = pos.x;
+                double y = pos.y;
+
+                // Wheel turn radius
+                double r = std::sqrt(x*x + (r_p - y)*(r_p - y));
+
+                // Wheel velocity
+                double sgn = (r_p - y) < 0.0 ? -1.0 : 1.0;
+                double vel = sgn * r * omega_p;
+                wheel_vel_[i] = vel / wheel_radius_;
+                // ROS_INFO_STREAM_NAMED(name_, "wheel[" << i << "]: r: " << r << ": vel: " << vel);
+            }
+
+            for (int i=0; i<steer_joints_size_; ++i)
+            {
+                auto pos = steer_positions_[i];
+                double x = pos.x;
+                double y = pos.y;
+
+                // Wheel angle
+                double angle = std::atan2(x, (r_p - y));
+
+                if (angle > M_PI/2.0)
+                    angle -= M_PI;
+
+                if (angle < -M_PI/2.0)
+                    angle += M_PI;
+
+                steer_ang_[i] = angle;
+                // ROS_INFO_STREAM_NAMED(name_, "steer[" << i << "]: angle: " << angle);
+            }
         }
 
-        publishWheelData(time, period, curr_cmd, ws, lwr, rwr);
+        // Set velocities.
+        for (size_t i = 0; i < wheel_joints_size_; ++i)
+        {
+            wheel_joints_[i].setCommand(wheel_vel_[i]);
+        }
+
+        // Set positions.
+        for (size_t i = 0; i < steer_joints_size_; ++i)
+        {
+            steer_joints_[i].setCommand(steer_ang_[i]);
+        }
+
+        // END ACKERMAN DRIVE LOGIC
+
+        // @TODO: enable publishing wheel and steer joint info.
+        // publishWheelData(time, period, curr_cmd, ws, lwr, rwr);
         time_previous_ = time;
     }
 
@@ -555,13 +755,21 @@ namespace ackermann_drive_controller
         brake();
     }
 
+    // @TODO: CLEAN
     void AckermannDriveController::brake()
     {
         const double vel = 0.0;
         for (size_t i = 0; i < wheel_joints_size_; ++i)
         {
-            left_wheel_joints_[i].setCommand(vel);
-            right_wheel_joints_[i].setCommand(vel);
+            // left_wheel_joints_[i].setCommand(vel);
+            // right_wheel_joints_[i].setCommand(vel);
+            wheel_joints_[i].setCommand(vel);
+        }
+
+        const double ang = 0.0;
+        for (size_t i = 0; i < steer_joints_size_; ++i)
+        {
+            steer_joints_[i].setCommand(ang);
         }
     }
 
@@ -572,10 +780,10 @@ namespace ackermann_drive_controller
             // check that we don't have multiple publishers on the command topic
             if (!allow_multiple_cmd_vel_publishers_ && sub_command_.getNumPublishers() > 1)
             {
-            ROS_ERROR_STREAM_THROTTLE_NAMED(1.0, name_, "Detected " << sub_command_.getNumPublishers()
-                << " publishers. Only 1 publisher is allowed. Going to brake.");
-            brake();
-            return;
+                ROS_ERROR_STREAM_THROTTLE_NAMED(1.0, name_, "Detected " << sub_command_.getNumPublishers()
+                    << " publishers. Only 1 publisher is allowed. Going to brake.");
+                brake();
+                return;
             }
 
             command_struct_.ang   = command.angular.z;
@@ -594,59 +802,65 @@ namespace ackermann_drive_controller
         }
     }
 
-    bool AckermannDriveController::getWheelNames(ros::NodeHandle& controller_nh,
-                                const std::string& wheel_param,
-                                std::vector<std::string>& wheel_names)
+    // @TODO: REMOVE - probably not required for 6 wheel version
+    /*
+    bool AckermannDriveController::getWheelNames(
+        ros::NodeHandle& controller_nh,
+        const std::string& wheel_param,
+        std::vector<std::string>& wheel_names)
     {
         XmlRpc::XmlRpcValue wheel_list;
         if (!controller_nh.getParam(wheel_param, wheel_list))
         {
-        ROS_ERROR_STREAM_NAMED(name_,
-            "Couldn't retrieve wheel param '" << wheel_param << "'.");
-        return false;
+            ROS_ERROR_STREAM_NAMED(name_,
+                "Couldn't retrieve wheel param '" << wheel_param << "'.");
+            return false;
         }
 
         if (wheel_list.getType() == XmlRpc::XmlRpcValue::TypeArray)
         {
-        if (wheel_list.size() == 0)
-        {
-            ROS_ERROR_STREAM_NAMED(name_,
-                "Wheel param '" << wheel_param << "' is an empty list");
-            return false;
-        }
-
-        for (int i = 0; i < wheel_list.size(); ++i)
-        {
-            if (wheel_list[i].getType() != XmlRpc::XmlRpcValue::TypeString)
+            if (wheel_list.size() == 0)
             {
-            ROS_ERROR_STREAM_NAMED(name_,
-                "Wheel param '" << wheel_param << "' #" << i <<
-                " isn't a string.");
-            return false;
+                ROS_ERROR_STREAM_NAMED(name_,
+                    "Wheel param '" << wheel_param << "' is an empty list");
+                return false;
             }
-        }
 
-        wheel_names.resize(wheel_list.size());
-        for (int i = 0; i < wheel_list.size(); ++i)
-        {
-            wheel_names[i] = static_cast<std::string>(wheel_list[i]);
-        }
+            for (int i = 0; i < wheel_list.size(); ++i)
+            {
+                if (wheel_list[i].getType() != XmlRpc::XmlRpcValue::TypeString)
+                {
+                    ROS_ERROR_STREAM_NAMED(name_,
+                        "Wheel param '" << wheel_param << "' #" << i <<
+                        " isn't a string.");
+                    return false;
+                }
+            }
+
+            wheel_names.resize(wheel_list.size());
+            for (int i = 0; i < wheel_list.size(); ++i)
+            {
+                wheel_names[i] = static_cast<std::string>(wheel_list[i]);
+            }
         }
         else if (wheel_list.getType() == XmlRpc::XmlRpcValue::TypeString)
         {
-        wheel_names.push_back(wheel_list);
+            wheel_names.push_back(wheel_list);
         }
         else
         {
-        ROS_ERROR_STREAM_NAMED(name_,
-            "Wheel param '" << wheel_param <<
-            "' is neither a list of strings nor a string.");
-        return false;
+            ROS_ERROR_STREAM_NAMED(name_,
+                "Wheel param '" << wheel_param <<
+                "' is neither a list of strings nor a string.");
+            return false;
         }
 
         return true;
     }
+    */
 
+    // @TODO: enable setting params from URDF
+    /*
     bool AckermannDriveController::setOdomParamsFromUrdf(ros::NodeHandle& root_nh,
                                 const std::string& left_wheel_name,
                                 const std::string& right_wheel_name,
@@ -715,6 +929,7 @@ namespace ackermann_drive_controller
 
         return true;
     }
+    */
 
     void AckermannDriveController::setOdomPubFields(ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh)
     {
@@ -763,7 +978,9 @@ namespace ackermann_drive_controller
         tf_odom_pub_->msg_.transforms[0].header.frame_id = odom_frame_id_;
     }
 
-    void AckermannDriveController::reconfCallback(AckermannDriveControllerConfig& config, uint32_t /*level*/)
+    // @TODO: enable dynamic reconfig
+    /*
+    void AckermannDriveController::reconfCallback(AckermannDriveControllerConfig& config, uint32_t level)
     {
         DynamicParams dynamic_params;
         dynamic_params.left_wheel_radius_multiplier  = config.left_wheel_radius_multiplier;
@@ -791,7 +1008,10 @@ namespace ackermann_drive_controller
         publish_period_ = ros::Duration(1.0 / dynamic_params.publish_rate);
         enable_odom_tf_ = dynamic_params.enable_odom_tf;
     }
+    */
 
+    // @TODO: enable publishing wheel and steer joint info.    
+    /*
     void AckermannDriveController::publishWheelData(const ros::Time& time, const ros::Duration& period, Commands& curr_cmd,
             double wheel_separation, double left_wheel_radius, double right_wheel_radius)
     {
@@ -806,61 +1026,62 @@ namespace ackermann_drive_controller
 
             for (size_t i = 0; i < wheel_joints_size_; ++i)
             {
-            const double control_duration = (time - time_previous_).toSec();
+                const double control_duration = (time - time_previous_).toSec();
 
-            const double left_wheel_acc = (left_wheel_joints_[i].getVelocity() - vel_left_previous_[i]) / control_duration;
-            const double right_wheel_acc = (right_wheel_joints_[i].getVelocity() - vel_right_previous_[i]) / control_duration;
+                const double left_wheel_acc = (left_wheel_joints_[i].getVelocity() - vel_left_previous_[i]) / control_duration;
+                const double right_wheel_acc = (right_wheel_joints_[i].getVelocity() - vel_right_previous_[i]) / control_duration;
 
-            // Actual
-            controller_state_pub_->msg_.actual.positions[i]     = left_wheel_joints_[i].getPosition();
-            controller_state_pub_->msg_.actual.velocities[i]    = left_wheel_joints_[i].getVelocity();
-            controller_state_pub_->msg_.actual.accelerations[i] = left_wheel_acc;
-            controller_state_pub_->msg_.actual.effort[i]        = left_wheel_joints_[i].getEffort();
+                // Actual
+                controller_state_pub_->msg_.actual.positions[i]     = left_wheel_joints_[i].getPosition();
+                controller_state_pub_->msg_.actual.velocities[i]    = left_wheel_joints_[i].getVelocity();
+                controller_state_pub_->msg_.actual.accelerations[i] = left_wheel_acc;
+                controller_state_pub_->msg_.actual.effort[i]        = left_wheel_joints_[i].getEffort();
 
-            controller_state_pub_->msg_.actual.positions[i + wheel_joints_size_]     = right_wheel_joints_[i].getPosition();
-            controller_state_pub_->msg_.actual.velocities[i + wheel_joints_size_]    = right_wheel_joints_[i].getVelocity();
-            controller_state_pub_->msg_.actual.accelerations[i + wheel_joints_size_] = right_wheel_acc;
-            controller_state_pub_->msg_.actual.effort[i+ wheel_joints_size_]         = right_wheel_joints_[i].getEffort();
+                controller_state_pub_->msg_.actual.positions[i + wheel_joints_size_]     = right_wheel_joints_[i].getPosition();
+                controller_state_pub_->msg_.actual.velocities[i + wheel_joints_size_]    = right_wheel_joints_[i].getVelocity();
+                controller_state_pub_->msg_.actual.accelerations[i + wheel_joints_size_] = right_wheel_acc;
+                controller_state_pub_->msg_.actual.effort[i+ wheel_joints_size_]         = right_wheel_joints_[i].getEffort();
 
-            // Desired
-            controller_state_pub_->msg_.desired.positions[i]    += vel_left_desired * cmd_dt;
-            controller_state_pub_->msg_.desired.velocities[i]    = vel_left_desired;
-            controller_state_pub_->msg_.desired.accelerations[i] = (vel_left_desired - vel_left_desired_previous_) * cmd_dt;
-            controller_state_pub_->msg_.desired.effort[i]        = std::numeric_limits<double>::quiet_NaN();
+                // Desired
+                controller_state_pub_->msg_.desired.positions[i]    += vel_left_desired * cmd_dt;
+                controller_state_pub_->msg_.desired.velocities[i]    = vel_left_desired;
+                controller_state_pub_->msg_.desired.accelerations[i] = (vel_left_desired - vel_left_desired_previous_) * cmd_dt;
+                controller_state_pub_->msg_.desired.effort[i]        = std::numeric_limits<double>::quiet_NaN();
 
-            controller_state_pub_->msg_.desired.positions[i + wheel_joints_size_]    += vel_right_desired * cmd_dt;
-            controller_state_pub_->msg_.desired.velocities[i + wheel_joints_size_]    = vel_right_desired;
-            controller_state_pub_->msg_.desired.accelerations[i + wheel_joints_size_] = (vel_right_desired - vel_right_desired_previous_) * cmd_dt;
-            controller_state_pub_->msg_.desired.effort[i+ wheel_joints_size_]         = std::numeric_limits<double>::quiet_NaN();
+                controller_state_pub_->msg_.desired.positions[i + wheel_joints_size_]    += vel_right_desired * cmd_dt;
+                controller_state_pub_->msg_.desired.velocities[i + wheel_joints_size_]    = vel_right_desired;
+                controller_state_pub_->msg_.desired.accelerations[i + wheel_joints_size_] = (vel_right_desired - vel_right_desired_previous_) * cmd_dt;
+                controller_state_pub_->msg_.desired.effort[i+ wheel_joints_size_]         = std::numeric_limits<double>::quiet_NaN();
 
-            // Error
-            controller_state_pub_->msg_.error.positions[i]     = controller_state_pub_->msg_.desired.positions[i] -
-                                                                                    controller_state_pub_->msg_.actual.positions[i];
-            controller_state_pub_->msg_.error.velocities[i]    = controller_state_pub_->msg_.desired.velocities[i] -
-                                                                                    controller_state_pub_->msg_.actual.velocities[i];
-            controller_state_pub_->msg_.error.accelerations[i] = controller_state_pub_->msg_.desired.accelerations[i] -
-                                                                                    controller_state_pub_->msg_.actual.accelerations[i];
-            controller_state_pub_->msg_.error.effort[i]        = controller_state_pub_->msg_.desired.effort[i] -
-                                                                                    controller_state_pub_->msg_.actual.effort[i];
+                // Error
+                controller_state_pub_->msg_.error.positions[i]     = controller_state_pub_->msg_.desired.positions[i] -
+                                                                                        controller_state_pub_->msg_.actual.positions[i];
+                controller_state_pub_->msg_.error.velocities[i]    = controller_state_pub_->msg_.desired.velocities[i] -
+                                                                                        controller_state_pub_->msg_.actual.velocities[i];
+                controller_state_pub_->msg_.error.accelerations[i] = controller_state_pub_->msg_.desired.accelerations[i] -
+                                                                                        controller_state_pub_->msg_.actual.accelerations[i];
+                controller_state_pub_->msg_.error.effort[i]        = controller_state_pub_->msg_.desired.effort[i] -
+                                                                                        controller_state_pub_->msg_.actual.effort[i];
 
-            controller_state_pub_->msg_.error.positions[i + wheel_joints_size_]     = controller_state_pub_->msg_.desired.positions[i + wheel_joints_size_] -
-                                                                                                        controller_state_pub_->msg_.actual.positions[i + wheel_joints_size_];
-            controller_state_pub_->msg_.error.velocities[i + wheel_joints_size_]    = controller_state_pub_->msg_.desired.velocities[i + wheel_joints_size_] -
-                                                                                                        controller_state_pub_->msg_.actual.velocities[i + wheel_joints_size_];
-            controller_state_pub_->msg_.error.accelerations[i + wheel_joints_size_] = controller_state_pub_->msg_.desired.accelerations[i + wheel_joints_size_] -
-                                                                                                        controller_state_pub_->msg_.actual.accelerations[i + wheel_joints_size_];
-            controller_state_pub_->msg_.error.effort[i+ wheel_joints_size_]         = controller_state_pub_->msg_.desired.effort[i + wheel_joints_size_] -
-                                                                                                        controller_state_pub_->msg_.actual.effort[i + wheel_joints_size_];
+                controller_state_pub_->msg_.error.positions[i + wheel_joints_size_]     = controller_state_pub_->msg_.desired.positions[i + wheel_joints_size_] -
+                                                                                                            controller_state_pub_->msg_.actual.positions[i + wheel_joints_size_];
+                controller_state_pub_->msg_.error.velocities[i + wheel_joints_size_]    = controller_state_pub_->msg_.desired.velocities[i + wheel_joints_size_] -
+                                                                                                            controller_state_pub_->msg_.actual.velocities[i + wheel_joints_size_];
+                controller_state_pub_->msg_.error.accelerations[i + wheel_joints_size_] = controller_state_pub_->msg_.desired.accelerations[i + wheel_joints_size_] -
+                                                                                                            controller_state_pub_->msg_.actual.accelerations[i + wheel_joints_size_];
+                controller_state_pub_->msg_.error.effort[i+ wheel_joints_size_]         = controller_state_pub_->msg_.desired.effort[i + wheel_joints_size_] -
+                                                                                                            controller_state_pub_->msg_.actual.effort[i + wheel_joints_size_];
 
-            // Save previous velocities to compute acceleration
-            vel_left_previous_[i] = left_wheel_joints_[i].getVelocity();
-            vel_right_previous_[i] = right_wheel_joints_[i].getVelocity();
-            vel_left_desired_previous_ = vel_left_desired;
-            vel_right_desired_previous_ = vel_right_desired;
+                // Save previous velocities to compute acceleration
+                vel_left_previous_[i] = left_wheel_joints_[i].getVelocity();
+                vel_right_previous_[i] = right_wheel_joints_[i].getVelocity();
+                vel_left_desired_previous_ = vel_left_desired;
+                vel_right_desired_previous_ = vel_right_desired;
             }
 
             controller_state_pub_->unlockAndPublish();
         }
     }
+    */
 
 } // namespace ackermann_drive_controller
