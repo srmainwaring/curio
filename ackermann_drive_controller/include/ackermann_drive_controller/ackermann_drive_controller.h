@@ -33,7 +33,11 @@
 //  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 //  POSSIBILITY OF SUCH DAMAGE.
 //
- 
+
+/*
+ * Author: Rhys Mainwaring
+ */
+
 // Adapted from the original source code for diff_drive_controller
 // and ackermann_steering_controller from the ros_controllers
 // package: https://github.com/ros-controls/ros_controllers
@@ -73,10 +77,7 @@
  *********************************************************************/
 
 /*
- * Author: Luca Marchionni
- * Author: Bence Magyar
- * Author: Enrique Fernández
- * Author: Paul Mathieu
+ * Author: Bence Magyar, Enrique Fernández
  */
 
 #ifndef ACKERMANN_DRIVE_CONTROLLER_ACKERMANN_DRIVE_CONTROLLER_H_
@@ -101,6 +102,25 @@
 
 namespace ackermann_drive_controller
 {
+    /**
+     *  A controller for a 6 wheel mobile robot with Ackerman steering on the 4 corner wheels.
+     * 
+     *  The controller has many similarities to the diff_drive_controller from which it was
+     *  adapted. The middle two wheels are not steerable, and so form a differential drive pair.
+     *  The odometry for this controller is calculated using the middle two wheels and uses the
+     *  same approch as the diff_drive_controller.
+     * 
+     *  Unlike the ackerman_steering_controller, in this controller all wheels are driven and
+     *  the controller calculates the commanded velocity for each wheel in addition to the
+     *  commanded steering position for the four corner wheels.   
+     * 
+     *  Assumptions:
+     *  - in the neutral steering position the axis of the front wheels
+     *    are colinear: ditto for mid wheels and back wheels.
+     *  - the lateral axis of the front wheels, mid wheels, and back wheels are parallel.
+     *  - the steering axis of the corner wheels is perpendicular to the wheel rotation axis
+     *    and bisects the wheel.
+     */    
     class AckermannDriveController :
         public controller_interface::MultiInterfaceController<
             hardware_interface::PositionJointInterface,
@@ -109,14 +129,33 @@ namespace ackermann_drive_controller
     public:
         AckermannDriveController();
 
+        /**
+         * \brief Initialize controller
+         * \param hw            Hardware interface for the robot
+         * \param root_nh       Node handle at root namespace
+         * \param controller_nh Node handle inside the controller namespace
+         */
         bool init(hardware_interface::RobotHW* robot_hw,
             ros::NodeHandle& root_nh,
             ros::NodeHandle &controller_nh);
 
+        /**
+         * \brief Updates controller, i.e. computes the odometry and sets the new velocity commands
+         * \param time   Current time
+         * \param period Time since the last called to update
+         */
         void update(const ros::Time& time, const ros::Duration& period);
 
+        /**
+         * \brief Starts controller
+         * \param time Current time
+         */
         void starting(const ros::Time& time);
 
+        /**
+         * \brief Stops controller
+         * \param time Current time
+         */
         void stopping(const ros::Time& /*time*/);
 
     private:
@@ -128,8 +167,6 @@ namespace ackermann_drive_controller
         bool open_loop_;
 
         /// Hardware handles:
-        // std::vector<hardware_interface::JointHandle> left_wheel_joints_;
-        // std::vector<hardware_interface::JointHandle> right_wheel_joints_;
         std::vector<hardware_interface::JointHandle> wheel_joints_;
         std::vector<hardware_interface::JointHandle> steer_joints_;
 
@@ -139,14 +176,14 @@ namespace ackermann_drive_controller
         /// Previous velocities from the encoders:
         // std::vector<double> vel_left_previous_;
         // std::vector<double> vel_right_previous_;
-        std::vector<double> vel_previous_;
-        std::vector<double> ang_previous_;
 
         /// Previous velocities from the encoders:
         // double vel_left_desired_previous_;
         // double vel_right_desired_previous_;
-        double vel_desired_previous_;
-        double ang_desired_previous_;
+
+        // Odometry workspace
+        std::vector<double> wheel_joints_pos_;
+        std::vector<double> steer_joints_pos_;
 
         /// Velocity command related:
         struct Commands
@@ -172,10 +209,7 @@ namespace ackermann_drive_controller
         /// Controller state publisher
         std::shared_ptr<realtime_tools::RealtimePublisher<control_msgs::JointTrajectoryControllerState> > controller_state_pub_;
 
-        /// Wheel separation, wrt the midpoint of the wheel width:
-        // double wheel_separation_;
-
-        /// Wheel radius (assuming it's the same for the left and right wheels):
+        /// Wheel radius (assumed to be the same for all wheels):
         double wheel_radius_;
         double mid_wheel_lat_separation_;
         double front_wheel_lat_separation_; 
@@ -185,6 +219,7 @@ namespace ackermann_drive_controller
 
         struct Pos
         {
+            Pos() {}
             Pos(double x, double y) : x(x), y(y) {}
             double x = 0.0;
             double y = 0.0;
@@ -231,7 +266,7 @@ namespace ackermann_drive_controller
         bool publish_cmd_;
 
         /// Publish wheel data:
-        bool publish_wheel_joint_controller_state_;    
+        // bool publish_wheel_joint_controller_state_;    
 
         // @TODO: enable dynamic reconfig
         // A struct to hold dynamic parameters
@@ -286,19 +321,24 @@ namespace ackermann_drive_controller
         */
 
     private:
-
+        /**
+         * \brief Brakes the wheels, i.e. sets the velocity to 0
+         */
         void brake();
 
+        /**
+         * \brief Velocity command callback
+         * \param command Velocity command message (twist)
+         */
         void cmdVelCallback(const geometry_msgs::Twist& command);
 
-        // @TOOD: probably not required unless we extend to more than 6 wheels...
-        /*
-        bool getWheelNames(ros::NodeHandle& controller_nh,
-            const std::string& wheel_param,
-            std::vector<std::string>& wheel_names);
-        */
-
         // @TODO: enable setting params from URDF
+        /**
+         * \brief Sets odometry parameters from the URDF, i.e. the wheel radius and separation
+         * \param root_nh Root node handle
+         * \param left_wheel_name Name of the left wheel joint
+         * \param right_wheel_name Name of the right wheel joint
+         */
         /*
         bool setOdomParamsFromUrdf(ros::NodeHandle& root_nh,
             const std::string& left_wheel_name,
@@ -307,16 +347,39 @@ namespace ackermann_drive_controller
             bool lookup_wheel_radius);
         */
 
+        /**
+         * \brief Sets the odometry publishing fields
+         * \param root_nh Root node handle
+         * \param controller_nh Node handle inside the controller namespace
+         */
         void setOdomPubFields(ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh);
 
+        /**
+         * \brief Callback for dynamic_reconfigure server
+         * \param config The config set from dynamic_reconfigure server
+         * \param level not used at this time.
+         * \see dyn_reconf_server_
+         */
         void reconfCallback(AckermannDriveControllerConfig& config, uint32_t /*level*/);
 
         // @TODO: enable dynamic reconfig
+        /**
+         * \brief Update the dynamic parameters in the RT loop
+         */
         /*
         void updateDynamicParams();
         */
 
         // @TODO: enable publishing wheel and steer joint info.    
+        /**
+         * \brief
+         * \param time Current time
+         * \param period Time since the last called to update
+         * \param curr_cmd Current velocity command
+         * \param wheel_separation wheel separation with multiplier
+         * \param left_wheel_radius left wheel radius with multiplier
+         * \param right_wheel_radius right wheel radius with multiplier
+         */
         /*
         void publishWheelData(const ros::Time& time,
             const ros::Duration& period,
@@ -326,9 +389,6 @@ namespace ackermann_drive_controller
             double right_wheel_radius);
         */
     };
-
-    PLUGINLIB_EXPORT_CLASS(ackermann_drive_controller::AckermannDriveController, controller_interface::ControllerBase);
-
 } // namespace ackermann_drive_controller
 
 #endif // ACKERMANN_DRIVE_CONTROLLER_ACKERMANN_DRIVE_CONTROLLER_H_

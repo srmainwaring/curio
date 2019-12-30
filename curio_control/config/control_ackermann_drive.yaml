@@ -77,4 +77,6 @@ ackermann_drive_controller:
     # Other (undocumented but in source code)
     # velocity_rolling_window_size: 10
     # cmd_vel_timeout: 0.5
+
+    # Deprecated...
     # publish_wheel_joint_controller_state: false
