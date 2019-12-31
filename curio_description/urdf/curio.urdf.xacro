@@ -47,12 +47,12 @@
     <gazebo>
         <!-- ROS Control 
 
-            Wheel joints controlled by ackermann_drive_controller:                
+            Wheel joints controlled by ackermann_drive_controller:
                 front_left_wheel_joint, front_right_wheel_joint,
                 mid_left_wheel_joint, mid_right_wheel_joint,
                 back_left_wheel_joint, back_right_wheel_joint
 
-            Steer joints controlled by ackermann_drive_controller:                
+            Steer joints controlled by ackermann_drive_controller:
                 front_left_corner_joint, front_right_corner_joint,
                 back_left_corner_joint, back_right_corner_joint,
         -->
@@ -317,7 +317,7 @@
     <xacro:rocker_link lat_label="left" reflect="1"/>
     <xacro:rocker_link lat_label="right" reflect="-1"/>
 
-    <!-- Continuous Rocker Joint  -->
+    <!-- Rocker Joint  -->
     <xacro:macro name="rocker_joint" params="lat_label reflect">
         <joint name="${lat_label}_rocker_joint" type="continuous">
             <origin rpy="0 0 0" xyz="0.071 ${reflect * 0.155} 0.0118"/>
@@ -491,7 +491,7 @@
     <xacro:bogie_link lat_label="left" reflect="1"/>
     <xacro:bogie_link lat_label="right" reflect="-1"/>
 
-    <!-- Continuous Bogie Joint  -->
+    <!-- Bogie Joint  -->
     <xacro:macro name="bogie_joint" params="lat_label reflect">
         <joint name="${lat_label}_bogie_joint" type="revolute">
             <origin rpy="0 0 0" xyz="-0.181 ${reflect * 0.025} -0.062"/>

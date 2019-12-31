@@ -98,7 +98,8 @@ class LX16AEncoder(object):
 
 
 if __name__ == '__main__':
-    print('Lewansoul LX-16A driver test')
+    rospy.init_node('lx_16a_driver_test_node')
+    rospy.loginfo('Lewansoul LX-16A odometry test')
 
     # Initialise servo driver
     servo_driver = curio_base.lx16a_driver.LX16ADriver()
@@ -107,14 +108,14 @@ if __name__ == '__main__':
     servo_driver.set_timeout(SERVO_TIMEOUT)
     servo_driver.open()
     
-    print('\nOpen connection to servo board')
-    print('is_open: {}'.format(servo_driver.is_open()))
-    print('port: {}'.format(servo_driver.get_port()))
-    print('baudrate: {}'.format(servo_driver.get_baudrate()))
-    print('timeout: {}'.format(servo_driver.get_timeout()))
+    rospy.loginfo('\nOpen connection to servo board')
+    rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))
+    rospy.loginfo('port: {}'.format(servo_driver.get_port()))
+    rospy.loginfo('baudrate: {}'.format(servo_driver.get_baudrate()))
+    rospy.loginfo('timeout: {}'.format(servo_driver.get_timeout()))
 
     # Run servo in motor (continuous) mode
-    print('\nSet motor duty')
+    rospy.loginfo('\nSet motor duty')
     duty = 200
     servo_driver.motor_mode_write(SERVO_ID, duty)
     time.sleep(1)
@@ -122,7 +123,7 @@ if __name__ == '__main__':
     duty_max = 300
     run_time = 10000
     servo_driver.motor_mode_write(SERVO_ID, duty)
-    print('duty: {}'.format(duty))
+    rospy.loginfo('duty: {}'.format(duty))
 
     start = millis()
     last_time = start
@@ -149,9 +150,9 @@ if __name__ == '__main__':
     servo_driver.motor_mode_write(SERVO_ID, 0)
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
-    print("position: {}, angle: {}".format(pos, angle))
+    rospy.loginfo("position: {}, angle: {}".format(pos, angle))
 
     # Shutdown
     servo_driver.close()
-    print('\nClose connection to servo board')
-    print('is_open: {}'.format(servo_driver.is_open()))
+    rospy.loginfo('\nClose connection to servo board')
+    rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))

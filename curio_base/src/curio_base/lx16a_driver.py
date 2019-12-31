@@ -118,34 +118,67 @@ class LX16ADriver(object):
         self._serial.timeout = timeout
 
     # Commands
-    def move_time_write(self, servo_id, servo_pos):
+    def move_time_write(self, servo_id, servo_pos, move_time):
         # @TODO test
         pos_lsb = servo_pos & 0xff
         pos_hsb = (servo_pos >> 8) & 0xff
-        time_lsb = 0
-        time_hsb = 0
-        self.send_command(servo_id, 7, LX16ADriver.SERVO_MOVE_TIME_WRITE,
-            (pos_lsb, pos_hsb, time_lsb, time_hsb))
-    
+        move_time_lsb = move_time & 0xff
+        move_time_hsb = (move_time >> 8) & 0xff
+        if self.send_command(servo_id, 7, LX16ADriver.SERVO_MOVE_TIME_WRITE,
+            (pos_lsb, pos_hsb, move_time_lsb, move_time_hsb)) == -1:
+            rospy.logwarn('Servo command error: move_time_write')
+
     def move_time_read(self, servo_id):
-        # @TODO implement
-        pass
+        # @TODO test
+        self._serial.reset_input_buffer()
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_MOVE_TIME_READ) == -1:
+            rospy.logwarn('Servo command error: move_time_read')
+            return -1, -1
+        data = self.read_response(servo_id, 7, LX16ADriver.SERVO_MOVE_TIME_READ)
+        if data == -1:
+            rospy.logwarn('Servo read error: move_time_read')
+            return -1, -1
+        pos  = data[0] + (data[1] << 8)
+        move_time = data[2] + (data[3] << 8)
+        return pos, move_time
 
-    def move_time_wait_write(self, servo_id):
-        # @TODO implement
-        pass
+    def move_time_wait_write(self, servo_id, servo_pos, move_time):
+        # @TODO test
+        pos_lsb = servo_pos & 0xff
+        pos_hsb = (servo_pos >> 8) & 0xff
+        move_time_lsb = move_time & 0xff
+        move_time_hsb = (move_time >> 8) & 0xff
+        if self.send_command(servo_id, 7, LX16ADriver.SERVO_MOVE_TIME_WAIT_WRITE,
+            (pos_lsb, pos_hsb, move_time_lsb, move_time_hsb)) == -1:
+            rospy.logwarn('Servo command error: move_time_wait_write')
 
+    # @TOOD: there appears to be a problem with this command - the response from the servo
+    #        is badly formed (and it also affects the execution of the write version of this command).
     def move_time_wait_read(self, servo_id):
-        # @TODO implement
-        pass
+        # @TODO test
+        self._serial.reset_input_buffer()
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_MOVE_TIME_WAIT_READ) == -1:
+            rospy.logwarn('Servo command error: move_time_wait_read')
+            return -1, -1
+        data = self.read_response(servo_id, 7, LX16ADriver.SERVO_MOVE_TIME_WAIT_READ)
+        if data == -1:
+            rospy.logwarn('Servo read error: move_time_wait_read')
+            return -1, -1
+        pos  = data[0] + (data[1] << 8)
+        move_time = data[2] + (data[3] << 8)
+        return pos, move_time
 
     def move_start(self, servo_id):
-        # @TODO implement
-        pass
+        # @TODO test
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_MOVE_START) == -1:
+            rospy.logwarn('Servo command error: move_start')
 
+    # @NOTE: The servo must be in servo mode for the move_stop to be effective.
+    #        When in motor_mode you must set the speed to zero instead.
     def move_stop(self, servo_id):
-        # @TODO implement
-        pass
+        # @TODO test
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_MOVE_STOP) == -1:
+            rospy.logwarn('Servo command error: move_stop')
 
     def id_write(self, servo_id):
         # @TODO implement
@@ -170,38 +203,61 @@ class LX16ADriver(object):
     def angle_offset_read(self, servo_id):
         # @TODO test
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_OFFSET_READ)
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_OFFSET_READ) == -1:
+            rospy.logwarn('Servo command error: angle_offset_read')
+            return -1
         data = self.read_response(servo_id, 4, LX16ADriver.SERVO_ANGLE_OFFSET_READ)
         if data == -1:
+            rospy.logwarn('Servo read error: angle_offset_read')
             return -1
-        angle_offset = data[0]
+        angle_offset = struct.unpack('b', data)[0]
         return angle_offset
 
-    def angle_limit_write(self, servo_id):
-        # @TODO implement
-        pass
+    def angle_limit_write(self, servo_id, min_angle, max_angle):
+        # @TODO test
+        min_angle_lsb = min_angle & 0xff
+        min_angle_hsb = (min_angle >> 8) & 0xff
+        max_angle_lsb = max_angle & 0xff
+        max_angle_hsb = (max_angle >> 8) & 0xff
+        if self.send_command(servo_id, 7, LX16ADriver.SERVO_ANGLE_LIMIT_WRITE,
+            (min_angle_lsb, min_angle_hsb, max_angle_lsb, max_angle_hsb)) == -1:
+            rospy.logwarn('Servo command error: angle_limit_write')
 
     def angle_limit_read(self, servo_id):
         # @TODO test
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_LIMIT_READ)
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_ANGLE_LIMIT_READ) == -1:
+            rospy.logwarn('Servo command error: angle_limit_read')
+            return -1, -1
         data = self.read_response(servo_id, 7, LX16ADriver.SERVO_ANGLE_LIMIT_READ)
         if data == -1:
+            rospy.logwarn('Servo read error: angle_limit_read')
             return -1, -1
         min_angle = data[0] + (data[1] << 8)
         max_angle = data[2] + (data[3] << 8)
         return min_angle, max_angle 
 
-    def vin_limit_write(self, servo_id):
-        # @TODO implement
-        pass
+    def vin_limit_write(self, servo_id, min_vin, max_vin):
+        # @TODO test
+        min_vin = int(min_vin * 1000)
+        max_vin = int(max_vin * 1000)
+        min_vin_lsb = min_vin & 0xff
+        min_vin_hsb = (min_vin >> 8) & 0xff
+        max_vin_lsb = max_vin & 0xff
+        max_vin_hsb = (max_vin >> 8) & 0xff
+        if self.send_command(servo_id, 7, LX16ADriver.SERVO_VIN_LIMIT_WRITE,
+            (min_vin_lsb, min_vin_hsb, max_vin_lsb, max_vin_hsb)) == -1:
+            rospy.logwarn('Servo command error: vin_limit_write')
 
     def vin_limit_read(self, servo_id):
         # @TODO test
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_LIMIT_READ)
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_LIMIT_READ) == -1:
+            rospy.logwarn('Servo command error: vin_limit_read')
+            return -1, -1
         data = self.read_response(servo_id, 7, LX16ADriver.SERVO_VIN_LIMIT_READ)
         if data == -1:
+            rospy.logwarn('Servo read error: vin_limit_read')
             return -1, -1
         min_vin = data[0] + (data[1] << 8)
         max_vin = data[2] + (data[3] << 8)
@@ -209,16 +265,22 @@ class LX16ADriver(object):
         max_vin = max_vin / 1000.0
         return min_vin, max_vin 
 
-    def temp_max_limit_write(self, servo_id):
-        # @TODO implement
-        pass
+    def temp_max_limit_write(self, servo_id, max_temp):
+        # @TODO test
+        max_temp_lsb = max_temp & 0xff
+        if self.send_command(servo_id, 4, LX16ADriver.SERVO_TEMP_MAX_LIMIT_WRITE,
+            (max_temp_lsb,)) == -1:
+            rospy.logwarn('Servo command error: temp_max_limit_write')
 
     def temp_max_limit_read(self, servo_id):
         # @TODO test
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LX16ADriver.SERVO_TEMP_MAX_LIMIT_READ)
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_TEMP_MAX_LIMIT_READ) == -1:
+            rospy.logwarn('Servo command error: temp_max_limit_read')
+            return -1
         data = self.read_response(servo_id, 4, LX16ADriver.SERVO_TEMP_MAX_LIMIT_READ)
         if data == -1:
+            rospy.logwarn('Servo read error: temp_max_limit_read')
             return -1
         temp_max_limit = data[0]
         return temp_max_limit  
@@ -226,9 +288,12 @@ class LX16ADriver(object):
     def temp_read(self, servo_id):
         # @TODO test
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LX16ADriver.SERVO_TEMP_READ)
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_TEMP_READ) == -1:
+            rospy.logwarn('Servo command error: temp_read')
+            return -1
         data = self.read_response(servo_id, 4, LX16ADriver.SERVO_TEMP_READ)
         if data == -1:
+            rospy.logwarn('Servo read error: temp_read')
             return -1
         temp = data[0]
         return temp  
@@ -236,9 +301,12 @@ class LX16ADriver(object):
     def vin_read(self, servo_id):
         # @TODO test
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_READ)
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_READ) == -1:
+            rospy.logwarn('Servo command error: vin_read')
+            return -1
         data = self.read_response(servo_id, 5, LX16ADriver.SERVO_VIN_READ)
         if data == -1:
+            rospy.logwarn('Servo read error: vin_read')
             return -1
         vin = data[0] + (data[1] << 8)
         vin = vin / 1000.0
@@ -247,58 +315,106 @@ class LX16ADriver(object):
     def pos_read(self, servo_id):
         # @TODO test
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LX16ADriver.SERVO_POS_READ)
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_POS_READ) == -1:
+            rospy.logwarn('Servo command error: pos_read')
+            return -1
         data = self.read_response(servo_id, 5, LX16ADriver.SERVO_POS_READ)
         if data == -1:
+            rospy.logwarn('Servo read error: pos_read')
             return -1
         # pos = data[0] + (data[1] << 8) 
         pos = struct.unpack('h', data)[0]
         return pos
 
-    def motor_mode_write(self, servo_id, speed):
+    def motor_mode_write(self, servo_id, duty):
         # @TODO test
-        lsb = speed & 0xff 
-        hsb = (speed >> 8) & 0xff 
-        self.send_command(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_WRITE,
-            (1, 0, lsb, hsb))
+        duty_lsb = duty & 0xff 
+        duty_hsb = (duty >> 8) & 0xff 
+        if self.send_command(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_WRITE,
+            (1, 0, duty_lsb, duty_hsb)) == -1:
+            rospy.logwarn('Servo command error: motor_mode_write')
 
     def servo_mode_write(self, servo_id):
         # @TODO test
-        self.send_command(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_WRITE,
-            (0, 0, 0, 0))
+        if self.send_command(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_WRITE,
+            (0, 0, 0, 0)) == -1:
+            rospy.logwarn('Servo command error: servo_mode_write')
 
     def mode_read(self, servo_id):
-        # @TODO implement
-        pass
+        # @TODO test
+        self._serial.reset_input_buffer()
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_OR_MOTOR_MODE_READ) == -1:
+            rospy.logwarn('Servo command error: mode_read')
+            return -1
+        data = self.read_response(servo_id, 7, LX16ADriver.SERVO_OR_MOTOR_MODE_READ)
+        if data == -1:
+            rospy.logwarn('Servo read error: mode_read')
+            return -1
+        mode = data[0]
+        duty = struct.unpack('h', data[2:4])[0]
+        return mode, duty
 
-    def load_or_unload_write(self, servo_id):
-        # @TODO implement
-        pass
+    def load_or_unload_write(self, servo_id, is_loaded):
+        # @TODO test
+        is_loaded_lsb = is_loaded & 0xff 
+        if self.send_command(servo_id, 4, LX16ADriver.SERVO_LOAD_OR_UNLOAD_WRITE,
+            (is_loaded_lsb,)) == -1:
+            rospy.logwarn('Servo command error: load_or_unload_write')
 
+    # @TODO: there appears to be a problem with this command - there is no response
+    #        to the read request command. 
     def load_or_unload_read(self, servo_id):
         # @TODO test
         self._serial.reset_input_buffer()
-        self.send_command(servo_id, 3, LX16ADriver.SERVO_LOAD_OR_UNLOAD_READ)
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_LOAD_OR_UNLOAD_READ) == -1:
+            rospy.logwarn('Servo command error: load_or_unload_read')
+            return -1
         data = self.read_response(servo_id, 4, LX16ADriver.SERVO_LOAD_OR_UNLOAD_READ)
         if data == -1:
+            rospy.logwarn('Servo read error: load_or_unload_read')
             return -1
         load_or_unload = data[0]
         return load_or_unload  
 
-    def led_ctrl_write(self, servo_id):
-        # @TODO implement
-        pass
+    def led_ctrl_write(self, servo_id, is_light_off):
+        # @TODO test
+        is_light_off_lsb = is_light_off & 0xff 
+        if self.send_command(servo_id, 4, LX16ADriver.SERVO_LED_CTRL_WRITE,
+            (is_light_off_lsb,)) == -1:
+            rospy.logwarn('Servo command error: led_ctrl_write')
 
     def led_ctrl_read(self, servo_id):
-        # @TODO implement
-        pass
+        # @TODO test
+        self._serial.reset_input_buffer()
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_LED_CTRL_READ) == -1:
+            rospy.logwarn('Servo command error: led_ctrl_read')
+            return -1
+        data = self.read_response(servo_id, 4, LX16ADriver.SERVO_LED_CTRL_READ)
+        if data == -1:
+            rospy.logwarn('Servo read error: led_ctrl_read')
+            return -1
+        is_light_off = data[0]
+        return is_light_off  
 
-    def led_error_write(self, servo_id):
-        # @TODO implement
-        pass
+    def led_error_write(self, servo_id, fault_code):
+        # @TODO test
+        fault_code_lsb = fault_code & 0xff 
+        if self.send_command(servo_id, 4, LX16ADriver.SERVO_LED_ERROR_WRITE,
+            (fault_code_lsb,)) == -1:
+            rospy.logwarn('Servo command error: led_error_write')
 
     def led_error_read(self, servo_id):
-        pass
+        # @TODO test
+        self._serial.reset_input_buffer()
+        if self.send_command(servo_id, 3, LX16ADriver.SERVO_LED_ERROR_READ) == -1:
+            rospy.logwarn('Servo command error: led_error_read')
+            return -1
+        data = self.read_response(servo_id, 4, LX16ADriver.SERVO_LED_ERROR_READ)
+        if data == -1:
+            rospy.logwarn('Servo read error: led_error_read')
+            return -1
+        fault_code = data[0]
+        return fault_code  
 
     # Serial communication protocol
     def checksum(self, servo_id, length, command, data):
@@ -310,7 +426,10 @@ class LX16ADriver(object):
         return checksum
 
     def read_byte(self):
-        return ord(self._serial.read())
+        byte = self._serial.read()
+        if len(byte) != 1:
+            rospy.logerr('Serial read error, expecting 1 byte: got: {}'.format(byte))
+        return ord(byte) if len(byte) == 1 else byte
 
     def read_bytearray(self, length):
         return bytearray(self._serial.read(length))
