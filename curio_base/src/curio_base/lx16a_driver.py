@@ -85,7 +85,6 @@ class LX16ADriver(object):
     SERVO_LED_ERROR_READ        = 36
 
     def __init__(self):
-        pass
         self._serial = serial.Serial()
     
     # Serial port 

@@ -82,16 +82,11 @@
 
 import curio_base.lx16a_driver
 import rospy
-import time
 
 SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0
 SERVO_ID            = 11
-
-# Current millis
-def millis():
-    return int(round(time.time() * 1000))
 
 # Convert LX-16A position to angle in deg
 def pos_to_deg(pos):
@@ -125,14 +120,14 @@ def test_servo_properties(servo_driver):
     # Run servo in motor (continuous) mode
     rospy.loginfo('Set motor speed')
     speed = 800
-    run_time = 2000
+    run_duration = rospy.Duration(2)
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
     rospy.loginfo("position: {}, angle: {}".format(pos, angle))
     servo_driver.motor_mode_write(SERVO_ID, speed)
 
-    start = millis()
-    while millis() < start + run_time:
+    start = rospy.get_rostime()
+    while rospy.get_rostime() < start + run_duration:
         pos = servo_driver.pos_read(SERVO_ID)
         angle = pos_to_deg(pos)
         rospy.loginfo("position: {}, angle: {}".format(pos, angle))
@@ -156,7 +151,7 @@ def test_move_time_write(servo_driver):
 
     # Min angle in 1000 ms
     servo_driver.move_time_write(SERVO_ID, 0, 1000)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -164,7 +159,7 @@ def test_move_time_write(servo_driver):
 
     # Max angle in 1000 ms
     servo_driver.move_time_write(SERVO_ID, 1000, 1000)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -172,7 +167,7 @@ def test_move_time_write(servo_driver):
 
     # Min angle in 100 ms
     servo_driver.move_time_write(SERVO_ID, 0, 100)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -180,7 +175,7 @@ def test_move_time_write(servo_driver):
 
     # Max angle in 100 ms
     servo_driver.move_time_write(SERVO_ID, 1000, 100)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -201,7 +196,7 @@ def test_move_time_read(servo_driver):
     servo_driver.move_time_write(SERVO_ID, 0, 1000)
     pos, move_time = servo_driver.move_time_read(SERVO_ID)
     rospy.loginfo("pos: {}, time: {}".format(pos, move_time))
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -211,7 +206,7 @@ def test_move_time_read(servo_driver):
     servo_driver.move_time_write(SERVO_ID, 1000, 1000)
     pos, move_time = servo_driver.move_time_read(SERVO_ID)
     rospy.loginfo("pos: {}, time: {}".format(pos, move_time))
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -221,7 +216,7 @@ def test_move_time_read(servo_driver):
     servo_driver.move_time_write(SERVO_ID, 0, 100)
     pos, move_time = servo_driver.move_time_read(SERVO_ID)
     rospy.loginfo("pos: {}, time: {}".format(pos, move_time))
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -231,7 +226,7 @@ def test_move_time_read(servo_driver):
     servo_driver.move_time_write(SERVO_ID, 1000, 100)
     pos, move_time = servo_driver.move_time_read(SERVO_ID)
     rospy.loginfo("pos: {}, time: {}".format(pos, move_time))
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -251,9 +246,9 @@ def test_move_time_wait_write(servo_driver):
     # Min angle in 1000 ms
     servo_driver.move_time_wait_write(SERVO_ID, 0, 1000)
     rospy.loginfo("waiting...")
-    time.sleep(1.5)
+    rospy.sleep(1.5)
     servo_driver.move_start(SERVO_ID)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -262,9 +257,9 @@ def test_move_time_wait_write(servo_driver):
     # Max angle in 1000 ms
     servo_driver.move_time_wait_write(SERVO_ID, 1000, 1000)
     rospy.loginfo("waiting...")
-    time.sleep(1.5)
+    rospy.sleep(1.5)
     servo_driver.move_start(SERVO_ID)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -273,9 +268,9 @@ def test_move_time_wait_write(servo_driver):
     # Min angle in 100 ms
     servo_driver.move_time_wait_write(SERVO_ID, 0, 100)
     rospy.loginfo("waiting...")
-    time.sleep(1.5)
+    rospy.sleep(1.5)
     servo_driver.move_start(SERVO_ID)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -284,9 +279,9 @@ def test_move_time_wait_write(servo_driver):
     # Max angle in 100 ms
     servo_driver.move_time_wait_write(SERVO_ID, 1000, 100)
     rospy.loginfo("waiting...")
-    time.sleep(1.5)
+    rospy.sleep(1.5)
     servo_driver.move_start(SERVO_ID)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -306,11 +301,11 @@ def test_move_time_wait_read(servo_driver):
     # Min angle in 1000 ms
     servo_driver.move_time_wait_write(SERVO_ID, 0 if pos > 500 else 1000, 1000)
     rospy.loginfo("waiting...")
-    time.sleep(1.5)
+    rospy.sleep(1.5)
     servo_driver.move_start(SERVO_ID)
     # pos, move_time = servo_driver.move_time_wait_read(SERVO_ID)
     # rospy.loginfo("pos: {}, time: {}".format(pos, move_time))
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -326,7 +321,7 @@ def test_move_stop(servo_driver):
 
     # Run the servo with speed 500
     servo_driver.motor_mode_write(SERVO_ID, 500)
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -337,7 +332,7 @@ def test_move_stop(servo_driver):
 
     # Stop
     servo_driver.move_stop(SERVO_ID)
-    time.sleep(1.0)
+    rospy.sleep(1.0)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -457,7 +452,7 @@ def test_mode_read(servo_driver):
     mode, speed = servo_driver.mode_read(SERVO_ID)
     rospy.loginfo("mode: {}, speed: {}".format(mode, speed))
 
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -474,7 +469,7 @@ def test_mode_read(servo_driver):
     mode, speed = servo_driver.mode_read(SERVO_ID)
     rospy.loginfo("mode: {}, speed: {}".format(mode, speed))
 
-    time.sleep(1.5)
+    rospy.sleep(1.5)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -486,7 +481,7 @@ def test_mode_read(servo_driver):
 
     # Stop
     servo_driver.motor_mode_write(SERVO_ID, 0)
-    time.sleep(1.0)
+    rospy.sleep(1.0)
 
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
@@ -518,7 +513,7 @@ def test_led_ctrl(servo_driver):
 
     # Write off
     servo_driver.led_ctrl_write(SERVO_ID, 1)
-    time.sleep(1.0)
+    rospy.sleep(1.0)
 
     # Read
     led_state = servo_driver.led_ctrl_read(SERVO_ID)
@@ -526,7 +521,7 @@ def test_led_ctrl(servo_driver):
 
     # Write on
     servo_driver.led_ctrl_write(SERVO_ID, 0)
-    time.sleep(1.0)
+    rospy.sleep(1.0)
 
     # Read
     led_state = servo_driver.led_ctrl_read(SERVO_ID)

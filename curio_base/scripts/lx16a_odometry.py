@@ -38,23 +38,18 @@
 ''' Lewansoul LX-16A driver odometry.
 '''
 
-import math
-import time
 import curio_base.lx16a_driver
+import math
+import rospy
 
 SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0
 SERVO_ID            = 11
 
-# Current millis
-def millis():
-    return int(round(time.time() * 1000))
-
 # Convert LX-16A position to angle in deg
 def pos_to_deg(pos):
     return pos * 240.0 / 1000.0
-
 
 class LX16AEncoder(object):
     ''' Pseudo encoder for LX-16A servo
@@ -108,43 +103,40 @@ if __name__ == '__main__':
     servo_driver.set_timeout(SERVO_TIMEOUT)
     servo_driver.open()
     
-    rospy.loginfo('\nOpen connection to servo board')
+    rospy.loginfo('Open connection to servo board')
     rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))
     rospy.loginfo('port: {}'.format(servo_driver.get_port()))
     rospy.loginfo('baudrate: {}'.format(servo_driver.get_baudrate()))
     rospy.loginfo('timeout: {}'.format(servo_driver.get_timeout()))
 
     # Run servo in motor (continuous) mode
-    rospy.loginfo('\nSet motor duty')
+    rospy.loginfo('Set motor duty')
     duty = 200
     servo_driver.motor_mode_write(SERVO_ID, duty)
-    time.sleep(1)
+    rospy.sleep(1)
     duty_freq = 0.25
     duty_max = 300
-    run_time = 10000
+    run_duration = rospy.Duration(10.0)
     servo_driver.motor_mode_write(SERVO_ID, duty)
     rospy.loginfo('duty: {}'.format(duty))
 
-    start = millis()
+    start = rospy.get_rostime()
     last_time = start
     last_pos  = servo_driver.pos_read(SERVO_ID)
 
     encoder = LX16AEncoder()
 
-    while millis() < start + run_time:
+    while rospy.get_rostime() < start + run_duration:
         #  Time varying duty
-        current_time = millis()
-        t = (current_time - start)/1000.0
+        current_time = rospy.get_rostime()
+        dt = current_time - start
         last_time = current_time
 
-        duty = int(duty_max * math.sin(2.0 * math.pi * duty_freq * t)) 
+        duty = int(duty_max * math.sin(2.0 * math.pi * duty_freq * dt.to_sec())) 
         servo_driver.motor_mode_write(SERVO_ID, duty)
 
         current_pos = servo_driver.pos_read(SERVO_ID)
         encoder.update(current_time - start, duty, current_pos)
-
-
-
 
     # Stop
     servo_driver.motor_mode_write(SERVO_ID, 0)
@@ -154,5 +146,5 @@ if __name__ == '__main__':
 
     # Shutdown
     servo_driver.close()
-    rospy.loginfo('\nClose connection to servo board')
+    rospy.loginfo('Close connection to servo board')
     rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))
