@@ -35,15 +35,13 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-''' Lewansoul LX-16A calibration.
+''' Lewansoul LX-16A encoder calibration.
 
-    This module contains a set of tests for the LX-16A servo driver.
-    The tests operate in both position and continuous mode, so the servo 
-    should be free to rotate continuously and run without load.
+    This module contains a ROS node for generating training sets for 
+    calibrating a LX-16A servo encoder.
 
-    The module runs as a ROS node, this is because the LX-16A driver uses
-    rospy logging to report warnings and errors so we need to have roscore
-    running in order to see these on the terminal.
+    In this node the servo operates in continuous mode, so  
+    must be free to rotate continuously and run without load.
 
     Usage:
 
@@ -51,9 +49,13 @@
 
     $ roscore
 
-    2. Start driver test
+    2. Start the rotary encoder rosserial node
 
-    $ rosrun curio_base lx16a_driver_test.py 
+    $ roslaunch curio_base rotary_encoder.launch
+
+    3. Start the encoder calibration node
+
+    $ rosrun curio_base lx16a_encoder_calibration.py 
 
     Notes:
 
@@ -80,172 +82,112 @@
 
 '''
 
+import csv
 import curio_base.lx16a_driver
-import io
 import rospy
 import serial
+from std_msgs.msg import Int64
 
 SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0
 SERVO_ID            = 111
 
-ENCODER_SERIAL_PORT   = '/dev/cu.usbmodemFD5121'
-ENCODER_BAUDRATE      = 115200
-ENCODER_TIMEOUT       = 1.0
-
 # Convert LX-16A position to angle in deg
 def pos_to_deg(pos):
     return pos * 240.0 / 1000.0
 
-class EncoderDriver(object):
+class EncoderController(object):
+    DATA_BUFFER_SIZE = 100
+
     def __init__(self):
-        self._serial = serial.Serial()
-        self._sio = io.TextIOWrapper(io.BufferedRWPair(self._serial, self._serial))
-        self._count = 0
-        self._count_a = 0
-        self._count_b = 0
-        self._count_z = 0
-    
-    # Serial port 
-    def open(self):
-        self._serial.open()
+        # Properties
+        self.filename = "./data/lx16a_data.csv"
+        self._data = []
+        self._data_size = 0
 
-    def close(self):
-        if self._serial.is_open:
-            self._serial.close()
+        # Subscribers
+        self._encoder_msg = Int64()
+        self._encoder_sub = rospy.Subscriber('/encoder', Int64, self.encoder_callback)
 
-    def is_open(self):
-        return self._serial.is_open
+        # Initialise servo driver
+        self._servo_driver = curio_base.lx16a_driver.LX16ADriver()
+        self._servo_driver.set_port(SERVO_SERIAL_PORT)
+        self._servo_driver.set_baudrate(SERVO_BAUDRATE)
+        self._servo_driver.set_timeout(SERVO_TIMEOUT)
+        self._servo_driver.open()
+        
+        rospy.loginfo('Open connection to servo board')
+        rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
+        rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
+        rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
+        rospy.loginfo('timeout: {}'.format(self._servo_driver.get_timeout()))
 
-    def get_port(self):
-        return self._serial.port
+    def shutdown(self):
+        # Stop servo
+        rospy.loginfo('Stop servo')
+        self._servo_driver.motor_mode_write(SERVO_ID, 0)
 
-    def set_port(self, port):
-        self._serial.port = port
+        # Write remaining data
+        self.write_data()
 
-    def get_baudrate(self):
-        return self._serial.baudrate
+        # Leave python to clean up the servo driver serial connection.
+        # Closing the servo driver manually may cause other running threads to error. 
+        # self._servo_driver.close()
+        # rospy.loginfo('Close connection to servo board')
+        # rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
 
-    def set_baudrate(self, baudrate):
-        self._serial.baudrate = baudrate
+    def encoder_callback(self, msg):
+        self._encoder_msg = msg
 
-    def get_timeout(self):
-        return self._serial.timeout
+    def control_loop(self, event):
+        # Run servo in motor (continuous) mode
+        duty = 250
+        self._servo_driver.motor_mode_write(SERVO_ID, duty)
 
-    def set_timeout(self, timeout):
-        self._serial.timeout = timeout
+        pos = self._servo_driver.pos_read(SERVO_ID)
+        count = self._encoder_msg.data
+        rospy.loginfo("duty: {}, pos: {}, count: {}".format(duty, pos, count % 4096))
 
-    def reset_input_buffer(self):
-        self._serial.reset_input_buffer()
+        # Buffer data        
+        self._data.append([rospy.get_rostime(), duty, pos, count])
+        self._data_size = self._data_size + 1
+        if (self._data_size == EncoderController.DATA_BUFFER_SIZE):
+            self.write_data()
 
-    def update(self):
-        # self._sio.flush()
-        # line = self._sio.readline()
-        # self._serial.reset_input_buffer()
-        line = self._serial.readline().rstrip()
-        self._count = line
+    def write_data(self):
+        with open(self.filename, 'ab') as csvfile:
+            # Write data
+            writer = csv.writer(csvfile, delimiter=',')
+            for row in self._data:
+                writer.writerow(row)
 
-        # sep = line.split(',')
-        # rospy.loginfo(line)
-        # rospy.loginfo(sep)
-        # if len(sep) > 0:
-        #     self._count = sep[0]
-        #     self._count_a = int(sep[1])
-        #     self._count_b = int(sep[2])
-        #     self._count_z = int(sep[3])
-
-    def count(self):
-        return self._count
-
-    def count_a(self):
-        return self._count_a
-
-    def count_a(self):
-        return self._count_b
-
-    def count_z(self):
-        return self._count_z
-
-def run(servo_driver, encoder_driver):
-    rospy.loginfo('Running...')
-
-    # Run servo in motor (continuous) mode
-    rospy.loginfo('Set motor duty')
-    duty = 250
-    servo_driver.motor_mode_write(SERVO_ID, duty)
-    duty_freq = 0.25
-    duty_max = 300
-    run_duration = rospy.Duration(10.0)
-
-    start = rospy.get_rostime()
-    last_time = start
-    last_pos  = servo_driver.pos_read(SERVO_ID)
-
-    # encoder_driver.reset_input_buffer()
-    count = 0
-    while rospy.get_rostime() < start + run_duration:
-        count = count + 1
-        current_time = rospy.get_rostime()
-        dt = current_time - last_time
-        last_time = current_time
-
-        #  Time varying duty
-        # duty = int(duty_max * math.sin(2.0 * math.pi * duty_freq * t)) 
-        # servo_driver.motor_mode_write(SERVO_ID, duty)
-
-        pos = servo_driver.pos_read(SERVO_ID)
-        # encoder_driver.update()
-        # count = encoder_driver.count()
-        # rospy.loginfo("time: {}, dt: {}, position: {}".format(current_time, dt.to_sec(), pos))
-
-    # Average update time
-    rospy.loginfo("av. update time: {}".format(run_duration.to_sec()/count))
-
-
-    # Stop
-    servo_driver.motor_mode_write(SERVO_ID, 0)
-    pos = servo_driver.pos_read(SERVO_ID)
- 
+            # Reset buffer
+            self._data_size = 0
+            self._data = []
 
 if __name__ == '__main__':
-    rospy.init_node('lx_16a_calibration_node')
-    rospy.loginfo('Lewansoul LX-16A calibration')
- 
-    # Initialise servo driver
-    servo_driver = curio_base.lx16a_driver.LX16ADriver()
-    servo_driver.set_port(SERVO_SERIAL_PORT)
-    servo_driver.set_baudrate(SERVO_BAUDRATE)
-    servo_driver.set_timeout(SERVO_TIMEOUT)
-    servo_driver.open()
-    
-    rospy.loginfo('Open connection to servo board')
-    rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))
-    rospy.loginfo('port: {}'.format(servo_driver.get_port()))
-    rospy.loginfo('baudrate: {}'.format(servo_driver.get_baudrate()))
-    rospy.loginfo('timeout: {}'.format(servo_driver.get_timeout()))
+    rospy.init_node('lx_16a_encoder_calibration')
+    rospy.loginfo('Lewansoul LX-16A encoder calibration')
 
-    # Initialise encoder driver
-    encoder_driver = EncoderDriver()
-    # encoder_driver.set_port(ENCODER_SERIAL_PORT)
-    # encoder_driver.set_baudrate(ENCODER_BAUDRATE)
-    # encoder_driver.set_timeout(ENCODER_TIMEOUT)
-    # encoder_driver.open()
-    
-    # rospy.loginfo('Open connection to encoder')
-    # rospy.loginfo('is_open: {}'.format(encoder_driver.is_open()))
-    # rospy.loginfo('port: {}'.format(encoder_driver.get_port()))
-    # rospy.loginfo('baudrate: {}'.format(encoder_driver.get_baudrate()))
-    # rospy.loginfo('timeout: {}'.format(encoder_driver.get_timeout()))
+    # Encoder controller
+    encoder_controller = EncoderController()
+    encoder_controller.file_name = '~/Code/robotics/curio/data/lx16a_duty_250.csv'
 
-    # Run.
-    run(servo_driver, encoder_driver)
 
-    # Shutdown
-    servo_driver.close()
-    rospy.loginfo('Close connection to servo board')
-    rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))
+    # Register shutdown behaviour
+    def shutdown_callback():
+        rospy.loginfo('Shutdown lx_16a_encoder_calibration...')
+        encoder_controller.shutdown()
 
-    # encoder_driver.close()
-    # rospy.loginfo('Close connection to encoder')
-    # rospy.loginfo('is_open: {}'.format(encoder_driver.is_open()))
+    rospy.on_shutdown(shutdown_callback)
+
+    # Start the encoder control loop
+    control_frequency = 50.0
+
+    rospy.loginfo('Starting encoder control loop at {} Hz'.format(control_frequency))
+    control_timer = rospy.Timer(
+        rospy.Duration(1.0 / control_frequency),
+        encoder_controller.control_loop)
+
+    rospy.spin()

@@ -45,7 +45,10 @@ include_directories(
 # Install
 
 catkin_install_python(PROGRAMS
-    nodes/curio_base_motor_node
+    nodes/curio_motor_controller
     scripts/lx16a_driver_test.py
+    scripts/lx16a_encoder_calibration.py
+    scripts/lx16a_make_training_data.py
+    scripts/lx16a_odometry.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

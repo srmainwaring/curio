@@ -1,4 +1,10 @@
-# Curio base parameters
+# Curio (python) motor controller node parameters
+
+# Motor driver port settings
+# port: /dev/cu.wchusbserialfd5110
+port: /dev/ttyUSB1
+baudrate: 115200
+timeout: 1.0
 
 # Update frequencies: control loop
 control_frequency: 10.0
@@ -7,12 +13,23 @@ control_frequency: 10.0
 max_linear_speed: 1.0
 max_linear_accel: 1.0
 
-# Wheel geometry / servo location
+#  ROS frame convention for mobile robots:
+# 
+#                         x
+#                         ^
+#                         | longatudinal dir
+#                         |
+#  lateral dir  y <-------
+# 
+# 
+# Wheel geometry / servo location. The numbers are servo serial ids:
+# two digits for wheel servos, three digits for steering servos.
+# 
 #     <- front wheel lat separation ->
 #    11 / 111 |-----|-----| 21 / 212   ---
 #                   |                   ^
 #                   |             front wheel lon separation
-#       <- mid wheel lat separation ->      v
+#       <- mid wheel lat separation ->  v
 #        12 |-------|-------| 22       ---
 #                   |                   ^
 #                   |             back wheel lon separation
@@ -28,8 +45,10 @@ front_wheel_lon_separation: 0.28
 back_wheel_lat_separation: 0.47
 back_wheel_lon_separation: 0.25
 
-# Servo configuration
-
+# Steering servo configuration
+#  - The offsets should be set so that a LX-16A servo command of 500
+#    will set the corner wheels to face ahead (i.e. the wheel rotation
+#    axis is parallel to the robot's y-axis using ROS base frame convetions)
 steer_servo_offsets: [
     {   
         id: 111,
@@ -49,8 +68,3 @@ steer_servo_offsets: [
     }
 ]
 
-# Motor driver settings
-# port: /dev/cu.wchusbserialfd5110
-port: /dev/ttyUSB1
-baudrate: 115200
-timeout: 1.0

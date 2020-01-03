@@ -136,7 +136,7 @@ class MotorController(object):
     SERVO_SPEED_MAX = 1000.0
 
     # Steering angle limits
-    REVERSE_SERVO_ANGLE = 90.0     # The angle at which we reverse the servo by 180 deg.
+    REVERSE_SERVO_ANGLE = 90.0      # The angle at which we reverse the servo by 180 deg.
     SERVO_ANGLE_MAX = 120.0         # Maximum (abs) angle at which the servo can be set.
     SERVO_POS_MIN = 0.0             # Minimum servo position (servo units).
     SERVO_POS_MAX = 1000.0          # Maximum servo position (servo units).
@@ -388,39 +388,12 @@ class MotorController(object):
 
         event       A rospy.Timer event. See http://wiki.ros.org/rospy/Overview/Time for details.
         '''
-        # rospy.loginfo('control_loop: last_expected: {}, last_real: {}, current_expected: {}, current_real: {}, last_duration: {}'
-        #     .format(
-        #         event.last_expected,
-        #         event.last_real,
-        #         event.current_expected,
-        #         event.current_real,
-        #         event.last_duration))
-        
-        # Read
-
-        # Update (PID control etc.)
-
         # Write
-        motor_controller.move(self._cmd_vel_msg.linear.x, self._cmd_vel_msg.angular.z)
+        self.move(self._cmd_vel_msg.linear.x, self._cmd_vel_msg.angular.z)
 
+    def shutdown(self):
+        ''' Called by the node shutdown hook on exit.
+        '''
+        # Stop all servos - @TODO add e-stop with latch.
+        self.stop()
 
-
-
-if __name__ == '__main__':
-    rospy.init_node('curio_base_motor_node')
-    rospy.loginfo('Starting curio base motor node')
-
-    # Motor controller
-    motor_controller = MotorController()
-
-    # Start the motor control loop
-    control_frequency = 10.0
-    if rospy.has_param('~control_frequency'):
-        control_frequency = rospy.get_param('~control_frequency')
-
-    rospy.loginfo('Starting motor control loop at {} Hz'.format(control_frequency))
-    control_timer = rospy.Timer(
-        rospy.Duration(1.0 / control_frequency),
-        motor_controller.control_loop)
-
-    rospy.spin()
