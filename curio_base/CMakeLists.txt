@@ -23,7 +23,7 @@ catkin_python_setup()
 # Declare catkin configuration
 
 catkin_package(
-    INCLUDE_DIRS include
+    # INCLUDE_DIRS include
     LIBRARIES 
     CATKIN_DEPENDS
         rospy
