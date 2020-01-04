@@ -16,9 +16,7 @@
 
  <launch>
     <arg name="model" default="$(find curio_description)/urdf/curio.urdf.xacro"/>
-    <!-- <arg name="rvizconfig" default="$(find curio_viz)/rviz/robot.rviz" /> -->
 
-    <!-- BEGIN CONTROL -->
     <!-- Load the robot description -->
     <include file="$(find curio_description)/launch/description.launch" >
         <arg name="model" value="$(arg model)"/>
@@ -27,38 +25,20 @@
     <!-- Load controller configuration parameters -->
     <rosparam command="load" file="$(find curio_control)/config/control_ackermann_drive.yaml" />
     <rosparam command="load" file="$(find curio_control)/config/control_joint_state.yaml" />
-    <!-- <rosparam command="load" file="$(find curio_control)/config/control_joint_pid.yaml" /> -->
 
     <!-- Spawn the controllers  -->
     <node name="curio_controller_spawner" pkg="controller_manager" type="spawner"
         args="joint_state_publisher ackermann_drive_controller" />
-    <!-- <node name="curio_controller_spawner" pkg="controller_manager" type="spawner"
-        args="joint_state_publisher" /> -->
-
-    <!-- Launch EKF for localization
-    
-        The robot_localization node also broadcasts the transform from:
-            odom -> base_link
-    -->    
-    <!-- <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_local">
-        <rosparam command="load" file="$(find curio_control)/config/ekf_localization_local.yaml" />
-    </node> -->
 
     <!-- Launch the robot state publisher -->
     <node pkg="robot_state_publisher" type="robot_state_publisher"  name="robot_state_publisher">
         <param name="publish_frequency" type="double" value="50.0" />
     </node>
 
-
-    <!-- END CONTROL -->
-
     <!-- Launch a rqt steering GUI for publishing to /ackermann_drive_controller/cmd_vel -->
     <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
         <param name="default_topic" value="/ackermann_drive_controller/cmd_vel"/>
     </node>
-
-    <!--  Launch rviz-->
-    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" /> -->
 
     <!-- Spawn robot in Gazebo -->
     <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model"

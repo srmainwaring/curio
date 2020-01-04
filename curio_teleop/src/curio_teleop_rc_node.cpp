@@ -34,139 +34,128 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
+#include "curio_teleop/curio_teleop_rc_node.h"
 #include <curio_msgs/Channels.h>
-
-#include <ros/ros.h>
 #include <geometry_msgs/Twist.h>
-
+#include <ros/ros.h>
 #include <string>
 #include <vector>
 
-// Publisher
-geometry_msgs::Twist twist_msg;
-ros::Publisher twist_pub;
-
-// Service Client
-ros::ServiceClient motor_client; 
-std::vector<int> channels;
-
-bool have_new = false;
-bool is_teleop_disabled = false;
-
-// Defaults
-int pwm_min = 1100;
-int pwm_max = 1900;
-int num_channels = 12;
-int linear_x_channel = 1;
-int angular_z_channel = 2;
-double linear_x_max_velocity = 0.5;
-double angular_z_max_velocity = 4.0;
-int disable_teleop_channel = 5;
-
-double map(double x, double in_min, double in_max, double out_min, double out_max)
+namespace curio_teleop
 {
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
-void channelsCallback(const curio_msgs::Channels::ConstPtr &msg)
-{    
-    ROS_DEBUG_STREAM("ch1: " << msg->channels[0]
-        << ", ch2: " << msg->channels[1]
-        << ", ch3: " << msg->channels[2]
-        << ", ch4: " << msg->channels[3]
-        << ", ch5: " << msg->channels[4]
-        << ", ch6: " << msg->channels[5]);
-
-        if (msg->channels.size() < num_channels)
-        {
-            ROS_ERROR_STREAM("curio_msgs::Channels message must contain at least: "
-                << num_channels << " channels");
-        }
-        for (int i=0; i<num_channels; ++i)
-        {
-            channels[i] = msg->channels[i];
-        }
-        have_new = true;
-}
-
-void publishMessages()
-{
-    if (have_new)
+    TeleopRC::TeleopRC(ros::NodeHandle &nh, ros::NodeHandle &private_nh) :
+        nh_(nh),
+        private_nh_(private_nh)
     {
-        have_new = false;
+        // Get parameters.
+        private_nh_.param<int>("num_channels", num_channels_, num_channels_);
+        private_nh_.param<int>("linear/x/channel", linear_x_channel_, linear_x_channel_);
+        private_nh_.param<int>("angular/z/channel", angular_z_channel_, angular_z_channel_);
+        private_nh_.param<double>("linear/x/max_velocity", linear_x_max_velocity_, linear_x_max_velocity_);
+        private_nh_.param<double>("angular/z/max_velocity", angular_z_max_velocity_, angular_z_max_velocity_);
+        private_nh_.param<int>("disable_teleop/channel", disable_teleop_channel_, disable_teleop_channel_);    
 
-        // Check the off channel - do not publish if off.
-        if (channels[disable_teleop_channel - 1] > 1800)
+        // Resize storage for channel PWM data. Set default midpoint to 1500.
+        int max_channel = 0;
+        max_channel = std::max(max_channel, linear_x_channel_);
+        max_channel = std::max(max_channel, angular_z_channel_);
+        max_channel = std::max(max_channel, disable_teleop_channel_);
+        if (num_channels_ < max_channel)
         {
-            if (!is_teleop_disabled)
+            ROS_ERROR_STREAM("Parameter 'num_channels' must be at least: " << max_channel);
+        }
+        channels_.resize(num_channels_, 1500);    
+
+        // Subscribers.
+        ros::Subscriber channels_sub = nh.subscribe("channels", 10, &TeleopRC::channelsCallback, this);
+
+        // Publishers.
+        twist_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+    }
+
+
+    double TeleopRC::map(double x, double in_min, double in_max, double out_min, double out_max) const
+    {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    void TeleopRC::channelsCallback(const curio_msgs::Channels::ConstPtr &msg)
+    {    
+        ROS_DEBUG_STREAM("ch1: " << msg->channels[0]
+            << ", ch2: " << msg->channels[1]
+            << ", ch3: " << msg->channels[2]
+            << ", ch4: " << msg->channels[3]
+            << ", ch5: " << msg->channels[4]
+            << ", ch6: " << msg->channels[5]);
+
+            if (msg->channels.size() < num_channels_)
             {
-                ROS_INFO("RC teleop disabled");
-                is_teleop_disabled = true;
+                ROS_ERROR_STREAM("curio_msgs::Channels message must contain at least: "
+                    << num_channels_ << " channels");
             }
-            return;
-        }
-        else if (is_teleop_disabled)
+            for (int i=0; i<num_channels_; ++i)
+            {
+                channels_[i] = msg->channels[i];
+            }
+            have_new_ = true;
+    }
+
+    void TeleopRC::publishMessages()
+    {
+        if (have_new_)
         {
-            ROS_INFO("RC teleop enabled");
-            is_teleop_disabled = false;
+            have_new_ = false;
+
+            // Check the off channel - do not publish if off.
+            if (channels_[disable_teleop_channel_ - 1] > 1800)
+            {
+                if (!is_teleop_disabled_)
+                {
+                    ROS_INFO("Teleop RC disabled");
+                    is_teleop_disabled_ = true;
+                }
+                return;
+            }
+            else if (is_teleop_disabled_)
+            {
+                ROS_INFO("Teleop RC enabled");
+                is_teleop_disabled_ = false;
+            }
+
+            // Calculate the linear velocity.
+            double lin_x = map(
+                channels_[linear_x_channel_ - 1],
+                pwm_min_, pwm_max_, -linear_x_max_velocity_, linear_x_max_velocity_);
+
+            // Calculate the angular velocity.
+            double ang_z = map(
+                channels_[angular_z_channel_ - 1],
+                pwm_min_, pwm_max_,
+                -angular_z_max_velocity_, angular_z_max_velocity_);
+
+            // Publish the twist message.
+            twist_msg_.linear.x = lin_x;
+            twist_msg_.angular.z = ang_z;
+            twist_pub_.publish(twist_msg_);
         }
-
-        // Calculate the linear velocity.
-        double lin_x = map(
-            channels[linear_x_channel - 1],
-            pwm_min, pwm_max, -linear_x_max_velocity, linear_x_max_velocity);
-
-        // Calculate the angular velocity.
-        double ang_z = map(
-            channels[angular_z_channel - 1],
-            pwm_min, pwm_max,
-            -angular_z_max_velocity, angular_z_max_velocity);
-
-        // Publish the twist message.
-        twist_msg.linear.x = lin_x;
-        twist_msg.angular.z = ang_z;
-        twist_pub.publish(twist_msg);
     }
 }
 
 int main(int argc, char *argv[])
 {
-    ROS_INFO("Curio Teleop RC Node");
+    ROS_INFO("Starting Curio Teleop RC Node");
 
     // Initialise node.
     ros::init(argc, argv, "curio_teleop_rc_node");
     ros::NodeHandle nh, private_nh("~");
 
-    // Get parameters.
-    private_nh.param<int>("num_channels", num_channels, num_channels);
-    private_nh.param<int>("linear/x/channel", linear_x_channel, linear_x_channel);
-    private_nh.param<int>("angular/z/channel", angular_z_channel, angular_z_channel);
-    private_nh.param<double>("linear/x/max_velocity", linear_x_max_velocity, linear_x_max_velocity);
-    private_nh.param<double>("angular/z/max_velocity", angular_z_max_velocity, angular_z_max_velocity);
-    private_nh.param<int>("disable_teleop/channel", disable_teleop_channel, disable_teleop_channel);    
-
-    // Resize storage for channel PWM data. Set default midpoint to 1500.
-    int max_channel = 0;
-    max_channel = std::max(max_channel, linear_x_channel);
-    max_channel = std::max(max_channel, angular_z_channel);
-    max_channel = std::max(max_channel, disable_teleop_channel);
-    if (num_channels < max_channel)
-    {
-        ROS_ERROR_STREAM("Parameter 'num_channels' must be at least: " << max_channel);
-    }
-    channels.resize(num_channels, 1500);    
-
-    // Subscribers.
-    ros::Subscriber channels_sub = nh.subscribe("channels", 10, channelsCallback);
-
-    // Publishers.
-    twist_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+    curio_teleop::TeleopRC teleop_rc(nh, private_nh);
 
     // Loop.
     ros::Rate loop_rate(50);
     while (ros::ok())
     {
-        publishMessages();
+        teleop_rc.publishMessages();
         ros::spinOnce();
         loop_rate.sleep();
     }
