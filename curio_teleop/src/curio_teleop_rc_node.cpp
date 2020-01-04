@@ -55,7 +55,7 @@ namespace curio_teleop
         private_nh_.param<double>("angular/z/max_velocity", angular_z_max_velocity_, angular_z_max_velocity_);
         private_nh_.param<int>("disable_teleop/channel", disable_teleop_channel_, disable_teleop_channel_);    
 
-        // Resize storage for channel PWM data. Set default midpoint to 1500.
+        // Resize storage for channel PWM data. Set default midpoint to 1500 µs.
         int max_channel = 0;
         max_channel = std::max(max_channel, linear_x_channel_);
         max_channel = std::max(max_channel, angular_z_channel_);

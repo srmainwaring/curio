@@ -52,7 +52,8 @@ namespace curio_teleop
     /// when teleoperation is enabled.
     ///
     /// Parameters may be used to assign RC transmitter switches to
-    /// enable / disable RC teleop control. 
+    /// enable / disable RC teleop control.
+    ///
     class TeleopRC
     {
     public:
