@@ -52,6 +52,9 @@ def map(x, in_min, in_max, out_min, out_max):
 def clamp(x, lower, upper):
     return min(max(x, lower), upper)
 
+def caseless_equal(left, right):
+    return left.upper() == right.upper()
+
 def turning_radius_and_rate(v_b, omega_b, d):
     ''' Calculate the turning radius and rate of turn about
     the instantaneous centre of curvature (ICC).
@@ -112,8 +115,32 @@ class Servo(object):
         self.lon_label = lon_label
         self.lat_label = lat_label
         self.orientation = orientation
-        self.offset = None
-        self.position = None
+        self.offset = 0.0
+        self.position = [0.0, 0.0]
+
+    @staticmethod
+    def to_lat_label(label_str):
+        ''' Convert a lateral label string to a enumerated value. 
+        '''
+        if caseless_equal(label_str, 'LEFT'):
+            return Servo.LEFT
+        if caseless_equal(label_str, 'RIGHT'):
+            return Servo.RIGHT
+        else:
+            return -1
+ 
+    @staticmethod
+    def to_lon_label(label_str):
+        ''' Convert a longitudinal label string to a enumerated value. 
+        '''
+        if caseless_equal(label_str, 'FRONT'):
+            return Servo.FRONT
+        if caseless_equal(label_str, 'MID'):
+            return Servo.MID
+        if caseless_equal(label_str, 'BACK'):
+            return Servo.BACK
+        else:
+            return -1
 
 class MotorController(object):
     ''' Motor controller for 6-wheel powered Ackerman steering.
@@ -131,9 +158,13 @@ class MotorController(object):
     REVERSE_SERVO_ANGLE should be set somewhere around 90 deg.
     '''
 
-    # Velocity limits
-    VEL_MAX = 1.0
-    SERVO_SPEED_MAX = 1000.0
+    # Velocity limits for the rover
+    LINEAR_VEL_MAX =  0.37
+    ANGULAR_VEL_MAX = 1.45
+
+    # Servo limits - LX-16A has max angular velocity of approx 1 revolution per second
+    SERVO_ANG_VEL_MAX = 2 * math.pi
+    SERVO_SPEED_MAX = 1000
 
     # Steering angle limits
     REVERSE_SERVO_ANGLE = 90.0      # The angle at which we reverse the servo by 180 deg.
@@ -144,72 +175,94 @@ class MotorController(object):
     def __init__(self):
         rospy.loginfo('Initialising motor controller...')
 
-        # Steering offsets (offsets are in servo position units)
-        self._steer_servo_offsets = [
-            {'id': 111, 'offset': 0},
-            {'id': 121, 'offset': 0},
-            {'id': 211, 'offset': 0},
-            {'id': 231, 'offset': 0},
-        ]
-        if rospy.has_param('~steer_servo_offsets'):
-            self._steer_servo_offsets = rospy.get_param('~steer_servo_offsets')
+        # Wheel geometry on a flat surface - defaults
+        self._wheel_radius                = 0.060
+        self._mid_wheel_lat_separation    = 0.052
+        self._front_wheel_lat_separation  = 0.047
+        self._front_wheel_lon_separation  = 0.028
+        self._back_wheel_lat_separation   = 0.047
+        self._back_wheel_lon_separation   = 0.025
 
-        for offset in self._steer_servo_offsets:
-            rospy.loginfo('steer offset: id: {}, offset: {}'.format(offset['id'], offset['offset']))
-            
-        # Wheel geometry on a flat surface - all parameters required
-        self._wheel_radius                = rospy.get_param('~wheel_radius')
-        self._wheel_width                 = rospy.get_param('~wheel_width')
-        self._mid_wheel_lat_separation    = rospy.get_param('~mid_wheel_lat_separation')
-        self._front_wheel_lat_separation  = rospy.get_param('~front_wheel_lat_separation') 
-        self._front_wheel_lon_separation  = rospy.get_param('~front_wheel_lon_separation')
-        self._back_wheel_lat_separation   = rospy.get_param('~back_wheel_lat_separation')
-        self._back_wheel_lon_separation   = rospy.get_param('~back_wheel_lon_separation')
+        if rospy.has_param('~wheel_radius'):
+            self._wheel_radius= rospy.get_param('~wheel_radius')
+        if rospy.has_param('~mid_wheel_lat_separation'):
+            self._mid_wheel_lat_separation = rospy.get_param('~mid_wheel_lat_separation')
+        if rospy.has_param('~front_wheel_lat_separation'):
+            self._front_wheel_lat_separation = rospy.get_param('~front_wheel_lat_separation') 
+        if rospy.has_param('~front_wheel_lon_separation'):
+            self._front_wheel_lon_separation = rospy.get_param('~front_wheel_lon_separation')
+        if rospy.has_param('~back_wheel_lat_separation'):
+            self._back_wheel_lat_separation = rospy.get_param('~back_wheel_lat_separation')
+        if rospy.has_param('~back_wheel_lon_separation'):
+            self._back_wheel_lon_separation = rospy.get_param('~back_wheel_lon_separation')
+        
         rospy.loginfo('wheel_radius: {:.2f}'.format(self._wheel_radius))
-        rospy.loginfo('wheel_width: {:.2f}'.format(self._wheel_width))
         rospy.loginfo('mid_wheel_lat_separation: {:.2f}'.format(self._mid_wheel_lat_separation))
         rospy.loginfo('front_wheel_lat_separation: {:.2f}'.format(self._front_wheel_lat_separation))
         rospy.loginfo('front_wheel_lon_separation: {:.2f}'.format(self._front_wheel_lon_separation))
         rospy.loginfo('back_wheel_lat_separation: {:.2f}'.format(self._back_wheel_lat_separation))
         rospy.loginfo('back_wheel_lon_separation: {:.2f}'.format(self._back_wheel_lon_separation))
 
-        # Location of each wheel joint in the base link frame (x-forward, y-left, z-up)
-        self._wheel_joint_locations = [
-            {'id': 11, 'pos': [self._front_wheel_lon_separation, self._front_wheel_lat_separation/2.0]},
-            {'id': 12, 'pos': [0.0, self._mid_wheel_lat_separation/2.0]},
-            {'id': 13, 'pos': [-self._back_wheel_lon_separation, self._back_wheel_lat_separation/2.0]},
-            {'id': 21, 'pos': [self._front_wheel_lon_separation, -self._front_wheel_lat_separation/2.0]},
-            {'id': 22, 'pos': [0.0, -self._mid_wheel_lat_separation/2.0]},
-            {'id': 23, 'pos': [-self._back_wheel_lon_separation, -self._back_wheel_lat_separation/2.0]}
-        ]
-        for location in self._wheel_joint_locations:
-            rospy.loginfo('wheel joint location: id: {}, pos: {}'.format(location['id'], location['pos']))
+        def calc_position(lon_label, lat_label):
+            ''' Calculate servo positions using the wheel geometry parameters
+            '''
+            if lon_label == Servo.FRONT:
+                if lat_label == Servo.LEFT:
+                    return [self._front_wheel_lon_separation, self._front_wheel_lat_separation/2.0]
+                if lat_label == Servo.RIGHT:
+                    return [self._front_wheel_lon_separation, -self._front_wheel_lat_separation/2.0]
+            if lon_label == Servo.MID:
+                if lat_label == Servo.LEFT:
+                    return [0.0, self._mid_wheel_lat_separation/2.0]
+                if lat_label == Servo.RIGHT:
+                    return [0.0, -self._mid_wheel_lat_separation/2.0]
+            if lon_label == Servo.BACK:
+                if lat_label == Servo.LEFT:
+                    return [-self._back_wheel_lon_separation, self._back_wheel_lat_separation/2.0]
+                if lat_label == Servo.RIGHT:
+                    return [-self._back_wheel_lon_separation, -self._back_wheel_lat_separation/2.0]
 
-        # Location of each steer joint in the base link frame (x-forward, y-left, z-up)
-        self._steer_joint_locations = [
-            {'id': 111, 'pos': [self._front_wheel_lon_separation, self._front_wheel_lat_separation/2.0]},
-            {'id': 131, 'pos': [-self._back_wheel_lon_separation, self._back_wheel_lat_separation/2.0]},
-            {'id': 211, 'pos': [self._front_wheel_lon_separation, -self._front_wheel_lat_separation/2.0]},
-            {'id': 231, 'pos': [-self._back_wheel_lon_separation, -self._back_wheel_lat_separation/2.0]}
-        ]
-        for location in self._steer_joint_locations:
-            rospy.loginfo('steer joint location: id: {}, pos: {}'.format(location['id'], location['pos']))
+            return [0.0, 0.0]
 
-        # Configure servos
-        self._wheel_servos = [
-            Servo(11, Servo.FRONT, Servo.LEFT, 1),
-            Servo(12, Servo.MID, Servo.LEFT, 1),
-            Servo(13, Servo.BACK, Servo.LEFT, 1),
-            Servo(21, Servo.FRONT, Servo.RIGHT, -1),
-            Servo(22, Servo.MID, Servo.RIGHT, -1),
-            Servo(23, Servo.BACK, Servo.RIGHT, -1)
-        ]
-        self._steer_servos = [
-            Servo(111, Servo.FRONT, Servo.LEFT, -1),
-            Servo(131, Servo.BACK, Servo.LEFT, -1),
-            Servo(211, Servo.FRONT, Servo.RIGHT, -1),
-            Servo(231, Servo.BACK, Servo.RIGHT, -1)
-        ]
+        # Servo parameters - required
+        wheel_servo_params = rospy.get_param('~wheel_servos')
+        if len(wheel_servo_params) != 6:
+            rospy.logerr("Parameter 'wheel_servos' must be an array length 6, got: {}"
+                .format(len(wheel_servo_params)))
+            return
+        rospy.logdebug('wheel servo params: {}'.format(wheel_servo_params))
+
+        steer_servo_params = rospy.get_param('~steer_servos')
+        if len(steer_servo_params) != 4:
+            rospy.logerr("parameter 'steer_servos' must be an array length 4, got: {}"
+                .format(len(steer_servo_params)))
+            return
+        rospy.logdebug('steer servo params: {}'.format(steer_servo_params))
+
+        self._wheel_servos = []
+        for params in wheel_servo_params:
+            id = params['id']
+            lon_label = Servo.to_lon_label(params['lon_label'])
+            lat_label = Servo.to_lat_label(params['lat_label'])
+            orientation = 1 if lat_label == Servo.LEFT else -1
+            servo = Servo(id, lon_label, lat_label, orientation)
+            servo.position = calc_position(lon_label, lat_label)
+            self._wheel_servos.append(servo)
+            rospy.logdebug('servo: id: {}, lon_label: {}, lat_label: {}, orientation: {}, offset: {}, position: {}'
+                .format(servo.id, servo.lon_label, servo.lat_label, servo.orientation, servo.offset, servo.position))
+
+        self._steer_servos = []
+        for params in steer_servo_params:
+            id = params['id']
+            lon_label = Servo.to_lon_label(params['lon_label'])
+            lat_label = Servo.to_lat_label(params['lat_label'])
+            orientation = -1
+            servo = Servo(id, lon_label, lat_label, orientation)            
+            servo.offset = params['offset']
+            servo.position = calc_position(lon_label, lat_label)
+            self._steer_servos.append(servo)
+            rospy.logdebug('servo: id: {}, lon_label: {}, lat_label: {}, orientation: {}, offset: {}, position: {}'
+                .format(servo.id, servo.lon_label, servo.lat_label, servo.orientation, servo.offset, servo.position))
 
         # LX-16A servo driver - all parameters are required
         rospy.loginfo('Opening connection to servo board...')
@@ -256,25 +309,23 @@ class MotorController(object):
 
         # Calculate velocity and steering angle for each wheel
         wheel_vel_max = 0.0
-        wheel_vel = []
+        wheel_lin_vel = []
         steer_angle = []
         if omega_p == 0:
-            # No rotation - set wheel velocity directly
+            # Body frame has no angular velocity - set wheel velocity directly
             wheel_vel_max = math.fabs(lin_vel)
-            for i in range(len(self._wheel_servos)):
-                joint = self._wheel_joint_locations[i]
-                servo = self._wheel_servos[i]
-                wheel_vel.append(lin_vel)
+            for servo in self._wheel_servos:
+                wheel_lin_vel.append(lin_vel)
 
-            for i in range(len(self._steer_servos)):
+            for servo in self._steer_servos:
                 steer_angle.append(0.0)
 
         else:
-            for joint in self._wheel_joint_locations:
+            for servo in self._wheel_servos:
                 # Wheel position
-                id = joint['id']
-                x = joint['pos'][0]
-                y = joint['pos'][1]
+                id = servo.id
+                x = servo.position[0]
+                y = servo.position[1]
 
                 # Wheel turn radius
                 r = math.sqrt(x*x + (r_p - y)*(r_p - y))
@@ -283,25 +334,25 @@ class MotorController(object):
                 sgn = -1 if (r_p - y) < 0 else 1
                 vel = sgn * r * omega_p 
                 wheel_vel_max = max(wheel_vel_max, math.fabs(vel))
-                wheel_vel.append(vel)
-                rospy.logdebug("id: {}, r: {:.2f}, wheel_vel: {:.2f}".format(joint['id'], r, vel))
+                wheel_lin_vel.append(vel)
+                # rospy.logdebug("id: {}, r: {:.2f}, wheel_lin_vel: {:.2f}".format(id, r, vel))
 
-            for joint in self._steer_joint_locations:
+            for servo in self._steer_servos:
                 # Wheel position
-                id = joint['id']
-                x = joint['pos'][0]
-                y = joint['pos'][1]
+                id = servo.id
+                x = servo.position[0]
+                y = servo.position[1]
 
                 # Wheel angle
                 angle = math.atan2(x, (r_p - y))
                 steer_angle.append(angle)
-                # rospy.loginfo("id: {}, angle: {:.2f}".format(joint['id'], degree(angle)))
+                # rospy.logdebug("id: {}, angle: {:.2f}".format(id, degree(angle)))
 
         # Apply speed limiter - preserving turning radius
-        if wheel_vel_max > MotorController.VEL_MAX:
-            speed_limiter_sf = MotorController.VEL_MAX / wheel_vel_max
-            for i in range(len(self._wheel_servos)):
-                wheel_vel[i] = wheel_vel[i] * speed_limiter_sf
+        if wheel_vel_max > MotorController.LINEAR_VEL_MAX:
+            speed_limiter_sf = MotorController.LINEAR_VEL_MAX / wheel_vel_max
+            for i in range(len(wheel_lin_vel)):
+                wheel_lin_vel[i] = wheel_lin_vel[i] * speed_limiter_sf
 
         # Update steer servos
         rospy.logdebug('Updating steer servos')
@@ -333,13 +384,17 @@ class MotorController(object):
         for i in range(len(self._wheel_servos)):
             servo = self._wheel_servos[i]
 
+            # Wheel angular velocity
+            wheel_ang_vel = wheel_lin_vel[i] / self._wheel_radius
+
             # Map speed to servo speed [-1000, 1000]
-            servo_speed = int(map(wheel_vel[i] * servo.orientation,
-                -MotorController.VEL_MAX, MotorController.VEL_MAX, 
+            servo_speed = int(map(wheel_ang_vel * servo.orientation,
+                -MotorController.SERVO_ANG_VEL_MAX, MotorController.SERVO_ANG_VEL_MAX, 
                 -MotorController.SERVO_SPEED_MAX, MotorController.SERVO_SPEED_MAX))
 
             # Set servo speed
-            rospy.logdebug('id: {}, vel: {:.2f}, servo_vel: {}'.format(servo.id, wheel_vel[i], servo_speed))
+            rospy.logdebug('id: {}, wheel_ang_vel: {:.2f}, servo_vel: {}'
+                .format(servo.id, wheel_ang_vel, servo_speed))
             self._servo_driver.motor_mode_write(servo.id, servo_speed)
 
     def set_steer_servo_offsets(self):
@@ -349,16 +404,10 @@ class MotorController(object):
         adjusted to ensure each corner wheel is centred when the robot
         is commanded to move with no turn.  
         '''
-        # @TODO add check that offset has the same servo id as servo object. 
-
         # Set the steering servo offsets to centre the corner wheels
-        for i in range(len(self._steer_servos)):
-            servo = self._steer_servos[i]
-
-            offset = self._steer_servo_offsets[i]['offset']
-
-            rospy.logdebug('id: {}, offset: {}'.format(servo.id, offset))
-            self._servo_driver.angle_offset_adjust(servo.id, offset)
+        for servo in self._steer_servos:
+            rospy.loginfo('id: {}, offset: {}'.format(servo.id, servo.offset))
+            self._servo_driver.angle_offset_adjust(servo.id, servo.offset)
             # self._servo_driver.angle_offset_write(servo.id)
 
     def stop(self):

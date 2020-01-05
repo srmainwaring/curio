@@ -27,7 +27,7 @@ For more detail see the sections below.
 ## Dependencies
 
 You will need a working installation of ROS and Gazebo to use these packages.
-They have been built and tested on the folowing platforms / distributions:
+They have been built and tested on the following platforms / distributions:
 
 ### macOS
 
@@ -124,7 +124,7 @@ $ python -m serial.tools.list_ports -v
 
 You'll get different device names according to the operating system and number of USB ports in use.
 
-### Lauch the motor controller node
+### Launch the motor controller node
 
 Start `roscore`:
 
@@ -138,13 +138,12 @@ In another terminal launch the motor controller:
 roslaunch curio_base motor_controller.launch port:=/dev/ttyUSB0
 ```
 
-where you should substite the correct port for the LewanSoul Servo Bus board.
+where you should substitute the correct port for the LewanSoul Servo Bus board.
 
 On linux you may get an error such as:
 
 ```bash
-serial.serialutil.SerialException: [Errno 13] could not open port /dev/ttyUSB0:
-[Errno 13] permission denied: '/dev/ttyUSB0'  
+serial.serialutil.SerialException: [Errno 13] could not open port /dev/ttyUSB0: [Errno 13] permission denied: '/dev/ttyUSB0'
 ```
 
 to resolve this you need to set access permissions on the device with:
@@ -155,7 +154,7 @@ sudo chmod 777 /dev/ttyUSB0
 
 then try re-launching the motor controller node.
 
-### Test motor controller
+### Test the motor controller
 
 Check the motor controller is subscribing to `/cmd_vel`:
 
@@ -214,15 +213,14 @@ roslaunch curio_view view_model.launch
 
 ### `curio_gazebo`
 
-This package contains launch files for spawning the robot model into a Gazebo simulation.
-
-To spawn the robot into a Gazebo simulation run:
+This package contains launch files for spawning the robot model into a Gazebo simulation:
 
 ```bash
 roslaunch curio_gazebo curio_empty_world.launch
 ```
 
-The robot should appear in an empty world along with a `rqt_robot_steering` widget.
+The robot should appear in an empty world, with a `rqt_robot_steering`
+widget in a separate window.
 
 You can simultaneously view the rover in `rviz` with:
 

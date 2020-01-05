@@ -10,8 +10,8 @@ timeout: 1.0
 control_frequency: 10.0
 
 # Robot dimensions and limits
-max_linear_speed: 1.0
-max_linear_accel: 1.0
+max_linear_velocity:  0.37   # [m/s]
+max_angular_velocity: 1.45   # [rad/s]
 
 #  ROS frame convention for mobile robots:
 # 
@@ -37,7 +37,6 @@ max_linear_accel: 1.0
 #   13 / 131 |------|------| 23 / 233  ---
 #      <- back wheel lat separation ->
 # 
-wheel_width: 0.10
 wheel_radius: 0.060
 mid_wheel_lat_separation: 0.52
 front_wheel_lat_separation: 0.47 
@@ -45,26 +44,67 @@ front_wheel_lon_separation: 0.28
 back_wheel_lat_separation: 0.47
 back_wheel_lon_separation: 0.25
 
-# Steering servo configuration
-#  - The offsets should be set so that a LX-16A servo command of 500
-#    will set the corner wheels to face ahead (i.e. the wheel rotation
-#    axis is parallel to the robot's y-axis using ROS base frame convetions)
-steer_servo_offsets: [
-    {   
+# Wheel servo serial id mappings
+wheel_servos: [
+    {
+        id: 11,
+        lon_label: front,
+        lat_label: left,
+    },
+    {
+        id: 12,
+        lon_label: mid,
+        lat_label: left,
+    },
+    {
+        id: 13,
+        lon_label: back,
+        lat_label: left,
+    },
+    {
+        id: 21,
+        lon_label: front,
+        lat_label: right,
+    },
+    {
+        id: 22,
+        lon_label: mid,
+        lat_label: right,
+    },
+    {
+        id: 23,
+        lon_label: back,
+        lat_label: right,
+    },
+]
+
+# Steer servo serial id mappings and angle adjustments. The offsets
+# should be set so that the corner wheel rotation axis is parallel to
+# the rover's y-axis when the commanded angular velocity is zero. 
+steer_servos: [
+    {
         id: 111,
+        lon_label: front,
+        lat_label: left,
         offset: -10,
     },
-    {   
-        id: 121,
+    {
+        id: 131,
+        lon_label: back,
+        lat_label: left,
         offset: -5,
     },
-    {   
+    {
         id: 211,
+        lon_label: front,
+        lat_label: right,
         offset: 40,
     },
-    {   
+    {
         id: 231,
+        lon_label: back,
+        lat_label: right,
         offset: 20,
-    }
+    },
 ]
 

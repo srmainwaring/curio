@@ -85,8 +85,8 @@ namespace curio_teleop
         int num_channels_ = 12;
         int linear_x_channel_ = 1;
         int angular_z_channel_ = 2;
-        double linear_x_max_velocity_ = 0.5;
-        double angular_z_max_velocity_ = 4.0;
+        double linear_x_max_velocity_ = 0.37;
+        double angular_z_max_velocity_ = 1.45;
         int disable_teleop_channel_ = 5;
 
         /// \brief Utility to map x in range [in_min, in_max] to range [out_min, out_max].

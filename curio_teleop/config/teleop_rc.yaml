@@ -16,7 +16,7 @@ num_channels: 12
 linear:
     x:
         channel: 3  # Assigned to left vertical stick. Ch1 when using PWM, Ch3 when using SUMD
-        max_velocity: 1.0
+        max_velocity: 0.37
 
 # Set the RC channel and limits for angular velocity.
 # 
@@ -25,7 +25,7 @@ linear:
 angular:
     z:
         channel: 1  # Assigned to right horizontal stick. Ch2 when using PWM, Ch1 when using SUMD
-        max_velocity: 3.8
+        max_velocity: 1.45
 
 # Toggle the RC teleoperation on/off. 
 # 
