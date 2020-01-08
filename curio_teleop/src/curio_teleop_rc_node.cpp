@@ -67,10 +67,10 @@ namespace curio_teleop
         channels_.resize(num_channels_, 1500);    
 
         // Subscribers.
-        ros::Subscriber channels_sub = nh.subscribe("channels", 10, &TeleopRC::channelsCallback, this);
+        channels_sub_ = nh_.subscribe("channels", 10, &TeleopRC::channelsCallback, this);
 
         // Publishers.
-        twist_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+        twist_pub_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
     }
 
 

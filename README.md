@@ -105,6 +105,26 @@ This package is used to control the rover. It contains a hardware interface
 for the LX-16A servos and a motor controller node that subscribes to ROS
 `geometry_msgs/Twist` messages published to the topic `/cmd_vel`.
 
+#### Configuration
+
+The motor controller is configured using the file `curio_base/config/motor_controller.yaml`.
+The most important parameters to check are the serial id's assigned to each servo, and to ensure
+that these are correct for your rover. The default configuration uses the following assignment:
+
+| Joint Name        |  Servo ID |
+| :---| :---: |
+| Front Left Wheel  | 11  |
+| Mid Left Wheel    | 12  |
+| Back Left Wheel   | 13  |
+| Front Right Wheel | 21  |
+| Mid Right Wheel   | 22  |
+| Back Right Wheel  | 23  |
+| Front Left Steer  | 111 |
+| Mid Left Steer    | 121 |
+| Mid Right Steer   | 221 |
+| Back Right Steer  | 231 |
+
+
 #### Set up the hardware
 
 The first step is to check that the motor controller is working correctly.

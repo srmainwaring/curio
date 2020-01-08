@@ -69,12 +69,13 @@ namespace curio_teleop
         // Node handles
         ros::NodeHandle nh_, private_nh_;
 
+        // Subscriber to /cmd_vel
+        ros::Subscriber channels_sub_;
+        std::vector<int> channels_;
+
         // Publisher Twist message to topic 'cmd_vel' at 10 Hz
         geometry_msgs::Twist twist_msg_;
         ros::Publisher twist_pub_;
-
-        // RC channel data
-        std::vector<int> channels_;
 
         bool have_new_ = false;
         bool is_teleop_disabled_ = false;
