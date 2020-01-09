@@ -1,0 +1,15 @@
+<launch>
+    <arg name="port" default="/dev/ttyUSB1"/>
+    <arg name="robot_name" default=""/>
+    <arg name="frame_id" default="laser"/>
+
+    <!-- Laser Scan node (RPLidar A1) -->
+    <node pkg="rplidar_ros" type="rplidarNode" name="curio_laser_scan" output="screen">
+        <param name="serial_port" type="string" value="$(arg port)"/>
+        <param name="serial_baudrate" type="int" value="115200"/>
+        <param name="frame_id" type="string" value="$(arg frame_id)"/>
+        <param name="inverted" type="bool" value="false"/>
+        <param name="angle_compensate" type="bool" value="true"/>
+        <remap from="scan" to="sensors/$(arg frame_id)" />
+    </node>
+</launch>

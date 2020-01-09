@@ -1,0 +1,16 @@
+<!-- Launch a rosserial rotary encoder node  
+
+    - An Arduino rosserial node that publishes data from a rotary encoder.
+ -->
+<launch>
+    <arg name="port" default="/dev/cu.usbmodemFD5121"/>
+    <arg name="robot_name" default=""/>
+
+    <!-- ROS serial node connected to Arduino Mega 2560 publishing rotary encoder data -->
+    <node pkg="rosserial_python" type="serial_node.py" name="rotary_encoder" output="screen">
+        <param name="port" value="$(arg port)"/>
+        <param name="baud" value="115200"/>
+        <param name="tf_prefix" value="$(arg robot_name)"/>
+    </node>
+
+</launch>

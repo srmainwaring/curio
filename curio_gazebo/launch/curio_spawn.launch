@@ -1,0 +1,51 @@
+ <!-- Spawn the robot model in Gazebo. 
+    
+    Note: To set the initial pose in Gazebo:
+
+    1. Start Gazebo paused
+    2. Set the desired joint positions in gazebo_ros spawn_model
+       using the option:
+       -J <joint_name> <joint_position>
+       and unpause Gazebo using:
+       -unpause       
+
+    Resources:
+        https://answers.ros.org/question/242151/how-to-set-initial-pose-to-ur5-in-gazebo/
+        https://answers.ros.org/question/236568/spawning-a-robot-arm-with-desired-joint-angles/
+ -->
+
+ <launch>
+    <arg name="model" default="$(find curio_description)/urdf/curio.urdf.xacro"/>
+
+    <!-- Load the robot description -->
+    <include file="$(find curio_description)/launch/description.launch" >
+        <arg name="model" value="$(arg model)"/>
+    </include>
+
+    <!-- Load controller configuration parameters -->
+    <rosparam command="load" file="$(find curio_control)/config/control_ackermann_drive.yaml" />
+    <rosparam command="load" file="$(find curio_control)/config/control_joint_state.yaml" />
+
+    <!-- Spawn the controllers  -->
+    <node pkg="controller_manager" type="spawner" name="curio_controller_spawner"
+        args="joint_state_publisher ackermann_drive_controller" />
+
+    <!-- Launch the robot state publisher -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="50.0" />
+    </node>
+
+    <!-- Launch a rqt steering GUI for publishing to /ackermann_drive_controller/cmd_vel -->
+    <node pkg="rqt_robot_steering" type="rqt_robot_steering" name="rqt_robot_steering" >
+        <param name="default_topic" value="/ackermann_drive_controller/cmd_vel"/>
+    </node>
+
+    <!-- Spawn robot in Gazebo -->
+    <node pkg="gazebo_ros" type="spawn_model" name="urdf_spawner" 
+        args="-z 0.3
+        -urdf
+        -model curio
+        -param robot_description"
+        respawn="false" output="screen" />
+
+</launch>

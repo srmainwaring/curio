@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>curio_description</name>
+    <version>0.0.0</version>
+    <description>URDF and meshes for Curio, a Sawppy Rover robot</description>
+    <maintainer email="rhys.maiwaring@me.com">Rhys Mainwaring</maintainer>
+    <license>BSD-3-Clause</license>
+    <author email="rhys.maiwaring@me.com">Rhys Mainwaring</author>
+    <buildtool_depend>catkin</buildtool_depend>
+    <depend>urdf</depend>
+    <depend>xacro</depend>
+    <exec_depend>roslaunch</exec_depend>
+</package>

@@ -1,0 +1,12 @@
+<library path="lib/libackermann_drive_controller">
+
+  <class name="ackermann_drive_controller/AckermannDriveController"
+    type="ackermann_drive_controller::AckermannDriveController"
+    base_class_type="controller_interface::ControllerBase">
+    <description>
+        The AckermannDriveController tracks velocity commands (geometry_msgs/Twist).
+        It expects 6 VelocityJointInterface and 4 PositionJointInterface types of hardware interface.
+    </description>
+  </class>
+
+</library>
