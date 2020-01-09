@@ -103,7 +103,7 @@ if __name__ == '__main__':
     servo_driver.set_timeout(SERVO_TIMEOUT)
     servo_driver.open()
     
-    rospy.loginfo('Open connection to servo board')
+    rospy.loginfo('Open connection to servo bus board')
     rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))
     rospy.loginfo('port: {}'.format(servo_driver.get_port()))
     rospy.loginfo('baudrate: {}'.format(servo_driver.get_baudrate()))
@@ -146,5 +146,5 @@ if __name__ == '__main__':
 
     # Shutdown
     servo_driver.close()
-    rospy.loginfo('Close connection to servo board')
+    rospy.loginfo('Close connection to servo bus board')
     rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))

@@ -265,7 +265,7 @@ class MotorController(object):
                 .format(servo.id, servo.lon_label, servo.lat_label, servo.orientation, servo.offset, servo.position))
 
         # LX-16A servo driver - all parameters are required
-        rospy.loginfo('Opening connection to servo board...')
+        rospy.loginfo('Opening connection to servo bus board...')
         port      = rospy.get_param('~port')
         baudrate  = rospy.get_param('~baudrate')
         timeout   = rospy.get_param('~timeout')

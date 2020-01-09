@@ -131,8 +131,8 @@ The first step is to check that the motor controller is working correctly.
 Make sure your rover is supported with it's wheels off the ground with all joints
 able to rotate / turn freely.
 
-Connect the LewanSoul Servo Bus board to your computer with a USB cable and power
-the servo board up. You can check the USB serial device names using:
+Connect the LewanSoul BusLinker TTL/USB debug board to your computer with a USB cable and power
+it up. You can check the USB serial device names using:
 
 ```bash
 $ python -m serial.tools.list_ports -v
@@ -158,7 +158,7 @@ In another terminal launch the motor controller:
 roslaunch curio_base motor_controller.launch port:=/dev/ttyUSB0
 ```
 
-where you should substitute the correct port for the LewanSoul Servo Bus board.
+where you should substitute the correct port for the LewanSoul BusLinker board.
 
 On linux you may get an error such as:
 
@@ -233,36 +233,66 @@ roslaunch curio_view view_model.launch
 
 ### `curio_gazebo`
 
-This package contains launch files for spawning the robot model into a Gazebo simulation:
+This package contains launch files for spawning the robot model into a Gazebo simulation.
+
+The first places the rover in an empty world:
 
 ```bash
 roslaunch curio_gazebo curio_empty_world.launch
 ```
 
-The robot should appear in an empty world, with a `rqt_robot_steering`
+The robot should appear on an empty ground plane in Gazebo with a `rqt_robot_steering`
 widget in a separate window.
 
 You can simultaneously view the rover in `rviz` with:
 
 ```bash
-roslauch curio_viz view_robot.launch
+roslaunch curio_viz view_robot.launch
 ```
 
-The robot will appear in the `/odom` frame and the joints will respond as the rover
+The robot is visualised in the `/odom` frame and the joints will respond as the rover
 is moved in the simulation.
+
+The second launch file:
+
+```bash
+roslaunch curio_gazebo curio_mars_world.launch
+```
+
+places the rover in a Mars terrain model, `curiosity_path`, authored
+by Miguel Angel Rodriguez using a 3D model from NASA
+[https://nasa3d.arc.nasa.gov/detail/curiosity-path](https://nasa3d.arc.nasa.gov/detail/curiosity-path).
+It was sourced from the
+[TheConstructCore' curiosity_mars_rover](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/)
+BitBucket repository.
 
 ## Other packages
 
 ### `ackermann_drive_controller`
 
+This package contains a controller plugin for a six wheel rover with four wheel Ackermann steering
+that can be used in the [`ros_control`](http://wiki.ros.org/ros_control) framework. It was
+adapted from the [`diff_drive_controller`](http://wiki.ros.org/diff_drive_controller?distro=melodic)
+from the [`ros_controllers`](http://wiki.ros.org/ros_controllers?distro=melodic) library.
+
+It is used in `curio_gazebo` to control the simulated rovers steering.
+
 ### `curio_bringup`
 
+This package contains launch files for bringing up the entire robot. Typically they
+configure and coordinate calling launch files from other packages in this distribution.
+
 ### `curio_control`
+
+This package contains configuration and launch files for joint controllers such as
+the `ackermann_drive_controller`. Not currently in use: `curio_base` will depend
+on this package once support for the `ros_control` framework has been added to
+the robot hardware abstraction layer.  
 
 ### `curio_description`
 
 The `curio_description` package contains a URDF / xacro model of the rover with
-`<gazebo>` extensions for simulating the rover in Gazebo.
+`<gazebo>` extensions.
 
 Note that the rocker-bogie differential cannot be fully modelled in URDF because it
 induces closed loop kinematic chains. The SDF representation of the model does capture
@@ -290,6 +320,11 @@ documentation on the Ackermann steering calculations:
 - [Open Source Rover Home](https://opensourcerover.jpl.nasa.gov/#!/home)
 - [Github](https://github.com/nasa-jpl/open-source-rover)
 - [Michael Cox, Eric Junkins, Olivia Lofaro. "Open Source Rover: Software Controls"](https://github.com/nasa-jpl/open-source-rover/blob/master/Software/Software%20Controls.pdf)
+
+TheConstruct team for their Gazebo terrain model of the curiosity path:
+
+- [curiosity_mars_rover](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/)
+
 
 There is a vast body of information to be found about using ROS. In addition to the ROS
 and Gazebo tutorials, I have found the open source packages and manual for the

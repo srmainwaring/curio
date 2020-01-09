@@ -117,7 +117,7 @@ class EncoderController(object):
         self._servo_driver.set_timeout(SERVO_TIMEOUT)
         self._servo_driver.open()
         
-        rospy.loginfo('Open connection to servo board')
+        rospy.loginfo('Open connection to servo bus board')
         rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
         rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
         rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
@@ -134,7 +134,7 @@ class EncoderController(object):
         # Leave python to clean up the servo driver serial connection.
         # Closing the servo driver manually may cause other running threads to error. 
         # self._servo_driver.close()
-        # rospy.loginfo('Close connection to servo board')
+        # rospy.loginfo('Close connection to servo bus board')
         # rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
 
     def encoder_callback(self, msg):
