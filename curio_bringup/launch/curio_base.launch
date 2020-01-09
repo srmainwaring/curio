@@ -1,0 +1,9 @@
+<!-- Bringup the robot base's motor controller
+ -->
+<launch>
+    <arg name="port" default="/dev/ttyUSB0"/>
+
+    <include file="$(find curio_base)/launch/motor_controller.launch">
+        <arg name="port" value="$(arg port)"/>
+    </include>
+</launch>

@@ -34,15 +34,15 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(curio_teleop_rc_node
-    src/curio_teleop_rc_node.cpp
+add_executable(curio_teleop_rc
+    src/curio_teleop_rc.cpp
 )
-target_link_libraries(curio_teleop_rc_node ${catkin_LIBRARIES})
+target_link_libraries(curio_teleop_rc ${catkin_LIBRARIES})
 
 ################################################################################
 # Install
 
-install(TARGETS curio_teleop_rc_node
+install(TARGETS curio_teleop_rc
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

@@ -71,7 +71,7 @@ import curio_base.motor_controller
 
 if __name__ == '__main__':
     rospy.init_node('curio_motor_controller')
-    rospy.loginfo('Starting Curio motor controller node')
+    rospy.loginfo('Starting Curio motor controller')
 
     # Motor controller
     motor_controller = curio_base.motor_controller.MotorController()

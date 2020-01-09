@@ -34,7 +34,7 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include "curio_teleop/curio_teleop_rc_node.h"
+#include "curio_teleop/curio_teleop_rc.h"
 #include <curio_msgs/Channels.h>
 #include <geometry_msgs/Twist.h>
 #include <ros/ros.h>
@@ -143,10 +143,10 @@ namespace curio_teleop
 
 int main(int argc, char *argv[])
 {
-    ROS_INFO("Starting Curio Teleop RC Node");
+    ROS_INFO("Starting Curio Teleop RC");
 
     // Initialise node.
-    ros::init(argc, argv, "curio_teleop_rc_node");
+    ros::init(argc, argv, "curio_teleop_rc");
     ros::NodeHandle nh, private_nh("~");
 
     curio_teleop::TeleopRC teleop_rc(nh, private_nh);

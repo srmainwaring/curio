@@ -34,8 +34,8 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
-#ifndef CURIO_TELEOP_CURIO_TELEOP_RC_NODE_H_
-#define CURIO_TELEOP_CURIO_TELEOP_RC_NODE_H_
+#ifndef CURIO_TELEOP_CURIO_TELEOP_RC_H_
+#define CURIO_TELEOP_CURIO_TELEOP_RC_H_
 
 #include <curio_msgs/Channels.h>
 #include <geometry_msgs/Twist.h>
@@ -99,4 +99,4 @@ namespace curio_teleop
     };
 } // namespace curio_teleop
 
-#endif // CURIO_TELEOP_CURIO_TELEOP_RC_NODE_H_
+#endif // CURIO_TELEOP_CURIO_TELEOP_RC_H_

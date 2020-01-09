@@ -6,7 +6,7 @@
         Publish:
             - curio_msgs/Channels to radio_ctrl/channels
 
-    - curio_teleop_rc_node
+    - curio_teleop_rc
         Subscribe to a curio_msgs/Channel message and calculate an appropriate
         geometry_msgs/Twist to publish to cmd_vel.
 
@@ -28,7 +28,7 @@
     </node>
 
     <!-- Launch RC teleoperation -->
-    <node pkg="curio_teleop" type="curio_teleop_rc_node" name="curio_teleop_rc"
+    <node pkg="curio_teleop" type="curio_teleop_rc" name="curio_teleop_rc"
         respawn="true" output="screen">
         <rosparam command="load" file="$(find curio_teleop)/config/teleop_rc.yaml" />
         <remap from="channels" to="radio_ctrl/channels" />

@@ -1,6 +1,6 @@
 <!-- Launch the base motor driver node -->
 <launch>
-    <arg name="port" default="/dev/ttyAMC1" />
+    <arg name="port" default="/dev/ttyUSB0" />
 
     <!-- Hardware driver -->
     <node pkg="curio_base" type="curio_motor_controller" name="curio_motor_controller"

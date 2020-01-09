@@ -1,0 +1,10 @@
+<!-- Bringup robot radio control teleoperation 
+-->
+<launch>
+    <arg name="port" default="/dev/ttyACM0"/>
+
+    <include file="$(find curio_teleop)/launch/teleop_rc.launch">
+        <arg name="port" value="$(arg port)"/>
+    </include>
+
+</launch>
