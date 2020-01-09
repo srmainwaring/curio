@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-    <name>curio_teleop</name>
+    <name>curio_firmware</name>
     <version>0.0.0</version>
-    <description>Teleop control for Curio, a Sawppy Rover robot</description>
+    <description>Firmware for Curio, a Sawppy Rover robot</description>
     <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
     <license>BSD-3-Clause</license>
     <url type="website">https://github.com/srmainwaring/curio</url>
@@ -10,9 +10,4 @@
     <url type="bugtracker">https://github.com/srmainwaring/curio/issues</url>
     <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
     <buildtool_depend>catkin</buildtool_depend>
-    <depend>roscpp</depend>
-    <depend>std_msgs</depend>
-    <depend>geometry_msgs</depend>
-    <depend>curio_base</depend>
-    <depend>curio_msgs</depend>
 </package>
