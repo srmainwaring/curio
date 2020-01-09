@@ -76,7 +76,8 @@ catkin init
 
 ### Clone and build the packages
 
-Clone the `curio_msgs` and `curio` packages into `curio_ws/src`:
+Clone the [`curio_msgs`](https://github.com/srmainwaring/curio_msgs.git) and
+[`curio`](https://github.com/srmainwaring/curio.git) packages into `curio_ws/src`:
 
 ```bash
 cd src
@@ -231,6 +232,9 @@ To view the rover in [`rviz`](http://wiki.ros.org/rviz) and manually control the
 roslaunch curio_view view_model.launch
 ```
 
+![Rviz View Model](https://github.com/srmainwaring/curio/wiki/images/curio_viz_view_model_rviz.jpg)
+<!-- ![Curio View Model Joints](https://github.com/srmainwaring/curio/wiki/images/curio_viz_view_model_joint_state_publisher_gui.jpg) -->
+
 ## Usage - Simulation
 
 ### `curio_gazebo`
@@ -248,11 +252,15 @@ The robot should appear on an empty ground plane in [Gazebo](http://gazebosim.or
 [`rqt_robot_steering`](http://wiki.ros.org/rqt_robot_steering)
 widget in a separate window.
 
+![Gazebo Empty World](https://github.com/srmainwaring/curio/wiki/images/curio_gazebo_curio_empty_world_gazebo.jpg)
+
 You can simultaneously view the rover in [`rviz`](http://wiki.ros.org/rviz) with:
 
 ```bash
 roslaunch curio_viz view_robot.launch
 ```
+
+![Rviz View Robot](https://github.com/srmainwaring/curio/wiki/images/curio_gazebo_curio_empty_world_rviz.jpg)
 
 The robot is visualised in the [`/odom`](https://www.ros.org/reps/rep-0105.html)
 frame and the joints will respond as the rover is moved in the simulation.
@@ -265,6 +273,9 @@ roslaunch curio_gazebo curio_mars_world.launch
 
 places the rover in a Mars terrain model sourced from
 [curiosity_mars_rover](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/).
+
+![Gazebo Mars World](https://github.com/srmainwaring/curio/wiki/images/curio_gazebo_mars_terrain.jpg)
+
 
 ## Other packages
 
@@ -333,6 +344,17 @@ Miguel Angel Rodriguez and TheConstruct team for the `curiosity_path`
 
 - [curiosity_mars_rover on BitBucket](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/)
 - [NASA 3D models](https://nasa3d.arc.nasa.gov/detail/curiosity-path).
+
+The turnbuckle CAD file used in the rover description was authored by Carlos Rey and retrieved from GrabCAD:
+
+- [Tensor/Turnbuckle](https://grabcad.com/library/tensor-turnbuckle-1)
+
+S. Chitta, E. Marder-Eppstein, W. Meeussen, V. Pradeep, A. Rodríguez Tsouroukdissian, J. Bohren, D. Coleman, B. Magyar, G. Raiola, M. Lüdtke and E. Fernandez Perdomo
+**"ros_control: A generic and simple control framework for ROS"**,
+The Journal of Open Source Software, 2017. ([PDF](http://www.theoj.org/joss-papers/joss.00456/10.21105.joss.00456.pdf)). The `ackermann_drive_steering` controller borrows heavily
+from the
+[`diff_drive_controller`](https://github.com/ros-controls/ros_controllers/tree/melodic-devel/diff_drive_controller)
+and the entire framework made the Gazebo integration much simpler.
 
 There is a vast body of information that describes how to use ROS. In addition to the ROS
 and [Gazebo](http://gazebosim.org/) tutorials, I have found the open source packages and manual for the
