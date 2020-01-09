@@ -1,0 +1,33 @@
+<sdf version="1.5">
+  <world name="mars_curiosity">
+
+    <!-- Martian Gravity-->
+    <gravity>0 0 -3.711</gravity>
+
+    <!-- Physics -->
+    <physics type='ode'>
+        <ode>
+            <solver>
+                <type>quick</type>
+            </solver>
+            <constraints> -->
+                <cfm>0.001</cfm>
+                <erp>0.02</erp>
+                <contact_max_correcting_vel>100.0</contact_max_correcting_vel>
+                <contact_surface_layer>0.001</contact_surface_layer>
+            </constraints>
+        </ode>
+    </physics>
+
+    <include>
+        <uri>model://sun</uri>
+    </include>
+
+    <include>
+        <uri>model://curiosity_path</uri>
+        <name>curiosity_path</name>
+        <pose>0 0 8.5 0 0 0</pose>
+    </include>
+
+  </world>
+</sdf>
