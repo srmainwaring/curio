@@ -11,22 +11,22 @@ teleoperation and simulation work well.
 ## Overview
 
 There are a number of ROS packages to control the rover, visualise it in rviz,
-and simulate it in Gazebo.
+and simulate it in [Gazebo](http://gazebosim.org/).
 
-- `ackermann_drive_controller` a 6 wheel, 4 steering controller consistent with the `ros_control` framework.
-- `curio_base` hardware drivers and a ROS motor controller node subscribing to `geometry_msgs/Twist` on `/cmd_vel`.
+- `ackermann_drive_controller` a 6 wheel, 4 steering controller consistent with the [`ros_control`](http://wiki.ros.org/ros_control) framework.
+- `curio_base` hardware drivers and a ROS motor controller node subscribing to [`geometry_msgs/Twist`](https://docs.ros.org/api/geometry_msgs/html/msg/Twist.html) on `/cmd_vel`.
 - `curio_bringup` a set of launch files for bringing up the rover nodes
-- `curio_control` configuration and launch files using the `ros_control` framework
+- `curio_control` configuration and launch files using the [`ros_control`](http://wiki.ros.org/ros_control) framework
 - `curio_description` a URDF / xacro model for the robot using STL files from the Sawppy CAD model
-- `curio_gazebo` configuration and launch files for spawning the rover in Gazebo with ROS control
+- `curio_gazebo` configuration and launch files for spawning the rover in [Gazebo with ROS control](http://gazebosim.org/tutorials/?tut=ros_control)
 - `curio_teleop` a telep node for interpreting PWM signals from a RC unit and publishing to `/cmd_vel`  
-- `curio_viz` configuration and launch files for loading the robot model into rviz.
+- `curio_viz` configuration and launch files for loading the robot model into [`rviz`](http://wiki.ros.org/rviz).
 
 For more detail see the sections below.
 
 ## Dependencies
 
-You will need a working installation of ROS and Gazebo to use these packages.
+You will need a working installation of ROS and [Gazebo](http://gazebosim.org/) to use these packages.
 They have been built and tested on the following platforms / distributions:
 
 ### macOS
@@ -96,14 +96,14 @@ Source the build:
 source devel/setup.bash
 ```
 
-
 ## Usage - Rover
 
 ### `curio_base`
 
 This package is used to control the rover. It contains a hardware interface
 for the LX-16A servos and a motor controller node that subscribes to ROS
-`geometry_msgs/Twist` messages published to the topic `/cmd_vel`.
+[`geometry_msgs/Twist`](https://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)
+messages published to the topic `/cmd_vel`.
 
 #### Configuration
 
@@ -123,7 +123,6 @@ that these are correct for your rover. The default configuration uses the follow
 | Mid Left Steer    | 121 |
 | Mid Right Steer   | 221 |
 | Back Right Steer  | 231 |
-
 
 #### Set up the hardware
 
@@ -146,7 +145,7 @@ You'll get different device names according to the operating system and number o
 
 ### Launch the motor controller node
 
-Start `roscore`:
+Start [`roscore`](http://wiki.ros.org/roscore):
 
 ```bash
 roscore
@@ -179,7 +178,7 @@ then try re-launching the motor controller node.
 Check the motor controller is subscribing to `/cmd_vel`:
 
 ```bash
-$ rosnode info /curio_motor_controller 
+$ rosnode info /curio_motor_controller
 --------------------------------------------------------------------------------
 Node [/curio_motor_controller]
 Publications:
@@ -202,7 +201,7 @@ Connections:
     * transport: TCPROS
 ```
 
-Start `rqt_robot_steering` and send commands:
+Start [`rqt_robot_steering`](http://wiki.ros.org/rqt_robot_steering) and send commands:
 
 ```bash
 rosrun rqt_robot_steering rqt_robot_steering
@@ -216,14 +215,17 @@ and the wheels turn.
 ### `curio_teleop`
 
 This package is used to control the robot using a radio control setup.
+It depends on the [`rosserial`](http://wiki.ros.org/rosserial/) libraries
+and assumes that the `curio_firmware` package
+has been used to program the Arduino controlling the RC receiver.
 
 ## Usage - Visualisation
 
 ### `curio_viz`
 
-This package contains launch and `rviz` configuration files.
+This package contains launch and [`rviz`](http://wiki.ros.org/rviz) configuration files.
 
-To view the rover in `rviz` and manually control the joints run:
+To view the rover in [`rviz`](http://wiki.ros.org/rviz) and manually control the joints run:
 
 ```bash
 roslaunch curio_view view_model.launch
@@ -233,7 +235,8 @@ roslaunch curio_view view_model.launch
 
 ### `curio_gazebo`
 
-This package contains launch files for spawning the robot model into a Gazebo simulation.
+This package contains launch files for spawning the robot model into a
+[Gazebo](http://gazebosim.org/) simulation.
 
 The first places the rover in an empty world:
 
@@ -241,17 +244,18 @@ The first places the rover in an empty world:
 roslaunch curio_gazebo curio_empty_world.launch
 ```
 
-The robot should appear on an empty ground plane in Gazebo with a `rqt_robot_steering`
+The robot should appear on an empty ground plane in [Gazebo](http://gazebosim.org/) with a
+[`rqt_robot_steering`](http://wiki.ros.org/rqt_robot_steering)
 widget in a separate window.
 
-You can simultaneously view the rover in `rviz` with:
+You can simultaneously view the rover in [`rviz`](http://wiki.ros.org/rviz) with:
 
 ```bash
 roslaunch curio_viz view_robot.launch
 ```
 
-The robot is visualised in the `/odom` frame and the joints will respond as the rover
-is moved in the simulation.
+The robot is visualised in the [`/odom`](https://www.ros.org/reps/rep-0105.html)
+frame and the joints will respond as the rover is moved in the simulation.
 
 The second launch file:
 
@@ -278,11 +282,18 @@ It is used in `curio_gazebo` to control the simulated rovers steering.
 This package contains launch files for bringing up the entire robot. Typically they
 configure and coordinate calling launch files from other packages in this distribution.
 
+To bringup the robot in a single command:
+
+```bash
+roslaunch curio_bringup curio_robot.launch motor_port:=/dev/ttyUSB0 teleop_port:=/dev/ttyACM0
+```
+
+
 ### `curio_control`
 
 This package contains configuration and launch files for joint controllers such as
 the `ackermann_drive_controller`. Not currently in use: `curio_base` will depend
-on this package once support for the `ros_control` framework has been added to
+on this package once support for the [`ros_control`](http://wiki.ros.org/ros_control) framework has been added to
 the robot hardware abstraction layer.  
 
 ### `curio_description`
@@ -292,9 +303,9 @@ The `curio_description` package contains a URDF / xacro model of the rover with
 
 Note that the rocker-bogie differential cannot be fully modelled in URDF because it
 induces closed loop kinematic chains. The SDF representation of the model does capture
-the full kinematics so you will see additional links and joints in Gazebo that are not
-present in `rviz`. These are the two turnbuckle linkages with ball joints that connect
-the rocker assemblies to the differential beam.
+the full kinematics so you will see additional links and joints in [Gazebo](http://gazebosim.org/)
+that are not present in [`rviz`](http://wiki.ros.org/rviz). These are the two turnbuckle linkages
+with ball joints that connect the rocker assemblies to the differential beam.
 
 ## License
 
@@ -317,13 +328,14 @@ documentation on the Ackermann steering calculations:
 - [Github](https://github.com/nasa-jpl/open-source-rover)
 - [Michael Cox, Eric Junkins, Olivia Lofaro. "Open Source Rover: Software Controls"](https://github.com/nasa-jpl/open-source-rover/blob/master/Software/Software%20Controls.pdf)
 
-Miguel Angel Rodriguez and TheConstruct team for the `curiosity_path` Gazebo terrain model:
+Miguel Angel Rodriguez and TheConstruct team for the `curiosity_path`
+[Gazebo](http://gazebosim.org/) terrain model:
 
 - [curiosity_mars_rover on BitBucket](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/)
 - [NASA 3D models](https://nasa3d.arc.nasa.gov/detail/curiosity-path).
 
-There is a vast body of information to be found about using ROS. In addition to the ROS
-and Gazebo tutorials, I have found the open source packages and manual for the
+There is a vast body of information that describes how to use ROS. In addition to the ROS
+and [Gazebo](http://gazebosim.org/) tutorials, I have found the open source packages and manual for the
 Turtlebot 3 by Robotis and the Clearpath Husky very useful when trying to understand
 how to organsise and structure packages for a rover:
 
