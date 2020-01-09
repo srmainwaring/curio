@@ -259,12 +259,8 @@ The second launch file:
 roslaunch curio_gazebo curio_mars_world.launch
 ```
 
-places the rover in a Mars terrain model, `curiosity_path`, authored
-by Miguel Angel Rodriguez using a 3D model from NASA
-[https://nasa3d.arc.nasa.gov/detail/curiosity-path](https://nasa3d.arc.nasa.gov/detail/curiosity-path).
-It was sourced from the
-[TheConstructCore' curiosity_mars_rover](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/)
-BitBucket repository.
+places the rover in a Mars terrain model sourced from
+[curiosity_mars_rover](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/).
 
 ## Other packages
 
@@ -321,10 +317,10 @@ documentation on the Ackermann steering calculations:
 - [Github](https://github.com/nasa-jpl/open-source-rover)
 - [Michael Cox, Eric Junkins, Olivia Lofaro. "Open Source Rover: Software Controls"](https://github.com/nasa-jpl/open-source-rover/blob/master/Software/Software%20Controls.pdf)
 
-TheConstruct team for their Gazebo terrain model of the curiosity path:
+Miguel Angel Rodriguez and TheConstruct team for the `curiosity_path` Gazebo terrain model:
 
-- [curiosity_mars_rover](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/)
-
+- [curiosity_mars_rover on BitBucket](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/)
+- [NASA 3D models](https://nasa3d.arc.nasa.gov/detail/curiosity-path).
 
 There is a vast body of information to be found about using ROS. In addition to the ROS
 and Gazebo tutorials, I have found the open source packages and manual for the
