@@ -35,10 +35,10 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-''' Lewansoul LX-16A encoder calibration.
+''' Lewansoul LX-16A servo controller.
 
-    This module contains a ROS node for generating training sets for 
-    calibrating a LX-16A servo encoder.
+    This module contains a ROS node for controlling a LX-16A servo
+    to create labelled encoder data. 
 
     In this node the servo operates in continuous mode, so  
     must be free to rotate continuously and run without load.
@@ -53,9 +53,9 @@
 
     $ roslaunch curio_base rotary_encoder.launch
 
-    3. Start the encoder calibration node
+    3. Start the servo node
 
-    $ rosrun curio_base lx16a_encoder_calibration.py 
+    $ rosrun curio_base lx16a_servo_controller.py 
 
     Notes:
 
@@ -87,28 +87,36 @@ import curio_base.lx16a_driver
 import rospy
 import serial
 from std_msgs.msg import Int64
+from geometry_msgs.msg import Twist
 
 SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
 SERVO_BAUDRATE      = 115200
-SERVO_TIMEOUT       = 1.0
+SERVO_TIMEOUT       = 1.0 # [s]
 SERVO_ID            = 111
+
+CONTROL_FREQUENCY   = 50  # [Hz]
+OUT_DATA_FILENAME   = "./data/lx16a_raw_data_08.csv"
+
 
 # Convert LX-16A position to angle in deg
 def pos_to_deg(pos):
     return pos * 240.0 / 1000.0
 
-class EncoderController(object):
+class ServoController(object):
     DATA_BUFFER_SIZE = 100
 
     def __init__(self):
         # Properties
-        self.filename = "./data/lx16a_data.csv"
+        self.filename = OUT_DATA_FILENAME
         self._data = []
         self._data_size = 0
 
-        # Subscribers
+        # Subscriptions
         self._encoder_msg = Int64()
         self._encoder_sub = rospy.Subscriber('/encoder', Int64, self.encoder_callback)
+
+        self._cmd_vel_msg = Twist()
+        self._cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, self.cmd_vel_callback)
 
         # Initialise servo driver
         self._servo_driver = curio_base.lx16a_driver.LX16ADriver()
@@ -131,28 +139,31 @@ class EncoderController(object):
         # Write remaining data
         self.write_data()
 
-        # Leave python to clean up the servo driver serial connection.
-        # Closing the servo driver manually may cause other running threads to error. 
-        # self._servo_driver.close()
-        # rospy.loginfo('Close connection to servo bus board')
-        # rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
-
     def encoder_callback(self, msg):
         self._encoder_msg = msg
 
+    def cmd_vel_callback(self, msg):
+        self._cmd_vel_msg = msg
+
     def control_loop(self, event):
+        # To simplify things we map the linear velocity from [-1.0, 1.0] m/s
+        # to [-1000, 1000] duty, and limit it to the range.
+        duty = int(1000 * self._cmd_vel_msg.linear.x)
+        # duty = duty * 3 # scale factor when simulation generated cmd_vel is in [-0.5, +0.5] 
+        duty = max(duty, -1000)
+        duty = min(duty, +1000)
+
         # Run servo in motor (continuous) mode
-        duty = 250
         self._servo_driver.motor_mode_write(SERVO_ID, duty)
 
         pos = self._servo_driver.pos_read(SERVO_ID)
         count = self._encoder_msg.data
         rospy.loginfo("duty: {}, pos: {}, count: {}".format(duty, pos, count % 4096))
 
-        # Buffer data        
+        # Buffer data
         self._data.append([rospy.get_rostime(), duty, pos, count])
         self._data_size = self._data_size + 1
-        if (self._data_size == EncoderController.DATA_BUFFER_SIZE):
+        if (self._data_size == ServoController.DATA_BUFFER_SIZE):
             self.write_data()
 
     def write_data(self):
@@ -167,27 +178,25 @@ class EncoderController(object):
             self._data = []
 
 if __name__ == '__main__':
-    rospy.init_node('lx_16a_encoder_calibration')
-    rospy.loginfo('Lewansoul LX-16A encoder calibration')
+    rospy.loginfo('Starting Lewansoul LX-16A servo controller')
+    rospy.init_node('lx_16a_servo_controller')
 
-    # Encoder controller
-    encoder_controller = EncoderController()
-    encoder_controller.file_name = '~/Code/robotics/curio/data/lx16a_duty_250.csv'
-
+    # Servo controller
+    servo_controller = ServoController()
 
     # Register shutdown behaviour
     def shutdown_callback():
-        rospy.loginfo('Shutdown lx_16a_encoder_calibration...')
-        encoder_controller.shutdown()
+        rospy.loginfo('Shutdown lx_16a_servo_controller...')
+        servo_controller.shutdown()
 
     rospy.on_shutdown(shutdown_callback)
 
-    # Start the encoder control loop
-    control_frequency = 50.0
+    # Start the control loop
+    control_frequency = CONTROL_FREQUENCY
 
-    rospy.loginfo('Starting encoder control loop at {} Hz'.format(control_frequency))
+    rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
     control_timer = rospy.Timer(
         rospy.Duration(1.0 / control_frequency),
-        encoder_controller.control_loop)
+        servo_controller.control_loop)
 
     rospy.spin()

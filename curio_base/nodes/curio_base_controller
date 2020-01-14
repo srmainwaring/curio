@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+# 
+#   Software License Agreement (BSD-3-Clause)
+#    
+#   Copyright (c) 2019 Rhys Mainwaring
+#   All rights reserved
+#    
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions
+#   are met:
+# 
+#   1.  Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+# 
+#   2.  Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+# 
+#   3.  Neither the name of the copyright holder nor the names of its
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#  
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+#   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+#   COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+#   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+#   BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+#   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#   CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+#   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+# 
+
+''' Mobile Base Controller node for Curio
+
+A mobile base controller node for a Sawppy Rover using LX-16A servos.
+
+Subscribers:
+
+    topic:  /cmd_vel
+    type:   geometry_msgs/Twist
+
+Parameters:
+
+    port:               the USB serial port for the LX-16A servo bus board, default /dev/ttyUSB0.
+    baudrate:           the baudrate for for the LX-16A servo bus board, default 115200.
+    timeout:            the timeout for for the LX-16A servo bus board, default 1.0 [s]
+    control_frequency:  the control loop frequency, default 10 [Hz].
+
+    max_linear_speed:   the maximum linear velocity for the robot, default 1.0 [m/s]  
+    max_linear_accel:   the maximum linear acceleration for the robot, default 1.0 [m/s^2]  
+    wheel_radius:       the wheel radius - used to convert wheel speed to angular speed.    
+
+    Wheel geometry - see curio_base/config/base_controller.yaml for details.
+    mid_wheel_lat_separation: 
+    front_wheel_lat_separation:
+    front_wheel_lon_separation:
+    back_wheel_lat_separation:
+    back_wheel_lon_separation:
+
+    Servo configuration - see curio_base/config/base_controller.yaml for details.
+    steer_servo_offsets: array of steering servo offsets.
+'''
+
+import rospy
+import curio_base.base_controller
+
+if __name__ == '__main__':
+    rospy.init_node('curio_base_controller')
+    rospy.loginfo('Starting Curio base controller')
+
+    # Base controller
+    base_controller = curio_base.base_controller.BaseController()
+
+    # Register shutdown behaviour
+    def shutdown_callback():
+        rospy.loginfo('Shutdown Curio base controller...')
+        base_controller.shutdown()
+
+    rospy.on_shutdown(shutdown_callback)
+
+    # Start the control loop
+    control_frequency = 10.0
+    if rospy.has_param('~control_frequency'):
+        control_frequency = rospy.get_param('~control_frequency')
+
+    rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
+    control_timer = rospy.Timer(
+        rospy.Duration(1.0 / control_frequency),
+        base_controller.control_loop)
+
+    # Wait for shutdown
+    rospy.spin()

@@ -1,0 +1,14 @@
+<!-- Launch the mobile base controller node -->
+<launch>
+    <arg name="port" default="/dev/ttyUSB0" />
+
+    <!-- Hardware driver -->
+    <node pkg="curio_base" type="curio_base_controller" name="curio_base_controller"
+        respawn="true" output="screen">
+        <rosparam command="load" file="$(find curio_base)/config/base_controller.yaml" />
+        <rosparam subst_value="true">
+            port: $(arg port)
+        </rosparam>
+    </node>
+
+</launch>
