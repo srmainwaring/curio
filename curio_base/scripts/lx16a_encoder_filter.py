@@ -141,7 +141,8 @@ class LX16AEncoderFilter(object):
         '''
         pos = self._pos[self._index] % ENCODER_MAX
         is_valid = self._clf_pipe.predict([self._X])[0]
-        rospy.logdebug('pos: {}, is_valid: {}'.format(pos, is_valid)) 
+
+        rospy.logdebug('pos: {}, is_valid: {}'.format(pos, is_valid))
         return pos, is_valid
     
     def _load_classifier(self):
@@ -177,6 +178,7 @@ if __name__ == '__main__':
 
     start_time = df.loc[0]['ros_time']
 
+    rev_count = 0
     prev_count = 0
     for i in range(0, len(df)):
         # Current dataset row
@@ -193,7 +195,16 @@ if __name__ == '__main__':
             .format(dt, row['duty'], count, is_valid))
 
         if is_valid:
-            rospy.loginfo('time: {:.2f}, duty: {}, count: {}'.format(dt, row['duty'], count))
+            # Check for revolutions - assume any change in count > 1400 is
+            # due to the encoder passing zero.
+            delta = count - prev_count
+            if delta > 1400:
+                rev_count = rev_count - 1
+            if delta < -1400:
+                rev_count = rev_count + 1
+
+            rospy.loginfo('time: {:.2f}, duty: {}, count: {}, rev: {}'
+                .format(dt, row['duty'], 1500 * rev_count + count, rev_count))
             encoder_pub.publish(count)
             prev_count = count
         else:
