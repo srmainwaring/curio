@@ -44,10 +44,12 @@ catkin_package(
 # Install
 
 catkin_install_python(PROGRAMS
-    nodes/curio_motor_controller
+    nodes/curio_base_controller
+    scripts/lx16a_cmd_vel_random.py
+    scripts/lx16a_cmd_vel_sinusoid.py
+    scripts/lx16a_cmd_vel_stepped.py
     scripts/lx16a_driver_test.py
-    scripts/lx16a_encoder_calibration.py
-    scripts/lx16a_make_training_data.py
-    scripts/lx16a_odometry.py
+    scripts/lx16a_encoder_filter.py
+    scripts/lx16a_encoder_logger.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

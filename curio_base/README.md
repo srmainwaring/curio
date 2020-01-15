@@ -9,7 +9,7 @@ ML estimator to predict whether the position data from a LX-16A servo is in its 
 Run `roscore`:
 
 ```bash
-$ roscore
+roscore
 ```
 
 Run rotary encoder node
@@ -18,10 +18,10 @@ Run rotary encoder node
 roslaunch curio_base rotary_encoder.launch
 ```
 
-Run the calibration node:
+Run the servo logger node:
 
 ```bash
-rosrun curio_base lx16a_servo_controller.py
+rosrun curio_base lx16a_encoder_logger.py
 ```
 
 Start `rqt` and use the topic publisher to the linear velocity component of `/cmd_vel`.
@@ -76,10 +76,10 @@ Run the rotary encoder node:
 roslaunch curio_base rotary_encoder.launch
 ```
 
-Run the calibration node:
+Run the servo logger node:
 
 ```bash
-rosrun curio_base lx16a_servo_controller.py
+rosrun curio_base lx16a_encoder_logger.py
 ```
 
 Play the `rosbag` using simulation time:

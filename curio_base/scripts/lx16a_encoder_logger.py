@@ -35,7 +35,7 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-''' Lewansoul LX-16A servo controller.
+''' Lewansoul LX-16A encoder logger.
 
     This module contains a ROS node for controlling a LX-16A servo
     to create labelled encoder data. 
@@ -55,7 +55,7 @@
 
     3. Start the servo node
 
-    $ rosrun curio_base lx16a_servo_controller.py 
+    $ rosrun curio_base lx16a_encoder_logger.py 
 
     Notes:
 
@@ -97,12 +97,13 @@ SERVO_ID            = 111
 CONTROL_FREQUENCY   = 50  # [Hz]
 OUT_DATA_FILENAME   = "./data/lx16a_raw_data_08.csv"
 
+REFERENCE_ENCODER_CPR = 4096  # Counts per revolution for the reference logger (publishing to /encoder)
 
 # Convert LX-16A position to angle in deg
 def pos_to_deg(pos):
     return pos * 240.0 / 1000.0
 
-class ServoController(object):
+class LX16AEncoderLogger(object):
     DATA_BUFFER_SIZE = 100
 
     def __init__(self):
@@ -149,7 +150,6 @@ class ServoController(object):
         # To simplify things we map the linear velocity from [-1.0, 1.0] m/s
         # to [-1000, 1000] duty, and limit it to the range.
         duty = int(1000 * self._cmd_vel_msg.linear.x)
-        # duty = duty * 3 # scale factor when simulation generated cmd_vel is in [-0.5, +0.5] 
         duty = max(duty, -1000)
         duty = min(duty, +1000)
 
@@ -158,12 +158,12 @@ class ServoController(object):
 
         pos = self._servo_driver.pos_read(SERVO_ID)
         count = self._encoder_msg.data
-        rospy.loginfo("duty: {}, pos: {}, count: {}".format(duty, pos, count % 4096))
+        rospy.loginfo("duty: {}, pos: {}, count: {}".format(duty, pos, count % REFERENCE_ENCODER_CPR))
 
         # Buffer data
         self._data.append([rospy.get_rostime(), duty, pos, count])
         self._data_size = self._data_size + 1
-        if (self._data_size == ServoController.DATA_BUFFER_SIZE):
+        if (self._data_size == LX16AEncoderLogger.DATA_BUFFER_SIZE):
             self.write_data()
 
     def write_data(self):
@@ -178,16 +178,16 @@ class ServoController(object):
             self._data = []
 
 if __name__ == '__main__':
-    rospy.loginfo('Starting Lewansoul LX-16A servo controller')
-    rospy.init_node('lx_16a_servo_controller')
+    rospy.loginfo('Starting Lewansoul LX-16A encoder logger')
+    rospy.init_node('lx16a_encoder_logger')
 
-    # Servo controller
-    servo_controller = ServoController()
+    # Servo encoder logger
+    encoder_logger = LX16AEncoderLogger()
 
     # Register shutdown behaviour
     def shutdown_callback():
-        rospy.loginfo('Shutdown lx_16a_servo_controller...')
-        servo_controller.shutdown()
+        rospy.loginfo('Shutdown lx16a_encoder_logger...')
+        encoder_logger.shutdown()
 
     rospy.on_shutdown(shutdown_callback)
 
@@ -197,6 +197,6 @@ if __name__ == '__main__':
     rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
     control_timer = rospy.Timer(
         rospy.Duration(1.0 / control_frequency),
-        servo_controller.control_loop)
+        encoder_logger.control_loop)
 
     rospy.spin()
