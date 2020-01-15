@@ -66,10 +66,10 @@ class LX16AEncoderFilter(object):
         # Initialise rotating buffers that store the encoder history.
         self._window = window
         self._index     = 0
-        self._ros_time  = [0 for x in range(window)]
-        self._duty      = [0 for x in range(window)]
-        self._pos       = [0 for x in range(window)]
-        self._X         = [0 for x in range(3 * window)]
+        self._ros_time  = [rospy.Time() for x in range(window)]
+        self._duty      = [0.0 for x in range(window)]
+        self._pos       = [0.0 for x in range(window)]
+        self._X         = [0.0 for x in range(3 * window)]
         self._filename       = filename
         self._classifier     = None
         self._revolutions    = 0
@@ -98,7 +98,7 @@ class LX16AEncoderFilter(object):
         # times
         for i in range(self._window):
             idx = (self._index - i) % self._window
-            dt = (self._ros_time[idx] - self._ros_time[self._index]) * 1.0E-9
+            dt = (self._ros_time[idx] - self._ros_time[self._index]).to_sec()
             self._X[i] = dt
         
         # duty 

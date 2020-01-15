@@ -87,7 +87,7 @@ if __name__ == '__main__':
         row = df.loc[i]
 
         # Time since start [s]
-        dt = (row['ros_time'] - start_time) * 1.0E-9
+        dt = (row['ros_time'] - start_time).to_sec()
 
         # Update the filter
         filter.update(row['ros_time'], row['duty'], row['pos'])
