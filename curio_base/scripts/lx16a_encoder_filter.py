@@ -54,7 +54,6 @@ from sklearn.pipeline import Pipeline
 # Constants
 DATA_DIR = './data/'
 SAMPLE_ID = '05'
-WINDOW_SIZE = 10
 
 # Raw data produced by servo and encoder 
 RAW_DATA_FILENAME = "{0}lx16a_raw_data_{1}.csv".format(
@@ -66,85 +65,117 @@ RAW_DATA_FILENAME = "{0}lx16a_raw_data_{1}.csv".format(
 # Filename for persisted ML model
 MODEL_FILENAME = "{0}lx16a_tree_model_all.joblib".format(DATA_DIR)
 
-ENCODER_MIN    = 0
-ENCODER_MAX    = 1500
-ENCODER_LOWER  = 1190
-ENCODER_UPPER  = 1310
-ENCODER_OFFSET = ENCODER_MAX - ENCODER_UPPER
+ENCODER_MIN    = 0      # minimum servo position reading
+ENCODER_MAX    = 1500   # maximum servo position reading
+ENCODER_LOWER  = 1190   # lower bound of the invalid range
+ENCODER_UPPER  = 1310   # upper bound of the invalid range
+ENCODER_STEP   = 1400   # threshold for determining the encoder has completed a revolution
+ENCODER_WINDOW = 10     # length of servo history used in the ML classifier
 
 class LX16AEncoderFilter(object):
     ''' Encoder filter for the LX-16A servo.
     '''
-    def __init__(self, window_size):        
+    def __init__(self, window):        
         '''Constructor        
-
-        The feature row vector contains:
-        window_size time deltas (increasingly negative) back to the previous encoder positions
-        window_size positions - the previous values of the LX-16A servo
-        window_size duty - the commanded duty at each previous time
         '''
         # Initialise rotating buffers that store the encoder history.
-        self._window_size = window_size
+        self._window = window
         self._index     = 0
-        self._ros_time  = [0 for x in range(window_size)]
-        self._duty      = [0 for x in range(window_size)]
-        self._pos       = [0 for x in range(window_size)]
-        self._X         = [0 for x in range(3 * window_size)]
+        self._ros_time  = [0 for x in range(window)]
+        self._duty      = [0 for x in range(window)]
+        self._pos       = [0 for x in range(window)]
+        self._X         = [0 for x in range(3 * window)]
         self._clf_pipe  = None
+        self._revolutions    = 0
+        self._prev_valid_pos = 0
 
         # Load the ML classifier pipeline
         self._load_classifier()
 
     def update(self, ros_time, duty, pos):
-        '''Update the feature vector X
-        
-            ros_time    the ros_time of the encoder reading
-            duty        the commanded duty to the LX-16A
-            pos         the measured position on the LX-16A
-            label       supervised learning label. True if pos is in the valid region.  
+        '''Update the encoder.
+
+        Update the encoder and estimate whether or not the new servo
+        position is in the valid range.
+
+        The feature vector X contains 3 * window entries:
+            dt[window]     the change in ros_time between servo postion readings
+            duty[window]   the commanded duty to the LX-16A
+            pos[window]    the measured position on the LX-16A
         '''
-        self._index = (self._index + 1) % self._window_size
+        # Update the history buffers
+        self._index = (self._index + 1) % self._window
         self._ros_time[self._index] = ros_time
         self._duty[self._index] = duty
         self._pos[self._index] = pos
-        
-        # array for the next row of the training set
-        self._X = [0 for x in range(3 * self._window_size)]
-
+                
         # times
-        for i in range(self._window_size):
-            idx = (self._index - i) % self._window_size
+        for i in range(self._window):
+            idx = (self._index - i) % self._window
             dt = (self._ros_time[idx] - self._ros_time[self._index]) * 1.0E-9
             self._X[i] = dt
         
         # duty 
-        for i in range(self._window_size):
+        for i in range(self._window):
             idx = (self._index - i)
             duty_i = self._duty[idx]
-            self._X[self._window_size + i] = duty_i
+            self._X[self._window + i] = duty_i
 
         # positions
-        for i in range(self._window_size):
+        for i in range(self._window):
             idx = (self._index - i)
             pos_i = self._pos[idx]
-            self._X[2 * self._window_size + i] = pos_i
+            self._X[2 * self._window + i] = pos_i
 
-    def get_pos(self):
-        ''' Get the current position (no filter)
-        '''
-        return self._pos[self._index]
-
-    def get_count(self):
-        ''' Get the current count (filtered)
-
-            Returns a tuple: position, is_valid
-        '''
+        # Apply the filter and update the encoder counters
         pos = self._pos[self._index] % ENCODER_MAX
         is_valid = self._clf_pipe.predict([self._X])[0]
+        if is_valid:
+            # If the absolute change in the servo position is 
+            # greater than ENCODER_STEP then we increment / decrement
+            # the revolution counter.
+            delta = pos - self._prev_valid_pos
+            if delta > ENCODER_STEP:
+                self._revolutions = self._revolutions - 1
+            if delta < -ENCODER_STEP:
+                self._revolutions = self._revolutions + 1
 
-        rospy.logdebug('pos: {}, is_valid: {}'.format(pos, is_valid))
-        return pos, is_valid
+            # Update the previous valid position
+            self._prev_valid_pos = pos
+
+    def get_revolutions(self):
+        ''' Get the number of revoutions since reset.
+        '''
+        return self._revolutions
+
+    def get_count(self):
+        ''' Get the current encoder count since reset (filtered).
+        '''
+        return self._prev_valid_pos + ENCODER_MAX * self._revolutions
+
+    def get_servo_pos(self, zero_offset=True):
+        ''' Get the current servo position and an estimate if it is valid.
+
+        Parameters:
+            zero_offset If True map the position to the range [0, 1500].
+        
+        Returns:
+            pos, is_valid
+        '''
+        is_valid = self._clf_pipe.predict([self._X])[0]
+        if zero_offset:
+            pos = self._pos[self._index] % ENCODER_MAX
+            return pos, is_valid
+        else:
+            pos = self._pos[self._index]
+            return pos, is_valid    
     
+    def reset(self):
+        ''' Reset the encoder counters to zero.
+        '''
+        self._revolutions    = 0
+        self._prev_valid_pos = 0
+
     def _load_classifier(self):
         ''' Load classifier
 
@@ -161,15 +192,22 @@ class LX16AEncoderFilter(object):
 
 
 if __name__ == '__main__':
-    rospy.loginfo('Lewansoul LX-16A encoder filter')
-    rospy.init_node('lx_16a_encoder_filter')
+    ''' A test node for the LX-16A encoder filter.
+
+    This example replays a raw data file containing ros_time, duty, pos, count
+    data for the servo through the encoder filter.
+    The encoder count is published to the topic /encoder.
+    The data is processes as fast as possible, so timestamps are not correct. 
+    '''
+    rospy.loginfo('Lewansoul LX-16A encoder filter (test)')
+    rospy.init_node('lx_16a_encoder_filter_test')
 
     # Publisher
     encoder_msg = Int64()
     encoder_pub = rospy.Publisher('/encoder', Int64, queue_size=10)
 
     # Encoder filter
-    filter = LX16AEncoderFilter(WINDOW_SIZE)
+    filter = LX16AEncoderFilter(ENCODER_WINDOW)
 
     # Load data from CSV and assign names to column headings
     df = pd.read_csv(RAW_DATA_FILENAME, header=None, names=['ros_time', 'duty', 'pos', 'count'])
@@ -178,8 +216,6 @@ if __name__ == '__main__':
 
     start_time = df.loc[0]['ros_time']
 
-    rev_count = 0
-    prev_count = 0
     for i in range(0, len(df)):
         # Current dataset row
         row = df.loc[i]
@@ -189,23 +225,14 @@ if __name__ == '__main__':
 
         # Update the filter
         filter.update(row['ros_time'], row['duty'], row['pos'])
-        count, is_valid = filter.get_count()
+        servo_pos, is_valid = filter.get_servo_pos()
+        count               = filter.get_count()
+        revolutions         = filter.get_revolutions()
 
-        rospy.logdebug('time: {:.2f}, duty: {}, count: {}, is_valid: {}'
-            .format(dt, row['duty'], count, is_valid))
+        rospy.logdebug('time: {:.2f}, duty: {}, pos: {}, is_valid: {}'
+            .format(dt, row['duty'], servo_pos, is_valid))
 
-        if is_valid:
-            # Check for revolutions - assume any change in count > 1400 is
-            # due to the encoder passing zero.
-            delta = count - prev_count
-            if delta > 1400:
-                rev_count = rev_count - 1
-            if delta < -1400:
-                rev_count = rev_count + 1
+        rospy.loginfo('time: {:.2f}, duty: {}, count: {}, rev: {}'
+            .format(dt, row['duty'], count, revolutions))
 
-            rospy.loginfo('time: {:.2f}, duty: {}, count: {}, rev: {}'
-                .format(dt, row['duty'], 1500 * rev_count + count, rev_count))
-            encoder_pub.publish(count)
-            prev_count = count
-        else:
-            encoder_pub.publish(prev_count)
+        encoder_pub.publish(count)
