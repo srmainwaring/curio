@@ -48,6 +48,7 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import TwistWithCovariance
 from nav_msgs.msg import Odometry
 from tf.transformations import quaternion_from_euler
+from tf import TransformBroadcaster
 
 # @TODO: use parameter server to locate this data...
 # Constants
@@ -457,7 +458,7 @@ class BaseController(object):
         self._odom_pub = rospy.Publisher('/odom', Odometry, queue_size=10)
         self._init_odometry()
 
-        # Initialise encoder filters
+        # Encoder filters
         self._wheel_servo_duty = {}
         self._encoder_filters = {}
         for servo in self._wheel_servos:
@@ -471,6 +472,9 @@ class BaseController(object):
             self._encoder_filters[servo.id]  = filter
             self._wheel_servo_duty[servo.id] = 0.0
         self._reset_encoders()
+
+        # Transforms
+        self._odom_broadcaster = TransformBroadcaster()
 
     def move(self, lin_vel, ang_vel):
         ''' Move the robot given linear and angular velocities for the base.
@@ -540,6 +544,7 @@ class BaseController(object):
                 wheel_lin_vel[i] = wheel_lin_vel[i] * speed_limiter_sf
 
         # Update steer servos
+        # @TODO link the time of the move to the angle which the servos turn through
         rospy.logdebug('Updating steer servos')
         for i in range(len(self._steer_servos)):
             servo = self._steer_servos[i]
@@ -562,7 +567,7 @@ class BaseController(object):
 
             rospy.logdebug('id: {}, angle: {:.2f}, servo_pos: {}'.format(servo.id, angle_deg, servo_pos))
             self._servo_driver.servo_mode_write(servo.id)
-            self._servo_driver.move_time_write(servo.id, servo_pos)
+            self._servo_driver.move_time_write(servo.id, servo_pos, 150)
 
         # Update wheel servos
         rospy.logdebug('Updating wheel servos')
@@ -630,6 +635,7 @@ class BaseController(object):
         # Read and publish
         self._update_odometry(time)
         self._publish_odometry(time)
+        self._publish_tf(time)
 
         # PID control would go here...
 
@@ -745,3 +751,16 @@ class BaseController(object):
 
         # Update the odometry
         self._odometry.update(wheel_servo_pos, time)
+
+    def _publish_tf(self, time):
+        '''
+        Publish the transform from 'odom' to 'base_link'
+        '''
+        # Broadcast the transform from 'odom' to 'base_link'
+        self._odom_broadcaster.sendTransform(
+            (self._odometry.get_x(), self._odometry.get_y(), 0.0),
+            quaternion_from_euler(0.0, 0.0, self._odometry.get_heading()),
+            time,
+            'base_link',
+            'odom')
+

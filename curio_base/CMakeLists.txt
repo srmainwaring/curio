@@ -8,13 +8,17 @@ add_compile_options(-std=c++11)
 # Find dependent catkin packages
 
 find_package(catkin REQUIRED COMPONENTS
+    curio_description
     curio_control
     curio_msgs
+    geometry_msgs
+    joint_state_publisher
+    nav_msgs
+    robot_state_publisher
     rospy
     # serial
-    geometry_msgs
-    nav_msgs
     std_msgs
+    tf
 )
 
 ################################################################################
@@ -29,13 +33,17 @@ catkin_package(
     # INCLUDE_DIRS include
     LIBRARIES 
     CATKIN_DEPENDS
+        curio_description
         curio_control
         curio_msgs
+        geometry_msgs
+        joint_state_publisher
+        nav_msgs
+        robot_state_publisher
         rospy
         # serial
-        geometry_msgs
-        nav_msgs
         std_msgs
+        tf
 )
 
 ################################################################################
