@@ -70,7 +70,7 @@ curr_t = None
 prev_x = 0.0
 curr_x = 0.0
 
-def control_loop(event):
+def update(event):
     global control_frequency
     global level
     global level_idx
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
     control_timer = rospy.Timer(
         rospy.Duration(1.0 / control_frequency),
-        control_loop)
+        update)
 
     rospy.spin()
 

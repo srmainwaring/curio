@@ -102,7 +102,7 @@ class LX16AOdometer(object):
     def cmd_vel_callback(self, msg):
         self._cmd_vel_msg = msg
 
-    def control_loop(self, event):
+    def update(self, event):
         # To simplify things we map the linear velocity from [-1.0, 1.0] m/s
         # to [-1000, 1000] duty, and limit it to the range.
         duty = int(1000 * self._cmd_vel_msg.linear.x)
@@ -144,6 +144,6 @@ if __name__ == '__main__':
     rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
     control_timer = rospy.Timer(
         rospy.Duration(1.0 / control_frequency),
-        odometer.control_loop)
+        odometer.update)
 
     rospy.spin()

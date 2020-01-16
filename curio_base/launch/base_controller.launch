@@ -11,4 +11,7 @@
         </rosparam>
     </node>
 
+    <!-- Controllers and localisation -->
+    <include file="$(find curio_control)/launch/control.launch" />
+
 </launch>

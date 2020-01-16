@@ -91,7 +91,7 @@ if __name__ == '__main__':
     rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
     control_timer = rospy.Timer(
         rospy.Duration(1.0 / control_frequency),
-        base_controller.control_loop)
+        base_controller.update)
 
     # Wait for shutdown
     rospy.spin()

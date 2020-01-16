@@ -9,8 +9,12 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
+    <depend>curio_control</depend>
+    <depend>curio_msgs</depend>
     <depend>rospy</depend>
     <!-- <depend>serial</depend> -->
     <depend>geometry_msgs</depend>
+    <depend>nav_msgs</depend>
     <depend>std_msgs</depend>
+
 </package>

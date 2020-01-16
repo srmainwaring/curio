@@ -8,9 +8,12 @@ add_compile_options(-std=c++11)
 # Find dependent catkin packages
 
 find_package(catkin REQUIRED COMPONENTS
+    curio_control
+    curio_msgs
     rospy
     # serial
     geometry_msgs
+    nav_msgs
     std_msgs
 )
 
@@ -26,9 +29,12 @@ catkin_package(
     # INCLUDE_DIRS include
     LIBRARIES 
     CATKIN_DEPENDS
+        curio_control
+        curio_msgs
         rospy
         # serial
         geometry_msgs
+        nav_msgs
         std_msgs
 )
 
