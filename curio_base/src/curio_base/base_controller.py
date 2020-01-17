@@ -110,6 +110,52 @@ def turning_radius_and_rate(v_b, omega_b, d):
         omega_p = (vr - vl) / d
         return r_p, omega_p
 
+class MeanWindowFilter(object):
+    ''' Simple rolling window filter.
+    '''
+    def __init__(self, window=5):
+        ''' Constructor
+
+        Parameters:
+            window  size of the rolling window (default = 5)
+        '''
+        self._window = window
+        self._index  = 0
+        self._buffer = [0.0 for i in range(window)]        
+        self._sum    = 0.0 
+        self._mean   = 0.0
+
+    def update(self, value):
+        ''' Update the filter with the the next value
+
+        Parameters:
+            value  a float value
+        '''
+        # Update the ring buffer
+        self._index = (self._index + 1) % self._window
+        old_value = self._buffer[self._index] 
+        self._buffer[self._index] = value
+
+        # Update the stats
+        self._sum  = self._sum + value - old_value
+        self._mean = self._sum / self._window
+
+    def get_mean(self):
+        ''' Get the rolling mean
+
+        Returns:
+            the rolling mean
+        '''
+        return self._mean
+
+    def get_window(self):
+        ''' Get the size of the rolling window
+
+        Returns:
+            the size of the rolling window
+        '''
+        return self._window
+
 class Servo(object):
     '''Servo properties.
     
@@ -193,11 +239,10 @@ class AckermannOdometry(object):
         self._heading = 0.0     # [rad]
         self._x       = 0.0     # [m]
         self._y       = 0.0     # [m]
-        self._lin_vel = 0.0     # [m/s]
-        self._ang_vel = 0.0     # [rad/s]
+        self._lin_vel_filter = MeanWindowFilter(window=5) # [m/s]
+        self._ang_vel_filter = MeanWindowFilter(window=5) # [rad/s]
         self._wheel_radius = 0.06               # [m]
         self._mid_wheel_lat_separation = 0.52   # [m]
-
         self._num_wheels = 6
         self._wheel_cur_pos = [0.0 for x in range(self._num_wheels)]    # [m]
         self._wheel_old_pos = [0.0 for x in range(self._num_wheels)]    # [m]
@@ -247,9 +292,9 @@ class AckermannOdometry(object):
         # Estimate speeds using a rolling mean / mode to filter them
         self._timestamp = time
 
-        # @TODO - add velocity filters
-        self._lin_vel = lin_vel/dt
-        self._ang_vel = ang_vel/dt
+        # Add to velocity filters
+        self._lin_vel_filter.update(lin_vel/dt)
+        self._ang_vel_filter.update(ang_vel/dt)
 
         return True
 
@@ -288,9 +333,9 @@ class AckermannOdometry(object):
         # Estimate speeds using a rolling mean / mode to filter them
         self._timestamp = time
 
-        # @TODO - add velocity filters
-        self._lin_vel = lin_vel/dt
-        self._ang_vel = ang_vel/dt
+        # Add to velocity filters
+        self._lin_vel_filter.update(lin_vel/dt)
+        self._ang_vel_filter.update(ang_vel/dt)
 
         return True
 
@@ -312,12 +357,12 @@ class AckermannOdometry(object):
     def get_lin_vel(self):
         ''' Get the linear velocity of the body [m/s]
         '''
-        return self._lin_vel
+        return self._lin_vel_filter.get_mean()
 
     def get_ang_vel(self):
         ''' Get the angular velocity of the body [rad/s]
         '''
-        return self._ang_vel
+        return self._ang_vel_filter.get_mean()
 
     def set_wheel_params(self, wheel_radius, mid_wheel_lat_separation):
         ''' Set the wheel and steering geometry
@@ -714,12 +759,14 @@ class BaseController(object):
             pos = self._servo_driver.pos_read(servo.id)            
             filter.reset(pos)
 
-    # @TODO: this fails when running at low update rate (e.g. 10Hz).
-    # This is because the encoder filter is not updated fast enough to
-    # have two measurements close either side of a discontinuity in the 
-    # servo position to see a jump of 1400 counts . Instead we are getting
-    # aliasing which is why the code behaves at low velocities and fails
-    # as it increases.
+    # @TODO: Errors when running at low control loop update rate (e.g. < 15Hz).
+    # 
+    # The error is because the encoder filter is not updated fast enough to
+    # have two measurements close enough in time either side of a discontinuity 
+    # in the servo position to see a jump of 1000-1400 counts. Instead the
+    # encoder suffers from aliasing. As result the odometry will work at
+    # low velocities and then suddenly fail as it is increased.
+    # 
     def _update_all_wheel_servo_positions(self, time):
         ''' Get the servo positions in radians for all wheels.
         '''
