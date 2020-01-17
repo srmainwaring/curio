@@ -52,14 +52,6 @@ from nav_msgs.msg import Odometry
 from tf.transformations import quaternion_from_euler
 from tf import TransformBroadcaster
 
-# @TODO: use parameter server to locate this data...
-# Constants
-DATA_DIR  = '/Users/rhys/Code/robotics/curio/curio_ws/data/'
-WINDOW    = 10
-
-# Filename for persisted ML model
-MODEL_FILENAME = "{0}lx16a_tree_model_all.joblib".format(DATA_DIR)
-
 def degree(rad):
     return rad * 180.0 / math.pi
 
@@ -551,8 +543,17 @@ class BaseController(object):
         self._init_odometry()
 
         # Encoder filters
+        self._classifier_window = rospy.get_param('~classifier_window', 10)
+
+        if not rospy.has_param('~classifier_filename'):
+            rospy.logerr('Missing parameter: classifier_filename. Exiting...')
+        self._classifier_filename = rospy.get_param('~classifier_filename')
+
         self._wheel_servo_duty = [0 for i in range(BaseController.NUM_WHEELS)]
-        self._encoder_filters = [LX16AEncoderFilter(MODEL_FILENAME, WINDOW) for i in range(BaseController.NUM_WHEELS)]
+        self._encoder_filters = [
+            LX16AEncoderFilter(self._classifier_filename, self._classifier_window)
+            for i in range(BaseController.NUM_WHEELS)
+        ]
 
         for i in range(BaseController.NUM_WHEELS):
             # Invert the encoder filters on the right side
@@ -812,7 +813,7 @@ class BaseController(object):
         servo_positions[Servo.LEFT]  = left_pos
         servo_positions[Servo.RIGHT] = right_pos
 
-        rospy.loginfo("time: {}, left: {}, right: {}".format(time, left_pos, right_pos))
+        rospy.logdebug("time: {}, left: {}, right: {}".format(time, left_pos, right_pos))
 
         return servo_positions
 

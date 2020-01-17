@@ -43,8 +43,8 @@ import rospy
 
 
 if __name__ == '__main__':
-    rospy.loginfo('Starting mean filter test')
     rospy.init_node('lx16a_mean_filter_test')
+    rospy.loginfo('Starting mean filter test')
 
     # Create the filter
     filter = MeanWindowFilter(window=5)

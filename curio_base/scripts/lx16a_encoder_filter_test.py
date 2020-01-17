@@ -65,8 +65,8 @@ if __name__ == '__main__':
     The encoder count is published to the topic /encoder.
     The data is processes as fast as possible, so timestamps are not correct. 
     '''
-    rospy.loginfo('Lewansoul LX-16A encoder filter (test)')
     rospy.init_node('lx_16a_encoder_filter_test')
+    rospy.loginfo('Lewansoul LX-16A encoder filter (test)')
 
     # Publisher
     encoder_msg = Int64()

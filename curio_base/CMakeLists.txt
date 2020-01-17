@@ -67,5 +67,6 @@ catkin_install_python(PROGRAMS
     scripts/lx16a_encoder_logger.py
     scripts/lx16a_mean_filter_test.py
     scripts/lx16a_odometry_test.py
+    scripts/lx16a_train_classifier.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )

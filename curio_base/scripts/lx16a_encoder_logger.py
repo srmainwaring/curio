@@ -178,8 +178,8 @@ class LX16AEncoderLogger(object):
             self._data = []
 
 if __name__ == '__main__':
-    rospy.loginfo('Starting Lewansoul LX-16A encoder logger')
     rospy.init_node('lx16a_encoder_logger')
+    rospy.loginfo('Starting Lewansoul LX-16A encoder logger')
 
     # Servo encoder logger
     encoder_logger = LX16AEncoderLogger()

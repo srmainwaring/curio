@@ -1,0 +1,24 @@
+<!-- Launch the LX-16A classifier training node
+
+Parameters
+    check_accuracy_score            set to true to run the accuracy score
+    check_cross_validation_score    set to true to run the cross validation score (takes time)
+    dataset_filename                the name of the zipped dataset csv file
+    classifier_filename             the name of the output model file (python pickled format)
+-->
+<launch>
+    <arg name="check_accuracy_score" default="false" />
+    <arg name="check_cross_validation_score" default="false" />
+    <arg name="dataset_filename" default="$(find curio_base)/data/lx16a_dataset.zip" />
+    <arg name="classifier_filename" default="$(find curio_base)/data/lx16a_tree_classifier.joblib" />
+
+    <!-- Run the training script for the classifier used the encoder filter  -->
+    <node pkg="curio_base" type="lx16a_train_classifier.py" name="lx16a_train_classifier"
+        respawn="false" output="screen">
+        <param name="check_accuracy_score" value="$(arg check_accuracy_score)" />
+        <param name="check_cross_validation_score" value="$(arg check_cross_validation_score)" />
+        <param name="dataset_filename" value="$(arg dataset_filename)" />
+        <param name="classifier_filename" value="$(arg classifier_filename)" />
+    </node>
+
+</launch>

@@ -132,8 +132,8 @@ class LX16AOdometer(object):
         # rospy.loginfo("duty: {}, pos: {}, count: {}".format(duty, pos, count))
 
 if __name__ == '__main__':
-    rospy.loginfo('Starting Lewansoul LX-16A odometry test')
     rospy.init_node('lx16a_odometry_test')
+    rospy.loginfo('Starting Lewansoul LX-16A odometry test')
 
     # Servo odometer
     odometer = LX16AOdometer()

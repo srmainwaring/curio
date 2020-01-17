@@ -1,11 +1,15 @@
 <!-- Launch the base controller node -->
 <launch>
+    <arg name="classifier_filename" default="$(find curio_base)/data/lx16a_tree_classifier.joblib" />
+    <arg name="classifier_window" default="10" />
     <arg name="model" default="$(find curio_description)/urdf/curio.urdf.xacro" />
     <arg name="port" default="/dev/ttyUSB0" />
 
     <!-- Controller for the mobile base  -->
     <node pkg="curio_base" type="curio_base_controller" name="curio_base_controller"
         respawn="true" output="screen">
+        <param name="classifier_filename" value="$(arg classifier_filename)" />
+        <param name="classifier_window" value="$(arg classifier_window)" />
         <rosparam command="load" file="$(find curio_base)/config/base_controller.yaml" />
         <rosparam subst_value="true">
             port: $(arg port)

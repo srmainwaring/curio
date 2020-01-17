@@ -106,9 +106,8 @@ def update(event):
     cmd_vel_pub.publish(cmd_vel_msg)
 
 if __name__ == '__main__':
-
-    rospy.loginfo('Starting LX-16A cmd_vel random')
     rospy.init_node('lx_16a_cmd_vel_random')
+    rospy.loginfo('Starting LX-16A cmd_vel random')
 
     # Start the control loop
     init_t = rospy.get_rostime()

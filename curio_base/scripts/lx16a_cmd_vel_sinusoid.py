@@ -119,9 +119,8 @@ def update(event):
     cmd_vel_pub.publish(cmd_vel_msg)
 
 if __name__ == '__main__':
-
-    rospy.loginfo('Starting LX-16A cmd_vel sinusoidal')
     rospy.init_node('lx_16a_cmd_vel_sinusoidal')
+    rospy.loginfo('Starting LX-16A cmd_vel sinusoidal')
 
     # Start the control loop
     init_t = rospy.get_rostime()
