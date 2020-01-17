@@ -49,7 +49,7 @@ from geometry_msgs.msg import Twist
 SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0 # [s]
-SERVO_ID            = 111
+SERVO_ID            = 11
 
 CONTROL_FREQUENCY   = 50  # [Hz]
 
@@ -111,7 +111,14 @@ class LX16AOdometer(object):
 
         # Read odometry
         rostime = rospy.get_rostime()    
-        pos = self._servo_driver.pos_read(SERVO_ID)
+
+        # @TODO: PROFILING
+        pos = 0
+        for i in range(10):
+            pos = self._servo_driver.pos_read(SERVO_ID)
+        # @TODO: PROFILING
+
+        # pos = self._servo_driver.pos_read(SERVO_ID)
         self._encoder_filter.update(rostime, duty, pos)
         count = self._encoder_filter.get_count()
 
@@ -122,7 +129,7 @@ class LX16AOdometer(object):
         self._encoder_msg.data = count
         self._encoder_pub.publish(self._encoder_msg)
 
-        rospy.loginfo("duty: {}, pos: {}, count: {}".format(duty, pos, count))
+        # rospy.loginfo("duty: {}, pos: {}, count: {}".format(duty, pos, count))
 
 if __name__ == '__main__':
     rospy.loginfo('Starting Lewansoul LX-16A odometry test')

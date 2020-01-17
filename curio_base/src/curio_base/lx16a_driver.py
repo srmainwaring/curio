@@ -496,6 +496,59 @@ class LX16ADriver(object):
         # Read OK - return data (bytearray)
         return data
 
+    # Read all bytes in one call instead of a byte at a time
+    #  - no noticeable performance change
+    # 
+    # def read_response2(self, servo_id, length, command):
+    #     Check port is open
+    #     if not self.is_open():
+    #         rospy.logwarn("Serial port not open")
+    #         return -1
+
+    #     # Read length + 3 bytes
+    #     bytes = self.read_bytearray(length + 3)
+
+    #     # Header (bytes 0 and 1)
+    #     if bytes[0] != LX16ADriver.SERVO_BUS_HEADER:
+    #         rospy.logwarn("Invalid 1st header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
+    #         return -1
+
+    #     if bytes[1] != LX16ADriver.SERVO_BUS_HEADER:
+    #         rospy.logwarn("Invalid 2nd header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
+    #         return -1
+
+    #     # Read id (byte 2)
+    #     if bytes[2] != servo_id:
+    #         rospy.logwarn("Invalid servo_id: expecting: {}, got: {}".format(servo_id, byte))
+    #         return -1
+
+    #     # Read length (byte 3)
+    #     if bytes[3] != length:
+    #         rospy.logwarn("Invalid length: expecting: {}, got: {}".format(length, byte))
+    #         return -1
+
+    #     # Read command (byte 4)
+    #     if bytes[4] != command:
+    #         rospy.logwarn("Invalid command: expecting: {}, got: {}".format(command, byte))
+    #         return -1
+
+    #     # Read data (byte 5 - (length + 1))
+    #     data = bytes[5:length+2]
+    #     if len(data) != length - 3:
+    #         rospy.logwarn("Invalid len(data): expecting: {}, got: {}".format(length - 3, len(data)))
+    #         return -1
+
+    #     # Calculate checksum
+    #     checksum = self.checksum(servo_id, length, command, data)
+
+    #     # Read checksum (byte (length + 2))
+    #     if bytes[length+2] != checksum:
+    #         rospy.logwarn("Invalid checksum: expecting: {}, got: ".format(checksum, byte))
+    #         return -1
+
+    #     # Read OK - return data (bytearray)
+    #     return data
+
     def send_command(self, servo_id, length, command, data=None):
         # Check the port is open
         if not self.is_open():

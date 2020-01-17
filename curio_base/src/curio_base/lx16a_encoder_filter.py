@@ -52,7 +52,7 @@ ENCODER_MIN    = 0      # minimum servo position reading
 ENCODER_MAX    = 1500   # maximum servo position reading
 ENCODER_LOWER  = 1190   # lower bound of the invalid range
 ENCODER_UPPER  = 1310   # upper bound of the invalid range
-ENCODER_STEP   = 1400   # threshold for determining the encoder has completed a revolution
+ENCODER_STEP   = 1000   # threshold for determining the encoder has completed a revolution
 
 class LX16AEncoderFilter(object):
     ''' Encoder filter for the LX-16A servo.
@@ -167,6 +167,11 @@ class LX16AEncoderFilter(object):
         else:
             pos = self._pos[self._index]
             return pos, is_valid    
+
+    def get_invert(self):
+        ''' Get the invert state: whether the encoder count is inverted.
+        '''
+        return self._invert
 
     def set_invert(self, is_inverted):
         ''' Invert the direction of the encoder count

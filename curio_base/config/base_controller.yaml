@@ -7,7 +7,7 @@ baudrate: 115200
 timeout: 1.0
 
 # Update frequencies: control loop
-control_frequency: 10.0
+control_frequency: 20.0
 
 # Robot dimensions and limits
 max_linear_velocity:  0.37   # [m/s]

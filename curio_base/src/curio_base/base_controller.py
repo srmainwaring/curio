@@ -39,6 +39,8 @@
 
 from curio_base.lx16a_driver import LX16ADriver
 from curio_base.lx16a_encoder_filter import LX16AEncoderFilter
+from curio_msgs.msg import CurioState
+from curio_msgs.msg import LX16AState
 
 import math
 import rospy
@@ -209,11 +211,11 @@ class AckermannOdometry(object):
         '''        
         self._timestamp = time
 
-    def update(self, wheel_servo_pos, time):
+    def update_6(self, wheel_servo_pos, time):
         ''' Update the odometry with the latest wheel servo positions
 
         Parameters
-            wheel_servo_pos     angular position of the wheel servos [rad]
+            wheel_servo_pos     angular position of the 6 wheel servos [rad]
             time                current time
         '''
         for i in range(self._num_wheels):
@@ -233,6 +235,47 @@ class AckermannOdometry(object):
         # Compute linear and angular velocities of the mobile base (base_link frame)  
         lin_vel = (self._wheel_est_vel[MID_RIGHT] + self._wheel_est_vel[MID_LEFT]) * 0.5
         ang_vel = (self._wheel_est_vel[MID_RIGHT] - self._wheel_est_vel[MID_LEFT]) / self._mid_wheel_lat_separation
+
+        # Integrate the velocities to get the linear and angular positions
+        self._integrate_velocities(lin_vel, ang_vel)
+
+        # Cannot estimate the speed for small time intervals
+        dt = (time - self._timestamp).to_sec()
+        if dt < 0.0001:
+            return False
+
+        # Estimate speeds using a rolling mean / mode to filter them
+        self._timestamp = time
+
+        # @TODO - add velocity filters
+        self._lin_vel = lin_vel/dt
+        self._ang_vel = ang_vel/dt
+
+        return True
+
+    def update_2(self, wheel_servo_pos, time):
+        ''' Update the odometry with the latest mid wheel servo positions
+
+        Parameters
+            wheel_servo_pos     angular position of the 2 mid wheel servos [rad]
+            time                current time
+        '''
+        for i in range(2):
+            # Get the current wheel joint (linear) positions [m]
+            self._wheel_cur_pos[i] = wheel_servo_pos[i] * self._wheel_radius
+
+            # Estimate the velocity of the wheels using old and current positions
+            self._wheel_est_vel[i] = self._wheel_cur_pos[i] - self._wheel_old_pos[i]
+
+            # Update old position with current
+            self._wheel_old_pos[i] = self._wheel_cur_pos[i]
+
+        LEFT  = Servo.LEFT
+        RIGHT = Servo.RIGHT
+
+        # Compute linear and angular velocities of the mobile base (base_link frame)  
+        lin_vel = (self._wheel_est_vel[RIGHT] + self._wheel_est_vel[LEFT]) * 0.5
+        ang_vel = (self._wheel_est_vel[RIGHT] - self._wheel_est_vel[LEFT]) / self._mid_wheel_lat_separation
 
         # Integrate the velocities to get the linear and angular positions
         self._integrate_velocities(lin_vel, ang_vel)
@@ -331,6 +374,10 @@ class BaseController(object):
     SERVO_POS_MIN = 0.0             # Minimum servo position (servo units).
     SERVO_POS_MAX = 1000.0          # Maximum servo position (servo units).
 
+    # 6 wheels, 4 steering.
+    NUM_WHEELS = 6
+    NUM_STEERS = 4
+
     def __init__(self):
         rospy.loginfo('Initialising mobile base controller...')
 
@@ -385,14 +432,14 @@ class BaseController(object):
 
         # Servo parameters - required
         wheel_servo_params = rospy.get_param('~wheel_servos')
-        if len(wheel_servo_params) != 6:
+        if len(wheel_servo_params) != BaseController.NUM_WHEELS:
             rospy.logerr("Parameter 'wheel_servos' must be an array length 6, got: {}"
                 .format(len(wheel_servo_params)))
             return
         rospy.logdebug('wheel servo params: {}'.format(wheel_servo_params))
 
         steer_servo_params = rospy.get_param('~steer_servos')
-        if len(steer_servo_params) != 4:
+        if len(steer_servo_params) != BaseController.NUM_STEERS:
             rospy.logerr("parameter 'steer_servos' must be an array length 4, got: {}"
                 .format(len(steer_servo_params)))
             return
@@ -459,22 +506,25 @@ class BaseController(object):
         self._init_odometry()
 
         # Encoder filters
-        self._wheel_servo_duty = {}
-        self._encoder_filters = {}
-        for servo in self._wheel_servos:
-            # Create an encoder filter for each wheel servo
-            filter = LX16AEncoderFilter(MODEL_FILENAME, WINDOW)
+        self._wheel_servo_duty = [0 for i in range(BaseController.NUM_WHEELS)]
+        self._encoder_filters = [LX16AEncoderFilter(MODEL_FILENAME, WINDOW) for i in range(BaseController.NUM_WHEELS)]
 
+        for i in range(BaseController.NUM_WHEELS):
             # Invert the encoder filters on the right side
+            servo = self._wheel_servos[i]
             if servo.lat_label == Servo.RIGHT:
-                filter.set_invert(True)
+                self._encoder_filters[i].set_invert(True)
             
-            self._encoder_filters[servo.id]  = filter
-            self._wheel_servo_duty[servo.id] = 0.0
         self._reset_encoders()
 
-        # Transforms
+        # Transform
         self._odom_broadcaster = TransformBroadcaster()
+
+        # Robot status
+        self._curio_state_msg = CurioState()
+        self._curio_state_pub = rospy.Publisher('status', CurioState, queue_size=10)
+        self._wheel_servo_state = [LX16AState() for x in range(BaseController.NUM_WHEELS)]
+        self._steer_servo_state = [LX16AState() for x in range(BaseController.NUM_STEERS)]
 
     def move(self, lin_vel, ang_vel):
         ''' Move the robot given linear and angular velocities for the base.
@@ -567,7 +617,7 @@ class BaseController(object):
 
             rospy.logdebug('id: {}, angle: {:.2f}, servo_pos: {}'.format(servo.id, angle_deg, servo_pos))
             self._servo_driver.servo_mode_write(servo.id)
-            self._servo_driver.move_time_write(servo.id, servo_pos, 150)
+            self._servo_driver.move_time_write(servo.id, servo_pos, 50)
 
         # Update wheel servos
         rospy.logdebug('Updating wheel servos')
@@ -588,7 +638,7 @@ class BaseController(object):
             self._servo_driver.motor_mode_write(servo.id, duty)
 
             # Update duty array (needed for servo position classifier)
-            self._wheel_servo_duty[servo.id] = duty 
+            self._wheel_servo_duty[i] = duty 
 
     def set_steer_servo_offsets(self):
         ''' Set angle offsets for the steering servos.
@@ -634,8 +684,11 @@ class BaseController(object):
 
         # Read and publish
         self._update_odometry(time)
+        # @TODO: move status update to a separate update loop with a lower update rate
+        # self._update_status(time)
         self._publish_odometry(time)
         self._publish_tf(time)
+        self._publish_status(time)
 
         # PID control would go here...
 
@@ -655,35 +708,92 @@ class BaseController(object):
         ''' Reset the encoders
         '''
         # Reset encoder filters
-        for servo in self._wheel_servos:
-            filter = self._encoder_filters[servo.id]
+        for i in range(BaseController.NUM_WHEELS):
+            servo = self._wheel_servos[i]
+            filter = self._encoder_filters[i]
             pos = self._servo_driver.pos_read(servo.id)            
             filter.reset(pos)
 
-    def _get_wheel_servo_positions(self):
-        ''' Get the servo positions in radians from the encoders
+    # @TODO: this fails when running at low update rate (e.g. 10Hz).
+    # This is because the encoder filter is not updated fast enough to
+    # have two measurements close either side of a discontinuity in the 
+    # servo position to see a jump of 1400 counts . Instead we are getting
+    # aliasing which is why the code behaves at low velocities and fails
+    # as it increases.
+    def _update_all_wheel_servo_positions(self, time):
+        ''' Get the servo positions in radians for all wheels.
         '''
-        # Update encoder filters
-        encoder_counts = []
-        servo_positions = []
-        msg = ''
-        for servo in self._wheel_servos:
-            filter = self._encoder_filters[servo.id]
-            rostime = rospy.get_rostime()
-            duty = self._wheel_servo_duty[servo.id]
+        servo_positions = [0 for i in range(BaseController.NUM_WHEELS)]
+        msg = 'time: {}, '.format(time)
+        for i in range (BaseController.NUM_WHEELS):
+            servo = self._wheel_servos[i]
+            filter = self._encoder_filters[i]
+            state = self._wheel_servo_state[i]            
+
+            # Calculate the encoder count
+            duty = self._wheel_servo_duty[i]            
             pos = self._servo_driver.pos_read(servo.id)            
-            filter.update(rostime, duty, pos)
+
+            filter.update(time, duty, pos)
             count = filter.get_count()
             theta = filter.get_angular_position()
-            encoder_counts.append(count)
-            servo_positions.append(theta)
-            msg = msg + "{}: {}, {:.2f}".format(servo.id, count, theta)
+ 
+            servo_positions[i] = theta
 
-        # rospy.loginfo(msg)
+            # Update state
+            state.duty = duty
+            state.pos = pos
+            state.count = count
+            state.count_is_inverted = 0 if filter.get_invert() > 0 else 1
+
+            # Append to debug message
+            msg = msg + "{}: {}, ".format(servo.id, count)
+
+        rospy.loginfo(msg)
 
         return servo_positions
 
+    def _update_mid_wheel_servo_positions(self, time):
+        ''' Update the servo positions in radians for the left and right mid wheels.
+        '''
+
+        # @TODO: resolve hardcoded index
+        left_pos  = self._update_wheel_servo_position(time, 1)
+        right_pos = self._update_wheel_servo_position(time, 4)
+
+        servo_positions = [0 for i in range(2)]
+        servo_positions[Servo.LEFT]  = left_pos
+        servo_positions[Servo.RIGHT] = right_pos
+
+        rospy.loginfo("time: {}, left: {}, right: {}".format(time, left_pos, right_pos))
+
+        return servo_positions
+
+    def _update_wheel_servo_position(self, time, i):
+        ''' Update the servo positions in radians for the i-th wheel.
+        '''
+        servo = self._wheel_servos[i]
+        filter = self._encoder_filters[i]
+        state = self._wheel_servo_state[i]            
+
+        # Calculate the encoder count
+        duty = self._wheel_servo_duty[i]            
+        pos = self._servo_driver.pos_read(servo.id)            
+
+        filter.update(time, duty, pos)
+        count = filter.get_count()
+        theta = filter.get_angular_position()
+
+        # Update state
+        state.duty = duty
+        state.pos = pos
+        state.count = count
+        state.count_is_inverted = 0 if filter.get_invert() > 0 else 1
+        return theta
+
     def _init_odometry(self):
+        ''' Initialise the odometry
+        '''
         odom_frame_id = 'odom'
         base_frame_id = 'base_link'
         pose_cov_diag = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01] 
@@ -718,13 +828,13 @@ class BaseController(object):
     def _publish_odometry(self, time):
         ''' Populate the nav_msgs.Odometry message and publish.
         '''
-        rospy.loginfo('x: {:.2f}, y: {:.2f}, heading: {:.2f}, lin_vel: {:.2f}, ang_vel: {:.2f}'
-            .format(
-                self._odometry.get_x(),
-                self._odometry.get_y(),
-                self._odometry.get_heading(),
-                self._odometry.get_lin_vel(),
-                self._odometry.get_ang_vel()))
+        # rospy.loginfo('x: {:.2f}, y: {:.2f}, heading: {:.2f}, lin_vel: {:.2f}, ang_vel: {:.2f}'
+        #     .format(
+        #         self._odometry.get_x(),
+        #         self._odometry.get_y(),
+        #         self._odometry.get_heading(),
+        #         self._odometry.get_lin_vel(),
+        #         self._odometry.get_ang_vel()))
 
         quat = quaternion_from_euler(0.0, 0.0, self._odometry.get_heading())
 
@@ -746,15 +856,16 @@ class BaseController(object):
         This is the same calculation as used in the odometry
         for the ackermann_drive_controller.
         '''
-        # Get the angular position of the wheel servos [rad]
-        wheel_servo_pos = self._get_wheel_servo_positions()
+        # Get the angular position of the all wheel servos [rad] and update odometry
+        # wheel_servo_pos = self._update_all_wheel_servo_positions(time)
+        # self._odometry.update_6(wheel_servo_pos, time)
 
-        # Update the odometry
-        self._odometry.update(wheel_servo_pos, time)
+        # Get the angular position of the mid wheel servos [rad] and update odometry
+        wheel_servo_pos = self._update_mid_wheel_servo_positions(time)
+        self._odometry.update_2(wheel_servo_pos, time)
 
     def _publish_tf(self, time):
-        '''
-        Publish the transform from 'odom' to 'base_link'
+        ''' Publish the transform from 'odom' to 'base_link'
         '''
         # Broadcast the transform from 'odom' to 'base_link'
         self._odom_broadcaster.sendTransform(
@@ -764,3 +875,37 @@ class BaseController(object):
             'base_link',
             'odom')
 
+    def _update_status(self, time):
+        ''' Update the rover's status
+        '''
+        for i in range (BaseController.NUM_WHEELS):
+            servo = self._wheel_servos[i]
+            state = self._wheel_servo_state[i]
+            state.servo_id = servo.id
+            state.temperature = self._servo_driver.temp_read(servo.id)
+            state.voltage = self._servo_driver.vin_read(servo.id)
+            state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
+            state.mode = LX16AState.LX16A_MODE_MOTOR
+
+        for i in range (BaseController.NUM_STEERS):
+            servo = self._steer_servos[i]
+            state = self._steer_servo_state[i]
+            state.servo_id = servo.id
+            state.temperature = self._servo_driver.temp_read(servo.id)
+            state.voltage = self._servo_driver.vin_read(servo.id)
+            state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
+            state.mode = LX16AState.LX16A_MODE_SERVO
+
+    def _publish_status(self, time):
+        ''' Publish the rover's status
+        '''
+        # Header
+        self._curio_state_msg.header.stamp = time
+        self. _curio_state_msg.header.frame_id = 'base_link'
+
+        # LX16A state
+        self._curio_state_msg.wheel_servo_state = self._wheel_servo_state
+        self._curio_state_msg.steer_servo_state = self._steer_servo_state
+
+        # Publish rover state
+        self._curio_state_pub.publish(self._curio_state_msg)
