@@ -73,8 +73,7 @@ class LX16AEncoderFilter(object):
         self._X         = [0.0 for x in range(3 * window)]
         self._filename       = filename
         self._classifier     = None  # scikit-learn classifier
-        # OFFSET DISABLED
-        # self._pos_offset    = 0     # set to ensure count = 0 when reset
+        self._count_offset   = 0     # set to ensure count = 0 when reset
         self._revolutions    = 0     # number of revolutions since reset
         self._prev_valid_pos = 0     # the previous valid position
         self._invert         = 1     # 1 or -1 depending on the desired direction for increasing count
@@ -118,8 +117,6 @@ class LX16AEncoderFilter(object):
             self._X[2 * self._window + i] = pos_i
 
         # Apply the filter and update the encoder counters
-        # OFFSET DISABLED
-        # pos = (self._pos[self._index] - self._pos_offset) % ENCODER_MAX
         pos = self._pos[self._index] % ENCODER_MAX
         is_valid = self._classifier.predict([self._X])[0]
         if is_valid:
@@ -142,17 +139,20 @@ class LX16AEncoderFilter(object):
 
     def get_count(self):
         ''' Get the current encoder count since reset (filtered).
+
+        The encoder count is offset so that the count is zero
+        when the encoder filter is reset.
         '''
         count = self._prev_valid_pos + ENCODER_MAX * self._revolutions 
-        return self._invert * count
+        return self._invert * (count - self._count_offset) 
 
     def get_angular_position(self):
-        ''' Get the angular position of the encoder [rad]
+        ''' Get the angular position [rad] of the encoder (filtered)
         '''
         return 2.0 * math.pi * self.get_count() / ENCODER_MAX
     
     def get_servo_pos(self, map_pos=True):
-        ''' Get the current servo position and an estimate if it is valid.
+        ''' Get the current (no-filtered) servo position and an estimate if it is valid.
 
         Parameters:
             map_pos If True map the position to the range [0, 1500].
@@ -190,11 +190,14 @@ class LX16AEncoderFilter(object):
             t = now - rospy.Duration((self._window - i)/50.0)
             self.update(t, 0, pos)  
 
-        # OFFSET DISABLED: Calculate the offset to zero the counter
-        # pos, is_valid = self.get_servo_pos()
-        # self._pos_offset     = pos
+        # Calculate the offset to zero the counter
+        pos, is_valid = self.get_servo_pos()
+        if is_valid:
+            self._count_offset = pos
+
+        # Initialise remaining variables
         self._revolutions    = 0
-        self._prev_valid_pos = pos % ENCODER_MAX
+        self._prev_valid_pos = pos
 
     def _load_classifier(self):
         ''' Load classifier
