@@ -5,6 +5,9 @@
     <description>Gazebo simulation launch files for Curio, a Sawppy Rover robot.</description>
     <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
     <license>BSD-3-Clause</license>
+    <url type="website">https://github.com/srmainwaring/curio</url>
+    <url type="repository">https://github.com/srmainwaring/curio</url>
+    <url type="bugtracker">https://github.com/srmainwaring/curio/issues</url>
     <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
     <buildtool_depend>catkin</buildtool_depend>
     <exec_depend>controller_manager</exec_depend>

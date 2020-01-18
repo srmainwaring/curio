@@ -5,8 +5,8 @@ This is a collection of ROS software packages to control a version of
 
 These packages are intended to help get builders of Roger's Sawppy up and running on ROS
 while staying faithful to the original design using LX-16A servo motors. This presents some
-challenges with getting reliable odometry which are still being worked through. On the other hand
-teleoperation and simulation work well.
+challenges with getting reliable odometry which we address with an encoder filter
+that identifies when the encoder position is outside its valid range.
 
 ## Overview
 
@@ -48,13 +48,20 @@ They have been built and tested on the following platforms / distributions:
 
 ### Python
 
-The ROS packages rely on the Python
-[`pyserial`](https://pyserial.readthedocs.io/en/latest/pyserial.html) package
-to communicate with the hardware devices, so make sure this is installed:
+These packages use ROS and Python 2.7. In addition to the Python packages
+required for a ROS desktop-full installation you will need the following:
 
-```bash
-python -m pip install pyserial
-```
+For the serial communication with USB connected hardware devices:
+
+- [`pyserial`](https://pypi.org/project/pyserial/)
+
+For the machine learning classifier used in the encoder filter:
+
+- [`joblib`](https://pypi.org/project/joblib/)
+- [`numpy`](https://pypi.org/project/numpy/)
+- [`pandas`](https://pypi.org/project/pandas/)
+- [`scikit-learn`](https://pypi.org/project/scikit-learn/)
+- [`scipy`](https://pypi.org/project/scipy/)
 
 ## Installation
 
@@ -76,7 +83,8 @@ catkin init
 
 ### Clone and build the packages
 
-Clone the `curio_msgs` and `curio` packages into `curio_ws/src`:
+Clone the [`curio_msgs`](https://github.com/srmainwaring/curio_msgs.git) and
+[`curio`](https://github.com/srmainwaring/curio.git) packages into `curio_ws/src`:
 
 ```bash
 cd src
@@ -95,6 +103,33 @@ Source the build:
 ```bash
 source devel/setup.bash
 ```
+
+## Calibration
+
+The encoder filter uses a decision tree classifier from `scikit-learn`.
+The persistence approach supported natively in `scikit-learn` relies on
+Python pickle, which is not compatible across Python and package versions.
+For this reason we have included the training data set and training routine
+in the `curio_base` package so that you can create an instance of a
+trained classifier customised to your environment.
+
+The default dataset and classifier are located in `curio_base/data`:
+
+```bash
+curio_base/data/lx16a_dataset.zip
+curio_base/data/lx16a_tree_classifier.joblib
+```
+
+It is strongly recommended for security and compatibility that you create
+a new instance of the classifier:
+
+```bash
+roslaunch curio_base train_classifier.launch
+```
+
+which will overwrite the default classifier instance included with the distribution.
+This will need to be done on the rover (and the desktop computer if you want to run
+the base controller from there while testing).
 
 ## Usage - Rover
 
@@ -231,6 +266,9 @@ To view the rover in [`rviz`](http://wiki.ros.org/rviz) and manually control the
 roslaunch curio_view view_model.launch
 ```
 
+![Rviz View Model](https://github.com/srmainwaring/curio/wiki/images/curio_viz_view_model_rviz.jpg)
+<!-- ![Curio View Model Joints](https://github.com/srmainwaring/curio/wiki/images/curio_viz_view_model_joint_state_publisher_gui.jpg) -->
+
 ## Usage - Simulation
 
 ### `curio_gazebo`
@@ -248,11 +286,15 @@ The robot should appear on an empty ground plane in [Gazebo](http://gazebosim.or
 [`rqt_robot_steering`](http://wiki.ros.org/rqt_robot_steering)
 widget in a separate window.
 
+![Gazebo Empty World](https://github.com/srmainwaring/curio/wiki/images/curio_gazebo_curio_empty_world_gazebo.jpg)
+
 You can simultaneously view the rover in [`rviz`](http://wiki.ros.org/rviz) with:
 
 ```bash
 roslaunch curio_viz view_robot.launch
 ```
+
+![Rviz View Robot](https://github.com/srmainwaring/curio/wiki/images/curio_gazebo_curio_empty_world_rviz.jpg)
 
 The robot is visualised in the [`/odom`](https://www.ros.org/reps/rep-0105.html)
 frame and the joints will respond as the rover is moved in the simulation.
@@ -265,6 +307,9 @@ roslaunch curio_gazebo curio_mars_world.launch
 
 places the rover in a Mars terrain model sourced from
 [curiosity_mars_rover](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/).
+
+![Gazebo Mars World](https://github.com/srmainwaring/curio/wiki/images/curio_gazebo_mars_terrain.jpg)
+
 
 ## Other packages
 
@@ -287,7 +332,6 @@ To bringup the robot in a single command:
 ```bash
 roslaunch curio_bringup curio_robot.launch motor_port:=/dev/ttyUSB0 teleop_port:=/dev/ttyACM0
 ```
-
 
 ### `curio_control`
 
@@ -333,6 +377,17 @@ Miguel Angel Rodriguez and TheConstruct team for the `curiosity_path`
 
 - [curiosity_mars_rover on BitBucket](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/)
 - [NASA 3D models](https://nasa3d.arc.nasa.gov/detail/curiosity-path).
+
+The turnbuckle CAD file used in the rover description was authored by Carlos Rey and retrieved from GrabCAD:
+
+- [Tensor/Turnbuckle](https://grabcad.com/library/tensor-turnbuckle-1)
+
+S. Chitta, E. Marder-Eppstein, W. Meeussen, V. Pradeep, A. Rodríguez Tsouroukdissian, J. Bohren, D. Coleman, B. Magyar, G. Raiola, M. Lüdtke and E. Fernandez Perdomo
+**"ros_control: A generic and simple control framework for ROS"**,
+The Journal of Open Source Software, 2017. ([PDF](http://www.theoj.org/joss-papers/joss.00456/10.21105.joss.00456.pdf)). The `ackermann_drive_steering` controller borrows heavily
+from the
+[`diff_drive_controller`](https://github.com/ros-controls/ros_controllers/tree/melodic-devel/diff_drive_controller)
+and the entire framework made the Gazebo integration much simpler.
 
 There is a vast body of information that describes how to use ROS. In addition to the ROS
 and [Gazebo](http://gazebosim.org/) tutorials, I have found the open source packages and manual for the
