@@ -47,15 +47,14 @@ import rospy
 from std_msgs.msg import Int64
 
 # Constants
-DATA_DIR  = './data/'
-SAMPLE_ID = '05'
-WINDOW    = 10
+WINDOW = 10
 
 # Raw data produced by servo and encoder 
-RAW_DATA_FILENAME = "{0}lx16a_raw_data_{1}.csv".format(DATA_DIR, SAMPLE_ID)
+RAW_DATA_FILENAME = "./data/lx16a_raw_data_05.csv"
 
-# Filename for persisted ML model
-MODEL_FILENAME = "{0}lx16a_tree_model_all.joblib".format(DATA_DIR)
+# File locations for persisted ML models
+CLASSIFIER_FILENAME = "./data/lx16a_tree_classifier.joblib"
+REGRESSOR_FILENAME  = "./data/lx16a_tree_regressor.joblib"
 
 if __name__ == '__main__':
     ''' A test node for the LX-16A encoder filter.
@@ -73,24 +72,28 @@ if __name__ == '__main__':
     encoder_pub = rospy.Publisher('/encoder', Int64, queue_size=10)
 
     # Encoder filter
-    filter = LX16AEncoderFilter(MODEL_FILENAME, WINDOW)
+    filter = LX16AEncoderFilter(
+        classifier_filename=CLASSIFIER_FILENAME,
+        regressor_filename=REGRESSOR_FILENAME,
+        window=WINDOW)
 
     # Load data from CSV and assign names to column headings
     df = pd.read_csv(RAW_DATA_FILENAME, header=None, names=['ros_time', 'duty', 'pos', 'count'])
     rospy.loginfo('num. samples = {}'.format(len(df)))
     rospy.loginfo('shape = {}'.format(df.shape))
 
-    start_time = df.loc[0]['ros_time']
+    start_time = rospy.Time(0, df.loc[0]['ros_time'])
 
     for i in range(0, len(df)):
+    # for i in range(0, 1000):
         # Current dataset row
         row = df.loc[i]
 
         # Time since start [s]
-        dt = (row['ros_time'] - start_time).to_sec()
+        dt = (rospy.Time(0, row['ros_time']) - start_time).to_sec()
 
         # Update the filter
-        filter.update(row['ros_time'], row['duty'], row['pos'])
+        filter.update(rospy.Time(0, row['ros_time']), row['duty'], row['pos'])
         servo_pos, is_valid = filter.get_servo_pos()
         count               = filter.get_count()
         revolutions         = filter.get_revolutions()

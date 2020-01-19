@@ -106,30 +106,38 @@ source devel/setup.bash
 
 ## Calibration
 
-The encoder filter uses a decision tree classifier from `scikit-learn`.
+The encoder filter uses a decision tree classifier and regressor from `scikit-learn`.
 The persistence approach supported natively in `scikit-learn` relies on
-Python pickle, which is not compatible across Python and package versions.
-For this reason we have included the training data set and training routine
-in the `curio_base` package so that you can create an instance of a
-trained classifier customised to your environment.
+Python pickle, which may not be compatible across Python and package versions.
+For this reason we have included the training data set and training routines
+in the `curio_base` package so that you can create instances of the models
+customised to your environment.
 
-The default dataset and classifier are located in `curio_base/data`:
+The labelled data and its corresponding dataset, and default instances
+of a classifier and regressor are located in `curio_base/data`:
 
 ```bash
 curio_base/data/lx16a_dataset.zip
+curio_base/data/lx16a_labelled_data.zip
 curio_base/data/lx16a_tree_classifier.joblib
+curio_base/data/lx16a_tree_regressor.joblib
 ```
 
 It is strongly recommended for security and compatibility that you create
-a new instance of the classifier:
+a new instance of the classifier and regressor:
 
 ```bash
 roslaunch curio_base train_classifier.launch
 ```
 
-which will overwrite the default classifier instance included with the distribution.
-This will need to be done on the rover (and the desktop computer if you want to run
-the base controller from there while testing).
+```bash
+roslaunch curio_base train_regressor.launch
+```
+
+which will overwrite the default classifier and regresssor instances
+included with the distribution. This will need to be run on the rover
+(and the desktop computer if you want to run the base controller
+from there while testing).
 
 ## Usage - Rover
 
@@ -309,7 +317,6 @@ places the rover in a Mars terrain model sourced from
 [curiosity_mars_rover](https://bitbucket.org/theconstructcore/curiosity_mars_rover/src/master/).
 
 ![Gazebo Mars World](https://github.com/srmainwaring/curio/wiki/images/curio_gazebo_mars_terrain.jpg)
-
 
 ## Other packages
 

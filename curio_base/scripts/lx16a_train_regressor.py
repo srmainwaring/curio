@@ -35,7 +35,7 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-''' Train the encoder classifier.
+''' Train the encoder regressor.
 '''
 
 import joblib
@@ -50,34 +50,46 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeRegressor
 
 if __name__ == '__main__':
-    rospy.init_node('lx16a_train_classifier')
-    rospy.loginfo('Starting LX-16A classifier training')
+    rospy.init_node('lx16a_train_regressor')
+    rospy.loginfo('Starting LX-16A regressor training')
 
     # Load parameters
     check_accuracy_score = rospy.get_param('~check_accuracy_score', False)
-    check_cross_validation_score = rospy.get_param('~check_cross_validation_score', False)
+
+    if not rospy.has_param('~labeldata_filename'):
+        rospy.logerr('Missing parameter: labeldata_filename. Exiting...')
+        exit()
+    labeldata_filename = rospy.get_param('~labeldata_filename')
 
     if not rospy.has_param('~dataset_filename'):
         rospy.logerr('Missing parameter: dataset_filename. Exiting...')
         exit()
     dataset_filename = rospy.get_param('~dataset_filename')
 
-    if not rospy.has_param('~classifier_filename'):
-        rospy.logerr('Missing parameter: classifier_filename. Exiting...')
+    if not rospy.has_param('~regressor_filename'):
+        rospy.logerr('Missing parameter: regressor_filename. Exiting...')
         exit()
-    classifier_filename = rospy.get_param('~classifier_filename')
+    regressor_filename = rospy.get_param('~regressor_filename')
 
     # Load data from CSV 
+    rospy.loginfo('Loading labelled data: {}'.format(labeldata_filename))
+    df_label = pd.read_csv(labeldata_filename, index_col=0, compression='zip')
+
     rospy.loginfo('Loading dataset: {}'.format(dataset_filename))
     df_data = pd.read_csv(dataset_filename, index_col=0, compression='zip')
+
+    # Create a boolean index to filter the data on the target (label = 0)
+    selector = df_data.iloc[:,-1:].values.ravel()
+    df_label = df_label[selector == 0]
+    df_data  = df_data[selector == 0]
 
     # Extract numpy arrays
     rospy.loginfo('Selecting features and targets')
     df_X = df_data.iloc[:,:-1]
-    df_y = df_data.iloc[:,-1:]
+    df_y = df_label['encoder']
     X = df_X.values
     y = df_y.values.ravel()
     rospy.loginfo("X.shape: {}, y.shape {}".format(X.shape, y.shape))
@@ -90,30 +102,23 @@ if __name__ == '__main__':
     X_test = df_X_test.values
     y_test = df_y_test.values.ravel()
 
-    # Create a pipeline for the decision tree classifier
+    # Create a pipeline for the decision tree regressor
     rospy.loginfo('Creating decision tree pipeline')
-    clf_pipe = make_pipeline(
-        StandardScaler(),
-        DecisionTreeClassifier(random_state=0)
-    )
+    scaler = StandardScaler()
+    regressor = DecisionTreeRegressor(random_state=0)
+    reg_pipe = make_pipeline(scaler, regressor)
 
     # Fit the whole pipeline
     rospy.loginfo('Fitting model to training dataset')
-    clf_pipe.fit(X_train, y_train)
+    reg_pipe.fit(X_train, y_train)
 
     # Check accuracy score
-    if check_accuracy_score:
-        rospy.loginfo('Calculating accuracy score...')
-        score = accuracy_score(clf_pipe.predict(X_test), y_test)
-        rospy.loginfo('Accuracy score: {}'.format(score))
+    # if check_accuracy_score:
+    #     rospy.loginfo('Calculating accuracy score...')
+    #     score = accuracy_score(clf_pipe.predict(X_test), y_test)
+    #     rospy.loginfo('Accuracy score: {}'.format(score))
  
-    # Cross validation score
-    if check_cross_validation_score:
-        rospy.loginfo('Calculating cross validation scores...')
-        cv = cross_validate(clf_pipe, X, y, cv=5)
-        rospy.loginfo('CV test score:  {}'.format(cv['test_score']))
-
     # Persist using joblib (better for larger models)
-    rospy.loginfo('Writing classifier: {}'.format(classifier_filename))
-    joblib.dump(clf_pipe, classifier_filename, protocol=2)
+    rospy.loginfo('Writing regressor: {}'.format(regressor_filename))
+    joblib.dump(reg_pipe, regressor_filename, protocol=2)
 

@@ -549,9 +549,16 @@ class BaseController(object):
             rospy.logerr('Missing parameter: classifier_filename. Exiting...')
         self._classifier_filename = rospy.get_param('~classifier_filename')
 
+        if not rospy.has_param('~regressor_filename'):
+            rospy.logerr('Missing parameter: regressor_filename. Exiting...')
+        self._regressor_filename = rospy.get_param('~regressor_filename')
+
         self._wheel_servo_duty = [0 for i in range(BaseController.NUM_WHEELS)]
         self._encoder_filters = [
-            LX16AEncoderFilter(self._classifier_filename, self._classifier_window)
+            LX16AEncoderFilter(
+                classifier_filename = self._classifier_filename,
+                regressor_filename = self._regressor_filename,
+                window=self._classifier_window)
             for i in range(BaseController.NUM_WHEELS)
         ]
 

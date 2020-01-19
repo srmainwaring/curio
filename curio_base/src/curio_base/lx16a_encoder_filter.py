@@ -57,12 +57,13 @@ ENCODER_STEP   = 1000   # threshold for determining the encoder has completed a 
 class LX16AEncoderFilter(object):
     ''' Encoder filter for the LX-16A servo.
     '''
-    def __init__(self, filename, window=10):
+    def __init__(self, classifier_filename, regressor_filename=None, window=10):
         '''Constructor        
 
         Parameters
-            filename    filename for the scikit-learn decision tree classifier
-            window      the size of the sample window used in the classifier
+            classifier_filename file name of the scikit-learn decision tree classifier
+            regressor_filename  file name of the scikit-learn decision tree regressor
+            window              the size of the sample window used in the classifier
         '''
         # Initialise ring buffers that store the encoder history.
         self._window = window
@@ -71,8 +72,10 @@ class LX16AEncoderFilter(object):
         self._duty      = [0.0 for x in range(window)]
         self._pos       = [0.0 for x in range(window)]
         self._X         = [0.0 for x in range(3 * window)]
-        self._filename       = filename
+        self._classifier_filename = classifier_filename
+        self._regressor_filename  = regressor_filename
         self._classifier     = None  # scikit-learn classifier
+        self._regressor      = None  # scikit-learn regressor
         self._count_offset   = 0     # set to ensure count = 0 when reset
         self._revolutions    = 0     # number of revolutions since reset
         self._prev_valid_pos = 0     # the previous valid position
@@ -80,6 +83,9 @@ class LX16AEncoderFilter(object):
 
         # Load the ML classifier pipeline
         self._load_classifier()
+
+        # Load the ML regressor pipeline
+        self._load_regressor()
 
     def update(self, ros_time, duty, pos):
         '''Update the encoder.
@@ -116,6 +122,9 @@ class LX16AEncoderFilter(object):
             pos_i = self._pos[idx]
             self._X[2 * self._window + i] = pos_i
 
+        # @TODO: this section would benefit from restructuring,
+        #        once the regression logic has been finalised.
+        #  
         # Apply the filter and update the encoder counters
         pos = self._pos[self._index] % ENCODER_MAX
         is_valid = self._classifier.predict([self._X])[0]
@@ -131,6 +140,38 @@ class LX16AEncoderFilter(object):
 
             # Update the previous valid position
             self._prev_valid_pos = pos
+        else:
+            # Not valid - so we'll try to use the regressor to predict
+            # a value for the encoder count.
+            pos_est = int(self._regressor.predict([self._X])[0]) % ENCODER_MAX
+
+            # @DEBUG_INFO
+            count_est = pos_est + ENCODER_MAX * self._revolutions 
+            rospy.logdebug("count_est: {}".format(count_est))
+
+            # @TODO: the acceptance criteria may need further tuning.
+            # The classifier will sometimes report false positives.
+            # To limit the impact of using a regressed value in this case
+            # we check that the previous position is 'close' to one of the boundaries. 
+            dist1 = abs(ENCODER_LOWER - self._prev_valid_pos)
+            dist2 = abs(ENCODER_UPPER - self._prev_valid_pos)
+            dist  = min(dist1, dist2)
+            DIST_MAX = (ENCODER_UPPER - ENCODER_LOWER)/2 + 5
+
+            # Accept the estimated position if in the range where the encoder
+            # does not report valid values: [1190, 1310]
+            if dist < DIST_MAX and pos_est >= ENCODER_LOWER and pos_est <= ENCODER_UPPER:
+                # If the absolute change in the servo position is 
+                # greater than ENCODER_STEP then we increment / decrement
+                # the revolution counter.
+                delta = pos_est - self._prev_valid_pos
+                if delta > ENCODER_STEP:
+                    self._revolutions = self._revolutions - 1
+                if delta < -ENCODER_STEP:
+                    self._revolutions = self._revolutions + 1
+
+                # Update the previous valid position
+                self._prev_valid_pos = pos_est
 
     def get_revolutions(self):
         ''' Get the number of revoutions since reset.
@@ -210,6 +251,14 @@ class LX16AEncoderFilter(object):
         - scikit-learn
         
         '''
-        rospy.loginfo('loading classifier from {}'.format(self._filename))
-        self._classifier = joblib.load(self._filename)
+        rospy.loginfo('Loading classifier from {}'.format(self._classifier_filename))
+        self._classifier = joblib.load(self._classifier_filename)
 
+    def _load_regressor(self):
+        ''' Load regressor
+
+        See comments for _load_classifier.        
+        '''
+        if self._regressor_filename is not None:
+            rospy.loginfo('Loading regressor from {}'.format(self._regressor_filename))
+            self._regressor = joblib.load(self._regressor_filename)
