@@ -52,19 +52,45 @@ ENCODER_MIN    = 0      # minimum servo position reading
 ENCODER_MAX    = 1500   # maximum servo position reading
 ENCODER_LOWER  = 1190   # lower bound of the invalid range
 ENCODER_UPPER  = 1310   # upper bound of the invalid range
-ENCODER_STEP   = 1000   # threshold for determining the encoder has completed a revolution
+ENCODER_STEP   = 1000   # threshold for determining the encoder has
+                        # completed a revolution
 
 class LX16AEncoderFilter(object):
-    ''' Encoder filter for the LX-16A servo.
+    ''' An encoder filter for the LX-16A servo.
+
+    This class loads a `scikit-learn` decision tree classifier
+    which is used to predict whether or not a position
+    obtained from a LX-16A servo lies within its valid measurement
+    region which covers a range of about 330 deg.
+
+    The LX-16A has 1500 counts per revolution giving an
+    angular resolution of 0.24 deg.
+
+    The class maintains a count of the number of full revolutions
+    made by the servo (positive and negative) and uses this and
+    the servo postion to determine the overall encoder count.
+
+    There is also an optional facilty to estimate the servo position
+    in the invalid region using a decision tree regressor. This is
+    enabled by supplying the constructor with a filename for the
+    regressor model. 
     '''
+
     def __init__(self, classifier_filename, regressor_filename=None, window=10):
         '''Constructor        
 
         Parameters
-            classifier_filename file name of the scikit-learn decision tree classifier
-            regressor_filename  file name of the scikit-learn decision tree regressor
-            window              the size of the sample window used in the classifier
+        ----------
+        classifier_filename : str
+            The file name of the scikit-learn decision tree classifier
+        regressor_filename : str
+            The file name of the scikit-learn decision tree regressor,
+            has (default None)
+        window : int
+            The size of the sample window used in the classifier,
+            has default 10)
         '''
+
         # Initialise ring buffers that store the encoder history.
         self._window = window
         self._index     = 0         # index for the ring buffers
@@ -76,10 +102,11 @@ class LX16AEncoderFilter(object):
         self._regressor_filename  = regressor_filename
         self._classifier     = None  # scikit-learn classifier
         self._regressor      = None  # scikit-learn regressor
-        self._count_offset   = 0     # set to ensure count = 0 when reset
+        self._count_offset   = 0     # set to ensure count=0 when reset
         self._revolutions    = 0     # number of revolutions since reset
         self._prev_valid_pos = 0     # the previous valid position
-        self._invert         = 1     # 1 or -1 depending on the desired direction for increasing count
+        self._invert         = 1     # 1 or -1 depending on the desired
+                                     # direction for increasing count
 
         # Load the ML classifier pipeline
         self._load_classifier()
@@ -88,16 +115,27 @@ class LX16AEncoderFilter(object):
         self._load_regressor()
 
     def update(self, ros_time, duty, pos):
-        '''Update the encoder.
+        '''Update the encoder filter.
 
         Update the encoder and estimate whether or not the new servo
         position is in the valid range.
 
         The feature vector X contains 3 * window entries:
-            dt[window]     the change in ros_time between servo postion readings
+            dt[window]     the change in ros_time between servo
+                           position readings
             duty[window]   the commanded duty to the LX-16A
             pos[window]    the measured position on the LX-16A
+        
+        Parameters
+        ----------
+        ros_time: rospy.Time
+            The time from rospy.get_rostime()
+        duty : int
+            The servo duty
+        pos : int
+            The servo position        
         '''
+
         # Update the ring buffers
         self._index = (self._index + 1) % self._window
         self._ros_time[self._index] = ros_time
@@ -140,7 +178,8 @@ class LX16AEncoderFilter(object):
 
             # Update the previous valid position
             self._prev_valid_pos = pos
-        else:
+
+        elif self._regressor is not None:
             # Not valid - so we'll try to use the regressor to predict
             # a value for the encoder count.
             pos_est = int(self._regressor.predict([self._X])[0]) % ENCODER_MAX
@@ -151,19 +190,20 @@ class LX16AEncoderFilter(object):
 
             # @TODO: the acceptance criteria may need further tuning.
             # The classifier will sometimes report false positives.
-            # To limit the impact of using a regressed value in this case
-            # we check that the previous position is 'close' to one of the boundaries. 
+            # To limit the impact of using a regressed value in this
+            # case we check that the previous position is 'close' to
+            # one of the boundaries. 
             dist1 = abs(ENCODER_LOWER - self._prev_valid_pos)
             dist2 = abs(ENCODER_UPPER - self._prev_valid_pos)
             dist  = min(dist1, dist2)
             DIST_MAX = (ENCODER_UPPER - ENCODER_LOWER)/2 + 5
 
-            # Accept the estimated position if in the range where the encoder
-            # does not report valid values: [1190, 1310]
+            # Accept the estimated position if in the range where the
+            # encoder does not report valid values: [1190, 1310]
             if dist < DIST_MAX and pos_est >= ENCODER_LOWER and pos_est <= ENCODER_UPPER:
                 # If the absolute change in the servo position is 
-                # greater than ENCODER_STEP then we increment / decrement
-                # the revolution counter.
+                # greater than ENCODER_STEP then we increment
+                # (or decrement) the revolution counter.
                 delta = pos_est - self._prev_valid_pos
                 if delta > ENCODER_STEP:
                     self._revolutions = self._revolutions - 1
@@ -175,32 +215,58 @@ class LX16AEncoderFilter(object):
 
     def get_revolutions(self):
         ''' Get the number of revoutions since reset.
+
+        Returns
+        -------
+        int
+            The number of revolutions since the count was reset.
         '''
+
         return self._revolutions
 
     def get_count(self):
         ''' Get the current encoder count since reset (filtered).
 
-        The encoder count is offset so that the count is zero
-        when the encoder filter is reset.
+        Note that the encoder count is offset from the servo position
+        so that the count is zero when the encoder filter is reset.
+
+        Returns
+        -------
+        int
+            The current encoder count.
         '''
+
         count = self._prev_valid_pos + ENCODER_MAX * self._revolutions 
         return self._invert * (count - self._count_offset) 
 
     def get_angular_position(self):
-        ''' Get the angular position [rad] of the encoder (filtered)
+        ''' Get the angular position of the encoder (filtered)
+
+        Returns
+        -------
+        float
+            The angular position of the encoder [rad].
         '''
+
         return 2.0 * math.pi * self.get_count() / ENCODER_MAX
     
     def get_servo_pos(self, map_pos=True):
-        ''' Get the current (no-filtered) servo position and an estimate if it is valid.
+        ''' Get the current (no-filtered) servo position and an
+        estimate whether it is valid.
 
-        Parameters:
-            map_pos If True map the position to the range [0, 1500].
+        Parameters
+        ----------
+        map_pos : bool
+            If True map the position to the range [0, 1500],
+            has (default True)
         
-        Returns:
-            pos, is_valid
+        Returns
+        -------
+        list
+            A two element list containing the position and a
+            bool which is True for valid, False otherwise.
         '''
+        
         is_valid = self._classifier.predict([self._X])[0]
         if map_pos:
             pos = self._pos[self._index] % ENCODER_MAX
@@ -211,20 +277,36 @@ class LX16AEncoderFilter(object):
 
     def get_invert(self):
         ''' Get the invert state: whether the encoder count is inverted.
+
+        Returns
+        -------
+        int
+            -1 if the count is inverted, 1 otherwise. 
         '''
+
         return self._invert
 
     def set_invert(self, is_inverted):
-        ''' Invert the direction of the encoder count
+        ''' Invert the direction of the encoder count.
+
+        Parameters
+        ----------
+        is_inverted : bool
+            Set to True if the encoder count is reversed.
         '''
+
         self._invert = -1 if is_inverted else 1
 
     def reset(self, pos):
         ''' Reset the encoder counters to zero.
 
-        Parameters:
-            pos the (assumed valid) position of the servo when the encoder is reset.  
+        Parameters
+        ----------
+        pos : int
+            The (assumed valid) position of the servo when the
+            encoder is reset.  
         '''
+
         # Back-populate the ring buffers with zero duty entries.
         now = rospy.get_rostime()
         for i in range(self._window):
@@ -243,14 +325,18 @@ class LX16AEncoderFilter(object):
     def _load_classifier(self):
         ''' Load classifier
 
-        Note that this function uses joblib (and so pickle). It is sensitive
-        to the version of Python and a number of packages including:
+        Load a `scikit-learn` classifier from file.
+
+        Note that this function uses joblib (and so pickle). It is
+        sensitive to the version of Python and a number of packages
+        including:
         
         - numpy
         - scipy
         - scikit-learn
         
         '''
+        
         rospy.loginfo('Loading classifier from {}'.format(self._classifier_filename))
         self._classifier = joblib.load(self._classifier_filename)
 
@@ -259,6 +345,7 @@ class LX16AEncoderFilter(object):
 
         See comments for _load_classifier.        
         '''
+        
         if self._regressor_filename is not None:
             rospy.loginfo('Loading regressor from {}'.format(self._regressor_filename))
             self._regressor = joblib.load(self._regressor_filename)

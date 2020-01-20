@@ -53,18 +53,97 @@ from tf.transformations import quaternion_from_euler
 from tf import TransformBroadcaster
 
 def degree(rad):
+    ''' Convert an angle in degrees to radians
+
+    Parameters
+    ----------
+    rad : float
+        An angle in radians
+
+    Returns
+    -------
+    float
+        The angle in degrees.
+    '''
+
     return rad * 180.0 / math.pi
 
 def radian(deg):
+    ''' Convert an angle in radians to degrees
+
+    Parameters
+    ----------
+    deg : float
+        An angle in degrees
+
+    Returns
+    -------
+    float
+        The angle in radians.
+    '''
+
     return deg * math.pi / 180.0
 
 def map(x, in_min, in_max, out_min, out_max):
+    ''' Map a value in one range to its equivalent in another.
+
+    Parameters
+    ----------
+    x : float
+        The value to be mapped
+    in_min : float
+        The minimum value the input variable can take. 
+    in_max : float
+        The maximum value the input variable can take. 
+    out_min : float
+        The minimum value the output variable can take. 
+    out_max : float
+        The maximum value the output variable can take. 
+
+    Returns
+    -------
+    float
+        The mapped value.
+    '''
+
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 def clamp(x, lower, upper):
+    ''' Clamp a value between a lower and upper bound.
+
+    Parameters
+    ----------
+    x : float
+        The value to be clamped
+    in_min : float
+        The lower limit of the clamp. 
+    in_max : float
+        The upper limit of the clamp. 
+
+    Returns
+    -------
+    float
+        The clamped value.
+    '''
+
     return min(max(x, lower), upper)
 
 def caseless_equal(left, right):
+    ''' A case insensitive comparison.
+
+    Parameters
+    ----------
+    left : str
+        A string to compare. 
+    right : str
+        A string to compare. 
+
+    Returns
+    -------
+    bool
+        Return True if the strings are equal ignoring case. 
+
+    '''
     return left.upper() == right.upper()
 
 def turning_radius_and_rate(v_b, omega_b, d):
@@ -75,22 +154,32 @@ def turning_radius_and_rate(v_b, omega_b, d):
     Standard Units of Measure and Coordinate Conventions
     https://www.ros.org/reps/rep-0103.html.
 
-    x forward
-    y left
-    z up
+    x : forward
+    y : left
+    z : up
 
-    Example:
-    v_b >= 0, omega_b > 0 => r_p > 0    the turn is positive (anti-clockwise),
-    v_b >= 0, omega_b < 0 => r_p < 0    the turn is negative (clockwise),
-    v_b >= 0, omega_b = 0 => r_p = inf  there is no turn.
+    Example
+    -------
+    v_b >= 0, omega_b > 0 => r_p > 0    positive turn (anti-clockwise),
+    v_b >= 0, omega_b < 0 => r_p < 0    negative turn (clockwise),
+    v_b >= 0, omega_b = 0 => r_p = inf  no turn.
 
     Parameters
-    v_b       linear velocity of the base (m/s).
-    omega_b   angular velocity of the base (rad/s).
-    d         distance between the fixed wheels (m).
+    ----------
+    v_b : float
+        The linear velocity of the base [m/s].
+    omega_b : float
+        The angular velocity of the base [rad/s].
+    d : float
+        distance between the fixed wheels [m].
 
     Returns
-    r_p, omega_p  turning radius (m) and rate of turn (rad/s).
+    -------
+    list
+        A two element list containing r_p the turning radius [m]
+        and and omega_p the rate of turn [rad/s]. If the motion
+        has no angular component then r_p is float('Inf') and
+        omega_p is zero.
     '''
 
     vl = v_b - d * omega_b / 2.0
@@ -105,12 +194,16 @@ def turning_radius_and_rate(v_b, omega_b, d):
 class MeanWindowFilter(object):
     ''' Simple rolling window filter.
     '''
+
     def __init__(self, window=5):
         ''' Constructor
 
-        Parameters:
-            window  size of the rolling window (default = 5)
+        Parameters
+        ----------
+        window : int
+            The size of the rolling window, has (default 5)
         '''
+
         self._window = window
         self._index  = 0
         self._buffer = [0.0 for i in range(window)]        
@@ -118,11 +211,14 @@ class MeanWindowFilter(object):
         self._mean   = 0.0
 
     def update(self, value):
-        ''' Update the filter with the the next value
+        ''' Update the filter with the the next value.
 
-        Parameters:
-            value  a float value
+        Parameters
+        ----------
+        value : float
+            The next value to accumulate in the filter.
         '''
+
         # Update the ring buffer
         self._index = (self._index + 1) % self._window
         old_value = self._buffer[self._index] 
@@ -135,16 +231,21 @@ class MeanWindowFilter(object):
     def get_mean(self):
         ''' Get the rolling mean
 
-        Returns:
-            the rolling mean
+        Returns
+        -------
+        float
+            The rolling mean
         '''
+
         return self._mean
 
     def get_window(self):
         ''' Get the size of the rolling window
 
-        Returns:
-            the size of the rolling window
+        Returns
+        -------
+        int
+            The size of the rolling window
         '''
         return self._window
 
