@@ -252,14 +252,28 @@ class MeanWindowFilter(object):
 class Servo(object):
     '''Servo properties.
     
-    Store information about the servo:
-    id                  servo serial id: 0 - 253.
-    lon_label           label for the longitudinal direction: FRONT, MID, BACK.
-    lat_label           label for the lateral direction: LEFT, RIGHT.
-    orientation         indicated whether the servo is installed for positive or negtive rotation: 1, -1.
-    offset              servo position offset (for servo rather than motor mode). Use to centre servos.
-    position            servo position in the robot base. Two dimensional coordinate vector.    
+    Store information about the servo.
+
+    Attributes
+    ----------
+    id : int
+        servo serial id: 0 - 253.
+    lon_label : int
+        Enumeration label for the longitudinal direction:
+        FRONT, MID, BACK.
+    lat_label : int
+        Enumeration label for the lateral direction: LEFT, RIGHT.
+    orientation : int
+        Flag to indicate whether the servo is installed for positive
+        or negtive rotation: 1, -1.
+    offset : int
+        The servo position offset (for servo rather than motor mode).
+        Use to centre servos.
+    position : list
+        List servo position in the robot base. Two dimensional
+        coordinate vector of floats.    
     '''
+
     # Lateral labels
     LEFT  = 0
     RIGHT = 1
@@ -270,6 +284,22 @@ class Servo(object):
     BACK  = 4
 
     def __init__(self, id, lon_label, lat_label, orientation):
+        ''' Constructor
+        
+        Parameters
+        ----------
+        id : int
+            servo serial id: 0 - 253.
+        lon_label : str
+            Label for the longitudinal direction:
+            'front', 'mid', 'back'.
+        lat_label : str
+            Label for the lateral direction: 'left', 'right'.
+        orientation : int
+            Flag to indicate whether the servo is installed for positive
+            or negtive rotation: 1, -1.
+        '''
+
         self.id = id
         self.lon_label = lon_label
         self.lat_label = lat_label
@@ -280,7 +310,19 @@ class Servo(object):
     @staticmethod
     def to_lat_label(label_str):
         ''' Convert a lateral label string to a enumerated value. 
+        
+        Parameters
+        ----------
+        label_str : str
+            Label for the lateral direction: 'left', 'right'.
+
+        Returns
+        -------
+        int
+            Enumeration label for the lateral direction:
+            LEFT, RIGHT.
         '''
+
         if caseless_equal(label_str, 'LEFT'):
             return Servo.LEFT
         if caseless_equal(label_str, 'RIGHT'):
@@ -291,7 +333,20 @@ class Servo(object):
     @staticmethod
     def to_lon_label(label_str):
         ''' Convert a longitudinal label string to a enumerated value. 
+        
+        Parameters
+        ----------
+        label_str : str
+            Label for the longitudinal direction:
+            'front', 'mid', 'back'.
+
+        Returns
+        -------
+        int :
+            Enumeration label for the longitudinal direction:
+            FRONT, MID, BACK.
         '''
+
         if caseless_equal(label_str, 'FRONT'):
             return Servo.FRONT
         if caseless_equal(label_str, 'MID'):
@@ -304,8 +359,9 @@ class Servo(object):
 class AckermannOdometry(object):
     ''' Odometry for the base controller (6 wheel Ackermann)
     
-    This class based on its C++ equivalent in the ackermann_drive_controller module
-    which in turn was derived from the diff_drive_controller in ros_controllers.
+    This class based on its C++ equivalent in the
+    `ackermann_drive_controller` module which in turn was derived
+    from the `diff_drive_controller` in `ros_controllers`.
 
     Original odometry code:
     https://github.com/ros-controls/ros_controllers/diff_drive_controller
@@ -326,8 +382,12 @@ class AckermannOdometry(object):
         ''' Constructor
 
         Parameters
-            velocity_filter_window  size of the window used in the velocity filter
+        ----------
+        velocity_filter_window : int
+            The size of the window used in the velocity filter,
+            has (default 10)
         '''
+
         self._timestamp = rospy.Time() 
         self._heading = 0.0     # [rad]
         self._x       = 0.0     # [m]
@@ -337,25 +397,33 @@ class AckermannOdometry(object):
         self._wheel_radius = 0.06               # [m]
         self._mid_wheel_lat_separation = 0.52   # [m]
         self._num_wheels = 6
-        self._wheel_cur_pos = [0.0 for x in range(self._num_wheels)]    # [m]
-        self._wheel_old_pos = [0.0 for x in range(self._num_wheels)]    # [m]
-        self._wheel_est_vel = [0.0 for x in range(self._num_wheels)]    # [m/s]
+        self._wheel_cur_pos = [0.0 for x in range(self._num_wheels)] # [m]
+        self._wheel_old_pos = [0.0 for x in range(self._num_wheels)] # [m]
+        self._wheel_est_vel = [0.0 for x in range(self._num_wheels)] # [m/s]
 
     def reset(self, time):
         ''' Reset the odometry
 
         Parameters
-            time    current time
+        ----------
+        time : rospy.Time
+            The current time.
         '''        
+
         self._timestamp = time
 
     def update_6(self, wheel_servo_pos, time):
-        ''' Update the odometry with the latest wheel servo positions
+        ''' Update the odometry with the latest wheel servo positions.
 
         Parameters
-            wheel_servo_pos     angular position of the 6 wheel servos [rad]
-            time                current time
+        ----------
+        wheel_servo_pos : list
+            A list of 6 floats denoting the angular position of the
+            6 wheel servos [rad].
+        time : rospy.Time
+            The current time.
         '''
+
         for i in range(self._num_wheels):
             # Get the current wheel joint (linear) positions [m]
             self._wheel_cur_pos[i] = wheel_servo_pos[i] * self._wheel_radius
@@ -392,12 +460,17 @@ class AckermannOdometry(object):
         return True
 
     def update_2(self, wheel_servo_pos, time):
-        ''' Update the odometry with the latest mid wheel servo positions
+        ''' Update the odometry with the mid wheel servo positions.
 
         Parameters
-            wheel_servo_pos     angular position of the 2 mid wheel servos [rad]
-            time                current time
+        ----------
+        wheel_servo_pos : list
+            A list of 2 floats denoting the angular position of the
+            2 mid wheel servos [rad]
+        time : rospy.Time
+            The current time.
         '''
+
         for i in range(2):
             # Get the current wheel joint (linear) positions [m]
             self._wheel_cur_pos[i] = wheel_servo_pos[i] * self._wheel_radius
@@ -434,36 +507,92 @@ class AckermannOdometry(object):
 
     def get_heading(self):
         ''' Get the heading [rad]
+
+        The heading in radians, with zero being along the longtidinal
+        axis (x), and positive rotation is towards the positive lateral
+        axis (y) to the left.
+
+        Returns
+        -------
+        float
+            The heading in radians.
         '''
+
         return self._heading
 
     def get_x(self):
         ''' Get the x position [m]
+        
+        Returns
+        -------
+        float
+            The x position [m].
         '''
+
         return self._x
 
     def get_y(self):
         ''' Get the y position [m]
+
+        Returns
+        -------
+        float
+            The y position [m].
         '''
+
         return self._y
 
     def get_lin_vel(self):
         ''' Get the linear velocity of the body [m/s]
+
+        Returns
+        -------
+        float
+            The linear velocity of the `base_link` [m/s].
         '''
+
         return self._lin_vel_filter.get_mean()
 
     def get_ang_vel(self):
         ''' Get the angular velocity of the body [rad/s]
+
+        Returns
+        -------
+        float
+            The angular velocity of the `base_link` [rad/s].
         '''
+
         return self._ang_vel_filter.get_mean()
 
     def set_wheel_params(self, wheel_radius, mid_wheel_lat_separation):
-        ''' Set the wheel and steering geometry
+        ''' Set the wheel and steering geometry.
+
+        Note: all wheels are assumed to have the same radius, and the
+        mid wheels do not steer.
+
+        Parameters
+        ----------
+        wheel_radius : float
+            The radius of the wheels [m].
+        mid_wheel_lat_separation : float
+            The lateral separation [m] of the mid wheels.
         '''
+
         self._wheel_radius = wheel_radius
         self._mid_wheel_lat_separation = mid_wheel_lat_separation
 
     def _integrate_velocities(self, lin_vel, ang_vel):
+        ''' Integrate the current velocities to obtain the current
+        position and heading.
+
+        Parameters
+        ----------
+        lin_vel : float
+            The linear velocity of the `base_link`.
+        ang_vel : float
+            The angular velocity of the `base_link`.
+        '''
+
         if math.fabs(ang_vel) < 1e-6:
             self._integrate_runge_kutta2(lin_vel, ang_vel)
         else:
@@ -475,6 +604,16 @@ class AckermannOdometry(object):
             self._y = self._y - r * (math.cos(self._heading) - math.cos(heading_old))
 
     def _integrate_runge_kutta2(self, lin_vel, ang_vel):
+        ''' Integrate the current velocities to obtain the current
+        position and heading.
+
+        Parameters
+        ----------
+        lin_vel : float
+            The linear velocity of the `base_link`.
+        ang_vel : float
+            The angular velocity of the `base_link`.
+        '''
         direction = self._heading + ang_vel * 0.5
 
         # Runge-Kutta 2nd order integration:
@@ -495,7 +634,97 @@ class BaseController(object):
     the servos are reversed, so for example an angle of +130 deg is
     reversed to an angle of 130 - 180 = -50 deg.
 
-    REVERSE_SERVO_ANGLE should be set somewhere around 90 deg.
+    REVERSE_SERVO_ANGLE should be set to 90 deg.
+
+    Attributes
+    ----------
+    LINEAR_VEL_MAX : float
+        The maximum linear velocity limit of the `base_link`,
+        has (constant 0.37) [m/s]
+    ANGULAR_VEL_MAX : float
+        The maximum angular velocity limit of the `base_link`,
+        has (constant 1.45) [rad/s]
+    SERVO_ANG_VEL_MAX : float
+        The maximum angular velocity limit of the servo,
+        has (constant 2 * pi) [rad/s]
+    SERVO_DUTY_MAX : int
+        The maximum duty for the servo, has (constant 1000). 
+    REVERSE_SERVO_ANGLE : float
+        The angle at which we reverse the servo by 180 deg,
+        has (constant 90 deg) 
+    SERVO_ANGLE_MAX : float
+        Maximum (abs) angle at which the servo can be set,
+        has (constant 120 deg)
+    SERVO_POS_MIN : int
+        Minimum servo position (servo units), has (constant 0)
+    SERVO_POS_MAX : int
+        Maximum servo position (servo units), has (constant 1000)
+    NUM_WHEELS : int
+        The number of wheel servos), has (constant 6)
+    NUM_WHEELS : int
+        The number of steering servos), has (constant 4)
+
+    ROS Parameters
+    --------------
+    ~wheel_radius : float
+        The wheel radius [m]
+    ~mid_wheel_lat_separation : float
+        The lateral distance [m] between the mid wheels
+    ~front_wheel_lat_separation : float
+        The lateral distance [m] between the front wheels
+    ~front_wheel_lon_separation : float
+        The longitudinal distance [m] from the front wheels to
+        the mid wheels.
+    ~back_wheel_lat_separation : float
+        The lateral distance [m] between the back wheels
+    ~back_wheel_lon_separation : float
+        The longitudinal distance [m] from the back wheels to
+        the mid wheels.
+    ~wheel_servos : list
+        A list of wheel servo settings. Each entry in the list is
+        a dictionary specifying:
+            id : int
+                The servo serial id : 0 - 253
+            lon_label: str
+                The longitudinal label: 'front', 'mid', 'right'
+            lat_label: str
+                The lateral label: 'left', 'right'
+            offset: int
+                The angle adjustment used to centre steering servos,
+                has (default 0) 
+    ~steer_servos : list
+        A list of wheel servo settings. See ~wheel_servos for 
+        a description of the elements.
+    ~port : str
+        The device name for the serial port (e.g. /dev/ttyUSB0)
+    ~baudrate : int
+        The baudrate, has default (115200).
+    ~timeout : float
+        The time in seconds out for the serial connection,
+        has (default 1.0)
+    ~classifier_window : int
+        The size of the classifier window, this sets the number of
+        entries in the servo history used to train the classifier.
+        The classifier and regressor models must correspond to this
+        setting. (default 10)
+    ~classifier_filename : str
+        The full filepath for the `scikit-learn` classifier model.
+    ~regressor_filename : str
+        The full filepath for the `scikit-learn` regressor model.
+
+    Publications
+    ------------
+    odom : nav_msgs/Odometry
+        Publish the odometry.
+    status : curio_msgs/CurioState
+        Publish the rover state.
+    tf : geometry_msgs/TransformStamped
+        Broadcast the transfrom from `odom` to `base_link`
+
+    Subscriptions
+    -------------
+    cmd_vel : geometry_msgs/Twist
+        Subscribe to `cmd_vel`.    
     '''
 
     # Velocity limits for the rover
@@ -504,7 +733,7 @@ class BaseController(object):
 
     # Servo limits - LX-16A has max angular velocity of approx 1 revolution per second
     SERVO_ANG_VEL_MAX = 2 * math.pi
-    SERVO_SPEED_MAX = 1000
+    SERVO_DUTY_MAX = 1000
 
     # Steering angle limits
     REVERSE_SERVO_ANGLE = 90.0      # The angle at which we reverse the servo by 180 deg.
@@ -517,6 +746,9 @@ class BaseController(object):
     NUM_STEERS = 4
 
     def __init__(self):
+        ''' Constructor
+        '''
+
         rospy.loginfo('Initialising mobile base controller...')
 
         # Wheel geometry on a flat surface - defaults
@@ -681,21 +913,26 @@ class BaseController(object):
         self._steer_servo_state = [LX16AState() for x in range(BaseController.NUM_STEERS)]
 
     def move(self, lin_vel, ang_vel):
-        ''' Move the robot given linear and angular velocities for the base.
+        ''' Move the robot given linear and angular velocities
+        for the base.
 
-        The linear and angular velocity arguments refer to the robot's base_link
-        reference frame. We assume that the base_link origin is located at the
-        mid-point between the two middle (non-steering) wheels. 
+        The linear and angular velocity arguments refer to the robot's
+        base_link reference frame. We assume that the base_link origin
+        is located at the mid-point between the two middle
+        (non-steering) wheels. 
         
-        The velocities and separation of the middle wheels are used to determine
-        a turning radius and rate of turn. Given this the velocity and steering
-        angle are then calculated for each wheel.
+        The velocities and separation of the middle wheels are used to
+        determine a turning radius and rate of turn. Given this the
+        velocity and steering angle are then calculated for each wheel.
 
         Parameters
-
-        lin_vel     linear velocity of base_link frame (m/s).
-        ang_vel     angular velocity of base_link frame (rad/s).
+        ----------
+        lin_vel : float
+            The linear velocity of base_link frame [m/s].
+        ang_vel : float
+            The angular velocity of base_link frame [rad/s].
         '''
+
         # Calculate the turning radius and rate 
         r_p, omega_p = turning_radius_and_rate(lin_vel, ang_vel, self._mid_wheel_lat_separation)
         rospy.logdebug('r_p: {:.2f}, omega_p: {:.2f}'.format(r_p, omega_p))
@@ -784,7 +1021,7 @@ class BaseController(object):
             # Map speed to servo duty [-1000, 1000]
             duty = int(map(wheel_ang_vel * servo.orientation,
                 -BaseController.SERVO_ANG_VEL_MAX, BaseController.SERVO_ANG_VEL_MAX, 
-                -BaseController.SERVO_SPEED_MAX, BaseController.SERVO_SPEED_MAX))
+                -BaseController.SERVO_DUTY_MAX, BaseController.SERVO_DUTY_MAX))
 
             # Set servo speed
             rospy.logdebug('id: {}, wheel_ang_vel: {:.2f}, servo_vel: {}'
@@ -799,8 +1036,9 @@ class BaseController(object):
         
         The offsets are specified in the node parameters are are
         adjusted to ensure each corner wheel is centred when the robot
-        is commanded to move with no turn.  
+        is commanded to move with no turn.
         '''
+
         # Set the steering servo offsets to centre the corner wheels
         for servo in self._steer_servos:
             rospy.loginfo('id: {}, offset: {}'.format(servo.id, servo.offset))
@@ -810,6 +1048,7 @@ class BaseController(object):
     def stop(self):
         ''' Stop all servos
         '''
+
         rospy.loginfo('Stopping all servos')
         for servo in self._wheel_servos:
             self._servo_driver.motor_mode_write(servo.id, 0)
@@ -818,21 +1057,27 @@ class BaseController(object):
         ''' Callback for the subscription to /cmd_vel.
 
         Parameters
-
-        msg     geometry_msgs/Twist message for the commanded velocity.
+        ----------
+        msg : geometry_msgs.msg/Twist
+            The message for the commanded velocity.
         '''
+
         rospy.logdebug('cmd_vel: linear: {}, angular: {}'.format(msg.linear.x, msg.angular.z))
         self._cmd_vel_msg = msg
 
     def update(self, event):
         ''' Callback for the control loop.
         
-        This to be called at the control loop frequency by the node's main function,
-        usually managed by a rospy.Timer.
+        This to be called at the control loop frequency by the node's
+        main function, usually managed by a rospy.Timer.
 
         Parameters
-            event   A rospy.Timer event. See http://wiki.ros.org/rospy/Overview/Time for details.
+        ----------
+        event : rospy.Timer
+            A rospy.Timer event.
+            See http://wiki.ros.org/rospy/Overview/Time for details.
         '''
+
         # Get the current real time (just before this function was called)
         time = event.current_real
 
@@ -852,6 +1097,7 @@ class BaseController(object):
     def shutdown(self):
         ''' Called by the node shutdown hook on exit.
         '''
+
         # Stop all servos - @TODO add e-stop with latch.
         self.stop()
 
@@ -861,6 +1107,7 @@ class BaseController(object):
     def _reset_encoders(self):
         ''' Reset the encoders
         '''
+
         # Reset encoder filters
         for i in range(BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
@@ -878,7 +1125,19 @@ class BaseController(object):
     # 
     def _update_all_wheel_servo_positions(self, time):
         ''' Get the servo positions in radians for all wheels.
+
+        Parameters
+        ----------
+        time : rospy.Time
+            The current time.
+
+        Returns
+        -------
+        list
+            A list of 6 floats containing the angular position
+            of each of the wheel servos [rad].
         '''
+
         servo_positions = [0 for i in range(BaseController.NUM_WHEELS)]
         msg = 'time: {}, '.format(time)
         for i in range (BaseController.NUM_WHEELS):
@@ -910,7 +1169,19 @@ class BaseController(object):
         return servo_positions
 
     def _update_mid_wheel_servo_positions(self, time):
-        ''' Update the servo positions in radians for the left and right mid wheels.
+        ''' Update the servo positions in radians for the
+        left and right mid wheels.
+
+        Parameters
+        ----------
+        time : rospy.Time
+            The current time.
+
+        Returns
+        -------
+        list
+            A list of 2 floats containing the angular position
+            of the left and right mid wheel servos [rad].
         '''
 
         # @TODO: resolve hardcoded index
@@ -927,7 +1198,20 @@ class BaseController(object):
 
     def _update_wheel_servo_position(self, time, i):
         ''' Update the servo positions in radians for the i-th wheel.
+
+        Parameters
+        ----------
+        time : rospy.Time
+            The current time.
+        i : int
+            The index of the i-th wheel.
+
+        Returns
+        -------
+        float
+            The angular positionthe wheel servo [rad].
         '''
+
         servo = self._wheel_servos[i]
         filter = self._encoder_filters[i]
         state = self._wheel_servo_state[i]            
@@ -949,7 +1233,11 @@ class BaseController(object):
 
     def _init_odometry(self):
         ''' Initialise the odometry
+
+        Initialise the time independent parameters of the
+        odometry message.
         '''
+
         odom_frame_id = 'odom'
         base_frame_id = 'base_link'
         pose_cov_diag = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01] 
@@ -983,7 +1271,13 @@ class BaseController(object):
 
     def _publish_odometry(self, time):
         ''' Populate the nav_msgs.Odometry message and publish.
+
+        Parameters
+        ----------
+        time : rospy.Time
+            The current time.
         '''
+
         # rospy.loginfo('x: {:.2f}, y: {:.2f}, heading: {:.2f}, lin_vel: {:.2f}, ang_vel: {:.2f}'
         #     .format(
         #         self._odometry.get_x(),
@@ -1011,18 +1305,32 @@ class BaseController(object):
 
         This is the same calculation as used in the odometry
         for the ackermann_drive_controller.
+
+        Parameters
+        ----------
+        time : rospy.Time
+            The current time.
         '''
-        # Get the angular position of the all wheel servos [rad] and update odometry
+
+        # Get the angular position of the all wheel servos [rad] and
+        # update odometry
         # wheel_servo_pos = self._update_all_wheel_servo_positions(time)
         # self._odometry.update_6(wheel_servo_pos, time)
 
-        # Get the angular position of the mid wheel servos [rad] and update odometry
+        # Get the angular position of the mid wheel servos [rad]
+        # and update odometry
         wheel_servo_pos = self._update_mid_wheel_servo_positions(time)
         self._odometry.update_2(wheel_servo_pos, time)
 
     def _publish_tf(self, time):
         ''' Publish the transform from 'odom' to 'base_link'
+
+        Parameters
+        ----------
+        time : rospy.Time
+            The current time.
         '''
+
         # Broadcast the transform from 'odom' to 'base_link'
         self._odom_broadcaster.sendTransform(
             (self._odometry.get_x(), self._odometry.get_y(), 0.0),
@@ -1033,7 +1341,13 @@ class BaseController(object):
 
     def _update_status(self, time):
         ''' Update the rover's status
+
+        Parameters
+        ----------
+        time : rospy.Time
+            The current time.
         '''
+
         for i in range (BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
             state = self._wheel_servo_state[i]
@@ -1054,7 +1368,13 @@ class BaseController(object):
 
     def _publish_status(self, time):
         ''' Publish the rover's status
+
+        Parameters
+        ----------
+        time : rospy.Time
+            The current time.
         '''
+
         # Header
         self._curio_state_msg.header.stamp = time
         self. _curio_state_msg.header.frame_id = 'base_link'
