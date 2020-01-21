@@ -39,7 +39,7 @@
 
 from curio_base.lx16a_driver import LX16ADriver
 from curio_base.lx16a_encoder_filter import LX16AEncoderFilter
-from curio_msgs.msg import CurioState
+from curio_msgs.msg import CurioServoStatus
 from curio_msgs.msg import LX16AState
 
 import math
@@ -716,7 +716,7 @@ class BaseController(object):
     ------------
     odom : nav_msgs/Odometry
         Publish the odometry.
-    status : curio_msgs/CurioState
+    servo/status : curio_msgs/CurioServoStatus
         Publish the rover state.
     tf : geometry_msgs/TransformStamped
         Broadcast the transfrom from `odom` to `base_link`
@@ -907,10 +907,10 @@ class BaseController(object):
         self._odom_broadcaster = TransformBroadcaster()
 
         # Robot status
-        self._curio_state_msg = CurioState()
-        self._curio_state_pub = rospy.Publisher('status', CurioState, queue_size=10)
-        self._wheel_servo_state = [LX16AState() for x in range(BaseController.NUM_WHEELS)]
-        self._steer_servo_state = [LX16AState() for x in range(BaseController.NUM_STEERS)]
+        self._curio_servo_status_msg = CurioServoStatus()
+        self._curio_servo_status_pub = rospy.Publisher('servo/status', CurioServoStatus, queue_size=10)
+        self._wheel_servo_states = [LX16AState() for x in range(BaseController.NUM_WHEELS)]
+        self._steer_servo_states = [LX16AState() for x in range(BaseController.NUM_STEERS)]
 
     def move(self, lin_vel, ang_vel):
         ''' Move the robot given linear and angular velocities
@@ -1143,7 +1143,7 @@ class BaseController(object):
         for i in range (BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
             filter = self._encoder_filters[i]
-            state = self._wheel_servo_state[i]            
+            state = self._wheel_servo_states[i]            
 
             # Calculate the encoder count
             duty = self._wheel_servo_duty[i]            
@@ -1214,7 +1214,7 @@ class BaseController(object):
 
         servo = self._wheel_servos[i]
         filter = self._encoder_filters[i]
-        state = self._wheel_servo_state[i]            
+        state = self._wheel_servo_states[i]            
 
         # Calculate the encoder count
         duty = self._wheel_servo_duty[i]            
@@ -1226,9 +1226,9 @@ class BaseController(object):
 
         # Update state
         state.duty = duty
-        state.pos = pos
-        state.count = count
-        state.count_is_inverted = 0 if filter.get_invert() > 0 else 1
+        state.position = pos
+        # state.count = count
+        # state.count_is_inverted = 0 if filter.get_invert() > 0 else 1
         return theta
 
     def _init_odometry(self):
@@ -1350,8 +1350,8 @@ class BaseController(object):
 
         for i in range (BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
-            state = self._wheel_servo_state[i]
-            state.servo_id = servo.id
+            state = self._wheel_servo_states[i]
+            state.id = servo.id
             state.temperature = self._servo_driver.temp_read(servo.id)
             state.voltage = self._servo_driver.vin_read(servo.id)
             state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
@@ -1360,7 +1360,7 @@ class BaseController(object):
         for i in range (BaseController.NUM_STEERS):
             servo = self._steer_servos[i]
             state = self._steer_servo_state[i]
-            state.servo_id = servo.id
+            state.id = servo.id
             state.temperature = self._servo_driver.temp_read(servo.id)
             state.voltage = self._servo_driver.vin_read(servo.id)
             state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
@@ -1376,12 +1376,12 @@ class BaseController(object):
         '''
 
         # Header
-        self._curio_state_msg.header.stamp = time
-        self. _curio_state_msg.header.frame_id = 'base_link'
+        self._curio_servo_status_msg.header.stamp = time
+        self. _curio_servo_status_msg.header.frame_id = 'base_link'
 
         # LX16A state
-        self._curio_state_msg.wheel_servo_state = self._wheel_servo_state
-        self._curio_state_msg.steer_servo_state = self._steer_servo_state
+        self._curio_servo_status_msg.wheel_servo_states = self._wheel_servo_states
+        self._curio_servo_status_msg.steer_servo_states = self._steer_servo_states
 
         # Publish rover state
-        self._curio_state_pub.publish(self._curio_state_msg)
+        self._curio_servo_status_pub.publish(self._curio_servo_status_msg)

@@ -214,7 +214,7 @@ class LX16ADriver(object):
         return self._serial.timeout
 
     def set_timeout(self, timeout):
-       ''' Set the serial timeout [s]
+        ''' Set the serial timeout [s]
 
         Parameters
         -------
@@ -600,6 +600,46 @@ class LX16ADriver(object):
         # Read OK - return data (bytearray)
         return data
 
+    # Here we use the same algorithm used in the Lewansoul Arduino
+    # examples to see if the approach makes a difference (it doesn't).
+    # def read_response2(self, servo_id, length, command):
+    #     data_count = 0
+    #     data_length = 2
+    #     frame_count = 0
+    #     frame_started = False
+    #     recv_buf = [0 for i in range(32)]
+
+    #     while self._serial.in_waiting:
+    #         rx_buf = self._serial.read()
+    #         rx_buf = ord(rx_buf)
+
+    #         if not frame_started:
+    #             if rx_buf == LX16ADriver.SERVO_BUS_HEADER:
+    #                 frame_count = frame_count + 1
+    #                 if frame_count == 2:
+    #                     data_count = 1
+    #                     frame_count = 0
+    #                     frame_started = True
+    #             else:
+    #                 data_count = 0
+    #                 frame_count = 0
+    #                 frame_started = False
+
+    #         if frame_started:
+    #             recv_buf[data_count] = rx_buf
+    #             if data_count == 3:
+    #                 data_length = recv_buf[data_count]
+    #                 if data_length < 3 or data_length > 7:
+    #                     data_length = 2
+    #                     frame_started = False
+    #             data_count = data_count + 1
+    #             if data_count == data_length + 3:
+    #                 if True:
+    #                     frame_started = False
+    #                     data = bytearray(recv_buf[5: data_length + 2])
+    #                     return data
+    #                 return -1
+        
     # Read all bytes in one call instead of a byte at a time
     #  - no noticeable performance change
     # 
