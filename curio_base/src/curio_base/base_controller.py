@@ -37,8 +37,19 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-from curio_base.lx16a_driver import LX16ADriver
+USE_ARDUINO_DRIVER = False
+
+# @PYSERIAL
+if not USE_ARDUINO_DRIVER:
+    from curio_base.lx16a_driver import LX16ADriver
+
+# @ARDUINO
+if USE_ARDUINO_DRIVER:
+    from curio_msgs.msg import CurioServoCommands
+    from curio_msgs.msg import CurioServoPositions
+
 from curio_base.lx16a_encoder_filter import LX16AEncoderFilter
+
 from curio_msgs.msg import CurioServoStatus
 from curio_msgs.msg import LX16AState
 
@@ -721,10 +732,17 @@ class BaseController(object):
     tf : geometry_msgs/TransformStamped
         Broadcast the transfrom from `odom` to `base_link`
 
+    servo/commands : curio_msgs/CurioServoCommands
+        Publish servo commands to the servo controller     
+
     Subscriptions
     -------------
     cmd_vel : geometry_msgs/Twist
         Subscribe to `cmd_vel`.    
+
+    servo/positions : curio_msgs/CurioServoPositions
+        Subscribe to servo positions from the servo controller     
+
     '''
 
     # Velocity limits for the rover
@@ -744,6 +762,132 @@ class BaseController(object):
     # 6 wheels, 4 steering.
     NUM_WHEELS = 6
     NUM_STEERS = 4
+
+    class PythonServoDriver(object):
+        ''' Servo driver abstraction
+        '''
+        
+        def __init__(self, wheel_servos, steer_servos):
+            ''' Constructor
+            '''
+            
+            self._wheel_servos = wheel_servos
+            self._steer_servos = steer_servos
+
+            # LX-16A servo driver - all parameters are required
+            rospy.loginfo('Opening connection to servo bus board...')
+            port      = rospy.get_param('~port')
+            baudrate  = rospy.get_param('~baudrate')
+            timeout   = rospy.get_param('~timeout')
+            self._servo_driver = LX16ADriver()
+            self._servo_driver.set_port(port)
+            self._servo_driver.set_baudrate(baudrate)
+            self._servo_driver.set_timeout(timeout)
+            self._servo_driver.open()        
+            rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
+            rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
+            rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
+            rospy.loginfo('timeout: {:.2f}'.format(self._servo_driver.get_timeout()))
+
+        def set_servo_steer_cmd(self, i, position):
+            ''' Set the servo steering command
+            '''
+
+            servo = self._steer_servos[i]
+            self._servo_driver.servo_mode_write(servo.id)
+            self._servo_driver.move_time_write(servo.id, position, 50)
+
+        def set_servo_wheel_cmd(self, i, duty):
+            ''' Set the servo wheel command
+            '''
+
+            servo = self._wheel_servos[i]
+            self._servo_driver.motor_mode_write(servo.id, duty)
+
+        def publish_servo_commands(self):
+            ''' Publish the servo commands
+            '''
+
+            pass
+
+        def get_wheel_servo_position(self, i):
+            ''' Get the servo position for the i-th wheel 
+            '''
+            
+            servo = self._wheel_servos[i]
+            return self._servo_driver.pos_read(servo.id) 
+
+        def set_angle_offset(self, i, deviation):
+            ''' Set the steering angle offset (trim)
+            '''
+
+            servo = self._steer_servos[i]
+            self._servo_driver.angle_offset_adjust(servo.id, servo.offset)
+            # self._servo_driver.angle_offset_write(servo.id)
+
+    class ArduinoServoDriver(object):
+        ''' Servo driver abstraction
+        '''
+
+        def __init__(self, wheel_servos, steer_servos):
+            ''' Constructor
+            '''
+
+            self._wheel_servos = wheel_servos
+            self._steer_servos = steer_servos
+
+            # Servo positions
+            self._servo_pos_msg = CurioServoPositions()
+            self._servo_pos_msg.wheel_servo_positions = [0 for i in range(BaseController.NUM_WHEELS)]
+            self._servo_pos_msg.steer_servo_positions = [0 for i in range(BaseController.NUM_STEERS)]
+            self._servo_pos_sub = rospy.Subscriber('/servo/positions', CurioServoPositions, self._servo_pos_callback)
+
+            # Servo commands
+            self._servo_cmd_msg = CurioServoCommands()
+            self._servo_cmd_msg.wheel_servo_duties = [0 for i in range(BaseController.NUM_WHEELS)]
+            self._servo_cmd_msg.steer_servo_positions = [0 for i in range(BaseController.NUM_STEERS)]
+            self._servo_cmd_pub = rospy.Publisher('/servo/commands', CurioServoCommands, queue_size=10)
+
+        def set_servo_steer_cmd(self, i, position):
+            ''' Set the servo steering command
+            '''
+
+            self._servo_cmd_msg.steer_servo_positions[i] = position
+
+        def set_servo_wheel_cmd(self, i, duty):
+            ''' Set the servo wheel command
+            '''
+
+            self._servo_cmd_msg.wheel_servo_duties[i] = duty
+
+        def publish_servo_commands(self):
+            ''' Publish the servo commands
+            '''
+
+            self._servo_cmd_pub.publish(self._servo_cmd_msg)
+
+        def get_wheel_servo_position(self, i):
+            ''' Get the servo position for the i-th wheel 
+            '''
+
+            return self._servo_pos_msg.wheel_servo_positions[i]            
+
+        def set_angle_offset(self, i, deviation):
+            ''' Set the steering angle offset (trim)
+            '''
+
+            pass
+
+        def _servo_pos_callback(self, msg):
+            ''' Callback for the subscription to `/servos/positions`.
+
+            Parameters
+            ----------
+            msg : curio_msgs.msg/CurioServoStatus
+                The message for the servo positions.
+            '''
+
+            self._servo_pos_msg = msg
 
     def __init__(self):
         ''' Constructor
@@ -840,24 +984,22 @@ class BaseController(object):
             rospy.logdebug('servo: id: {}, lon_label: {}, lat_label: {}, orientation: {}, offset: {}, position: {}'
                 .format(servo.id, servo.lon_label, servo.lat_label, servo.orientation, servo.offset, servo.position))
 
-        # LX-16A servo driver - all parameters are required
-        rospy.loginfo('Opening connection to servo bus board...')
-        port      = rospy.get_param('~port')
-        baudrate  = rospy.get_param('~baudrate')
-        timeout   = rospy.get_param('~timeout')
-        self._servo_driver = LX16ADriver()
-        self._servo_driver.set_port(port)
-        self._servo_driver.set_baudrate(baudrate)
-        self._servo_driver.set_timeout(timeout)
-        self._servo_driver.open()        
-        rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
-        rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
-        rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
-        rospy.loginfo('timeout: {:.2f}'.format(self._servo_driver.get_timeout()))
+        # Mixin class to select between Python or Arduino servo driver
+        # @PYSERIAL
+        if not USE_ARDUINO_DRIVER:
+            self._servo_driver = BaseController.PythonServoDriver(
+                self._wheel_servos, self._steer_servos)
 
-        # Subscriber
+        # @ARDUINO
+        if USE_ARDUINO_DRIVER:
+            self._servo_driver = BaseController.ArduinoServoDriver(
+                self._wheel_servos, self._steer_servos)
+
+        # Commanded velocity
+        self._cmd_vel_timeout = rospy.Duration(0.5)
+        self._cmd_vel_last_rec_time = rospy.get_rostime()
         self._cmd_vel_msg = Twist()
-        self._cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, self.cmd_vel_callback)
+        self._cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, self._cmd_vel_callback)
 
         # Tuning / calibration
         rospy.loginfo('Setting steer servo offsets...')
@@ -907,10 +1049,11 @@ class BaseController(object):
         self._odom_broadcaster = TransformBroadcaster()
 
         # Robot status
-        self._curio_servo_status_msg = CurioServoStatus()
-        self._curio_servo_status_pub = rospy.Publisher('servo/status', CurioServoStatus, queue_size=10)
-        self._wheel_servo_states = [LX16AState() for x in range(BaseController.NUM_WHEELS)]
-        self._steer_servo_states = [LX16AState() for x in range(BaseController.NUM_STEERS)]
+        # @SERVO_STATUS
+        # self._curio_servo_status_msg = CurioServoStatus()
+        # self._curio_servo_status_pub = rospy.Publisher('servo/status', CurioServoStatus, queue_size=10)
+        # self._wheel_servo_states = [LX16AState() for x in range(BaseController.NUM_WHEELS)]
+        # self._steer_servo_states = [LX16AState() for x in range(BaseController.NUM_STEERS)]
 
     def move(self, lin_vel, ang_vel):
         ''' Move the robot given linear and angular velocities
@@ -933,6 +1076,9 @@ class BaseController(object):
             The angular velocity of base_link frame [rad/s].
         '''
 
+        # Check for timeout
+        has_timed_out = rospy.get_rostime() > self._cmd_vel_last_rec_time + self._cmd_vel_timeout
+
         # Calculate the turning radius and rate 
         r_p, omega_p = turning_radius_and_rate(lin_vel, ang_vel, self._mid_wheel_lat_separation)
         rospy.logdebug('r_p: {:.2f}, omega_p: {:.2f}'.format(r_p, omega_p))
@@ -943,9 +1089,10 @@ class BaseController(object):
         steer_angle = []
         if omega_p == 0:
             # Body frame has no angular velocity - set wheel velocity directly
-            wheel_vel_max = math.fabs(lin_vel)
+            vel = 0.0 if has_timed_out else lin_vel
+            wheel_vel_max = math.fabs(vel)
             for servo in self._wheel_servos:
-                wheel_lin_vel.append(lin_vel)
+                wheel_lin_vel.append(vel)
 
             for servo in self._steer_servos:
                 steer_angle.append(0.0)
@@ -963,6 +1110,7 @@ class BaseController(object):
                 # Wheel velocity
                 sgn = -1 if (r_p - y) < 0 else 1
                 vel = sgn * r * omega_p 
+                vel = 0.0 if has_timed_out else vel
                 wheel_vel_max = max(wheel_vel_max, math.fabs(vel))
                 wheel_lin_vel.append(vel)
                 # rospy.logdebug("id: {}, r: {:.2f}, wheel_lin_vel: {:.2f}".format(id, r, vel))
@@ -1007,8 +1155,7 @@ class BaseController(object):
                 BaseController.SERVO_POS_MIN, BaseController.SERVO_POS_MAX))
 
             rospy.logdebug('id: {}, angle: {:.2f}, servo_pos: {}'.format(servo.id, angle_deg, servo_pos))
-            self._servo_driver.servo_mode_write(servo.id)
-            self._servo_driver.move_time_write(servo.id, servo_pos, 50)
+            self._servo_driver.set_servo_steer_cmd(i, servo_pos)
 
         # Update wheel servos
         rospy.logdebug('Updating wheel servos')
@@ -1026,10 +1173,13 @@ class BaseController(object):
             # Set servo speed
             rospy.logdebug('id: {}, wheel_ang_vel: {:.2f}, servo_vel: {}'
                 .format(servo.id, wheel_ang_vel, duty))
-            self._servo_driver.motor_mode_write(servo.id, duty)
+            self._servo_driver.set_servo_wheel_cmd(i, duty)
 
             # Update duty array (needed for servo position classifier)
-            self._wheel_servo_duty[i] = duty 
+            self._wheel_servo_duty[i] = duty
+
+        # Publish the servo command
+        self._servo_driver.publish_servo_commands()
 
     def set_steer_servo_offsets(self):
         ''' Set angle offsets for the steering servos.
@@ -1040,21 +1190,26 @@ class BaseController(object):
         '''
 
         # Set the steering servo offsets to centre the corner wheels
-        for servo in self._steer_servos:
+        for i in range(len(self._steer_servos)):
+            servo = self._steer_servos[i]
             rospy.loginfo('id: {}, offset: {}'.format(servo.id, servo.offset))
-            self._servo_driver.angle_offset_adjust(servo.id, servo.offset)
-            # self._servo_driver.angle_offset_write(servo.id)
+            self._servo_driver.set_angle_offset(i, servo.offset)
 
     def stop(self):
         ''' Stop all servos
         '''
 
         rospy.loginfo('Stopping all servos')
-        for servo in self._wheel_servos:
-            self._servo_driver.motor_mode_write(servo.id, 0)
-    
-    def cmd_vel_callback(self, msg):
-        ''' Callback for the subscription to /cmd_vel.
+        for i in range(len(self._wheel_servos)):
+            self._servo_driver.set_servo_wheel_cmd(i, 0)
+
+        self._servo_driver.publish_servo_commands()
+
+    def _cmd_vel_callback(self, msg):
+        ''' Callback for the subscription to `/cmd_vel`.
+
+        The callback updates the current command, and also a watchdog
+        timer so that if cmd_vel messages stop, the motors stop.
 
         Parameters
         ----------
@@ -1063,7 +1218,19 @@ class BaseController(object):
         '''
 
         rospy.logdebug('cmd_vel: linear: {}, angular: {}'.format(msg.linear.x, msg.angular.z))
+        self._cmd_vel_last_rec_time = rospy.get_rostime()
         self._cmd_vel_msg = msg
+
+    def _servo_pos_callback(self, msg):
+        ''' Callback for the subscription to `/servos/positions`.
+
+        Parameters
+        ----------
+        msg : curio_msgs.msg/CurioServoStatus
+            The message for the servo positions.
+        '''
+
+        self._servo_pos_msg = msg
 
     def update(self, event):
         ''' Callback for the control loop.
@@ -1112,7 +1279,7 @@ class BaseController(object):
         for i in range(BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
             filter = self._encoder_filters[i]
-            pos = self._servo_driver.pos_read(servo.id)            
+            pos = self._servo_driver.get_wheel_servo_position(i)
             filter.reset(pos)
 
     # @TODO: Errors when running at low control loop update rate (e.g. < 15Hz).
@@ -1143,23 +1310,21 @@ class BaseController(object):
         for i in range (BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
             filter = self._encoder_filters[i]
-            state = self._wheel_servo_states[i]            
+            # @SERVO_STATUS
+            # state = self._wheel_servo_states[i]
 
             # Calculate the encoder count
-            duty = self._wheel_servo_duty[i]            
-            pos = self._servo_driver.pos_read(servo.id)            
-
+            duty = self._wheel_servo_duty[i]
+            pos = self._servo_driver.get_wheel_servo_position(i)
             filter.update(time, duty, pos)
             count = filter.get_count()
             theta = filter.get_angular_position()
- 
             servo_positions[i] = theta
 
+            # @SERVO_STATUS
             # Update state
-            state.duty = duty
-            state.pos = pos
-            state.count = count
-            state.count_is_inverted = 0 if filter.get_invert() > 0 else 1
+            # state.duty = duty
+            # state.position = pos
 
             # Append to debug message
             msg = msg + "{}: {}, ".format(servo.id, count)
@@ -1209,26 +1374,25 @@ class BaseController(object):
         Returns
         -------
         float
-            The angular positionthe wheel servo [rad].
+            The angular position of the wheel servo [rad].
         '''
 
         servo = self._wheel_servos[i]
         filter = self._encoder_filters[i]
-        state = self._wheel_servo_states[i]            
+        # @SERVO_STATUS
+        # state = self._wheel_servo_states[i]
 
         # Calculate the encoder count
-        duty = self._wheel_servo_duty[i]            
-        pos = self._servo_driver.pos_read(servo.id)            
-
+        duty = self._wheel_servo_duty[i]
+        pos = self._servo_driver.get_wheel_servo_position(i)
         filter.update(time, duty, pos)
         count = filter.get_count()
         theta = filter.get_angular_position()
 
+        # @SERVO_STATUS
         # Update state
-        state.duty = duty
-        state.position = pos
-        # state.count = count
-        # state.count_is_inverted = 0 if filter.get_invert() > 0 else 1
+        # state.duty = duty
+        # state.position = pos
         return theta
 
     def _init_odometry(self):
@@ -1350,21 +1514,23 @@ class BaseController(object):
 
         for i in range (BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
-            state = self._wheel_servo_states[i]
-            state.id = servo.id
-            state.temperature = self._servo_driver.temp_read(servo.id)
-            state.voltage = self._servo_driver.vin_read(servo.id)
-            state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
-            state.mode = LX16AState.LX16A_MODE_MOTOR
+            # @SERVO_STATUS
+            # state = self._wheel_servo_states[i]
+            # state.id = servo.id
+            # state.temperature = self._servo_driver.temp_read(servo.id)
+            # state.voltage = self._servo_driver.vin_read(servo.id)
+            # state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
+            # state.mode = LX16AState.LX16A_MODE_MOTOR
 
         for i in range (BaseController.NUM_STEERS):
             servo = self._steer_servos[i]
-            state = self._steer_servo_state[i]
-            state.id = servo.id
-            state.temperature = self._servo_driver.temp_read(servo.id)
-            state.voltage = self._servo_driver.vin_read(servo.id)
-            state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
-            state.mode = LX16AState.LX16A_MODE_SERVO
+            # @SERVO_STATUS
+            # state = self._steer_servo_state[i]
+            # state.id = servo.id
+            # state.temperature = self._servo_driver.temp_read(servo.id)
+            # state.voltage = self._servo_driver.vin_read(servo.id)
+            # state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
+            # state.mode = LX16AState.LX16A_MODE_SERVO
 
     def _publish_status(self, time):
         ''' Publish the rover's status
@@ -1375,13 +1541,14 @@ class BaseController(object):
             The current time.
         '''
 
+        # @SERVO_STATUS
         # Header
-        self._curio_servo_status_msg.header.stamp = time
-        self. _curio_servo_status_msg.header.frame_id = 'base_link'
+        # self._curio_servo_status_msg.header.stamp = time
+        # self. _curio_servo_status_msg.header.frame_id = 'base_link'
 
         # LX16A state
-        self._curio_servo_status_msg.wheel_servo_states = self._wheel_servo_states
-        self._curio_servo_status_msg.steer_servo_states = self._steer_servo_states
+        # self._curio_servo_status_msg.wheel_servo_states = self._wheel_servo_states
+        # self._curio_servo_status_msg.steer_servo_states = self._steer_servo_states
 
         # Publish rover state
-        self._curio_servo_status_pub.publish(self._curio_servo_status_msg)
+        # self._curio_servo_status_pub.publish(self._curio_servo_status_msg)
