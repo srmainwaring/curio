@@ -24,7 +24,7 @@
     <node pkg="rosserial_python" type="serial_node.py" name="curio_rosserial_rc_channels"
         respawn="true" output="screen">
         <param name="port" value="$(arg port)"/>
-        <param name="baud" value="57600"/>
+        <param name="baud" value="115200"/>
     </node>
 
     <!-- Launch RC teleoperation -->
