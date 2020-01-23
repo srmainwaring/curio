@@ -37,7 +37,7 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-USE_ARDUINO_DRIVER = True
+USE_ARDUINO_DRIVER = False
 
 if USE_ARDUINO_DRIVER:
     # Load imports for the Arduino driver
