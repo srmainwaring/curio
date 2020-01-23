@@ -15,8 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
     joint_state_publisher
     nav_msgs
     robot_state_publisher
+    roscpp
     rospy
-    # serial
+    serial
     std_msgs
     tf
 )
@@ -30,8 +31,10 @@ catkin_python_setup()
 # Declare catkin configuration
 
 catkin_package(
-    # INCLUDE_DIRS include
-    LIBRARIES 
+    INCLUDE_DIRS
+        include
+    LIBRARIES
+        curio_base
     CATKIN_DEPENDS
         curio_description
         curio_control
@@ -40,8 +43,9 @@ catkin_package(
         joint_state_publisher
         nav_msgs
         robot_state_publisher
+        roscpp
         rospy
-        # serial
+        serial
         std_msgs
         tf
 )
@@ -49,13 +53,33 @@ catkin_package(
 ################################################################################
 # Build
 
-# include_directories(
-#     include
-#     ${catkin_INCLUDE_DIRS}
-# )
+include_directories(
+    include
+    ${catkin_INCLUDE_DIRS}
+)
+
+add_library(curio_base
+    src/lx16a_driver.cpp
+)
+target_link_libraries(curio_base ${catkin_LIBRARIES})
+
+add_executable(lx16a_position_publisher
+    src/examples/lx16a_position_publisher.cpp
+)
+target_link_libraries(lx16a_position_publisher curio_base ${catkin_LIBRARIES})
 
 ################################################################################
 # Install
+
+install(TARGETS
+    curio_base
+    lx16a_position_publisher
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+
+install(DIRECTORY include/curio_base/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
 
 catkin_install_python(PROGRAMS
     nodes/curio_base_controller
@@ -68,5 +92,9 @@ catkin_install_python(PROGRAMS
     scripts/lx16a_mean_filter_test.py
     scripts/lx16a_odometry_test.py
     scripts/lx16a_train_classifier.py
+    scripts/lx16a_train_regressor.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+install(DIRECTORY config data launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

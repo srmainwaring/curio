@@ -19,8 +19,9 @@
     <depend>joint_state_publisher</depend>
     <depend>nav_msgs</depend>
     <depend>robot_state_publisher</depend>
+    <depend>roscpp</depend>
     <depend>rospy</depend>
-    <!-- <depend>serial</depend> -->
+    <depend>serial</depend>
     <depend>std_msgs</depend>
     <depend>tf</depend>
 
