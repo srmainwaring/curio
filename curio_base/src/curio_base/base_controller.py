@@ -37,21 +37,21 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-USE_ARDUINO_DRIVER = False
+USE_ARDUINO_DRIVER = True
 
-# @PYSERIAL
-if not USE_ARDUINO_DRIVER:
-    from curio_base.lx16a_driver import LX16ADriver
-
-# @ARDUINO
 if USE_ARDUINO_DRIVER:
+    # Load imports for the Arduino driver
     from curio_msgs.msg import CurioServoCommands
     from curio_msgs.msg import CurioServoPositions
+else:
+    # Load imports for the Python serial driver
+    from curio_base.lx16a_driver import LX16ADriver
+    from curio_msgs.msg import CurioServoStates
+    from curio_msgs.msg import LX16AState
 
 from curio_base.lx16a_encoder_filter import LX16AEncoderFilter
-
-from curio_msgs.msg import CurioServoStatus
-from curio_msgs.msg import LX16AState
+from curio_msgs.msg import CurioServoEncoders
+from curio_msgs.msg import LX16AEncoder
 
 import math
 import rospy
@@ -727,21 +727,24 @@ class BaseController(object):
     ------------
     odom : nav_msgs/Odometry
         Publish the odometry.
-    servo/status : curio_msgs/CurioServoStatus
-        Publish the rover state.
     tf : geometry_msgs/TransformStamped
         Broadcast the transfrom from `odom` to `base_link`
-
+    servo/encoders : curio_msgs/CurioServoEncoders
+        Publish servo encoder states
+    servo/states : curio_msgs/CurioServoStates
+        Publish the servo states
+        (Python serial only)
     servo/commands : curio_msgs/CurioServoCommands
         Publish servo commands to the servo controller     
+        (Arduino serial only)
 
     Subscriptions
     -------------
     cmd_vel : geometry_msgs/Twist
         Subscribe to `cmd_vel`.    
-
     servo/positions : curio_msgs/CurioServoPositions
         Subscribe to servo positions from the servo controller     
+        (Arduino serial only)
 
     '''
 
@@ -789,7 +792,13 @@ class BaseController(object):
             rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
             rospy.loginfo('timeout: {:.2f}'.format(self._servo_driver.get_timeout()))
 
-        def set_servo_steer_cmd(self, i, position):
+            # Publishers
+            self._states_msg = CurioServoStates()
+            self._states_pub = rospy.Publisher('servo/states', CurioServoStates, queue_size=10)
+            self._wheel_states = [LX16AState() for x in range(BaseController.NUM_WHEELS)]
+            self._steer_states = [LX16AState() for x in range(BaseController.NUM_STEERS)]
+
+        def set_steer_command(self, i, position):
             ''' Set the servo steering command
             '''
 
@@ -797,25 +806,30 @@ class BaseController(object):
             self._servo_driver.servo_mode_write(servo.id)
             self._servo_driver.move_time_write(servo.id, position, 50)
 
-        def set_servo_wheel_cmd(self, i, duty):
+        def set_wheel_command(self, i, duty):
             ''' Set the servo wheel command
             '''
 
             servo = self._wheel_servos[i]
+            state = self._wheel_states[i]
+            state.command = duty
             self._servo_driver.motor_mode_write(servo.id, duty)
 
-        def publish_servo_commands(self):
+        def publish_commands(self):
             ''' Publish the servo commands
             '''
 
             pass
 
-        def get_wheel_servo_position(self, i):
+        def get_wheel_position(self, i):
             ''' Get the servo position for the i-th wheel 
             '''
             
             servo = self._wheel_servos[i]
-            return self._servo_driver.pos_read(servo.id) 
+            state = self._wheel_states[i]
+            pos = self._servo_driver.pos_read(servo.id) 
+            state.position = pos
+            return pos
 
         def set_angle_offset(self, i, deviation):
             ''' Set the steering angle offset (trim)
@@ -824,6 +838,55 @@ class BaseController(object):
             servo = self._steer_servos[i]
             self._servo_driver.angle_offset_adjust(servo.id, servo.offset)
             # self._servo_driver.angle_offset_write(servo.id)
+
+        # @TODO: check and test
+        def update_states(self, time):
+            ''' Update the servo states
+
+            Parameters
+            ----------
+            time : rospy.Time
+                The current time.
+            '''
+
+            for i in range (BaseController.NUM_WHEELS):
+                servo = self._wheel_servos[i]
+                state = self._wheel_states[i]
+                state.id = servo.id
+                # state.temperature = self._servo_driver.temp_read(servo.id)
+                # state.voltage = self._servo_driver.vin_read(servo.id)
+                # state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
+                state.mode = LX16AState.LX16A_MODE_MOTOR
+
+            for i in range (BaseController.NUM_STEERS):
+                servo = self._steer_servos[i]
+                state = self._steer_states[i]
+                state.id = servo.id
+                # state.temperature = self._servo_driver.temp_read(servo.id)
+                # state.voltage = self._servo_driver.vin_read(servo.id)
+                # state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
+                state.mode = LX16AState.LX16A_MODE_SERVO
+
+        # @TODO: check and test
+        def publish_states(self, time):
+            ''' Publish the servo states
+
+            Parameters
+            ----------
+            time : rospy.Time
+                The current time.
+            '''
+
+            # Header
+            self._states_msg.header.stamp = time
+            self. _states_msg.header.frame_id = 'base_link'
+
+            # LX16A state
+            self._states_msg.wheel_servo_states = self._wheel_states
+            self._states_msg.steer_servo_states = self._steer_states
+
+            # Publish rover state
+            self._states_pub.publish(self._states_msg)
 
     class ArduinoServoDriver(object):
         ''' Servo driver abstraction
@@ -838,39 +901,39 @@ class BaseController(object):
 
             # Servo positions
             self._servo_pos_msg = CurioServoPositions()
-            self._servo_pos_msg.wheel_servo_positions = [0 for i in range(BaseController.NUM_WHEELS)]
-            self._servo_pos_msg.steer_servo_positions = [0 for i in range(BaseController.NUM_STEERS)]
+            self._servo_pos_msg.wheel_positions = [0 for i in range(BaseController.NUM_WHEELS)]
+            self._servo_pos_msg.steer_positions = [0 for i in range(BaseController.NUM_STEERS)]
             self._servo_pos_sub = rospy.Subscriber('/servo/positions', CurioServoPositions, self._servo_pos_callback)
 
             # Servo commands
             self._servo_cmd_msg = CurioServoCommands()
-            self._servo_cmd_msg.wheel_servo_duties = [0 for i in range(BaseController.NUM_WHEELS)]
-            self._servo_cmd_msg.steer_servo_positions = [0 for i in range(BaseController.NUM_STEERS)]
+            self._servo_cmd_msg.wheel_commands = [0 for i in range(BaseController.NUM_WHEELS)]
+            self._servo_cmd_msg.steer_commands = [0 for i in range(BaseController.NUM_STEERS)]
             self._servo_cmd_pub = rospy.Publisher('/servo/commands', CurioServoCommands, queue_size=10)
 
-        def set_servo_steer_cmd(self, i, position):
+        def set_steer_command(self, i, position):
             ''' Set the servo steering command
             '''
 
-            self._servo_cmd_msg.steer_servo_positions[i] = position
+            self._servo_cmd_msg.steer_commands[i] = position
 
-        def set_servo_wheel_cmd(self, i, duty):
+        def set_wheel_command(self, i, duty):
             ''' Set the servo wheel command
             '''
 
-            self._servo_cmd_msg.wheel_servo_duties[i] = duty
+            self._servo_cmd_msg.wheel_commands[i] = duty
 
-        def publish_servo_commands(self):
+        def publish_commands(self):
             ''' Publish the servo commands
             '''
 
             self._servo_cmd_pub.publish(self._servo_cmd_msg)
 
-        def get_wheel_servo_position(self, i):
+        def get_wheel_position(self, i):
             ''' Get the servo position for the i-th wheel 
             '''
 
-            return self._servo_pos_msg.wheel_servo_positions[i]            
+            return self._servo_pos_msg.wheel_positions[i]            
 
         def set_angle_offset(self, i, deviation):
             ''' Set the steering angle offset (trim)
@@ -883,7 +946,7 @@ class BaseController(object):
 
             Parameters
             ----------
-            msg : curio_msgs.msg/CurioServoStatus
+            msg : curio_msgs.msg/CurioServoStates
                 The message for the servo positions.
             '''
 
@@ -984,15 +1047,12 @@ class BaseController(object):
             rospy.logdebug('servo: id: {}, lon_label: {}, lat_label: {}, orientation: {}, offset: {}, position: {}'
                 .format(servo.id, servo.lon_label, servo.lat_label, servo.orientation, servo.offset, servo.position))
 
-        # Mixin class to select between Python or Arduino servo driver
-        # @PYSERIAL
-        if not USE_ARDUINO_DRIVER:
-            self._servo_driver = BaseController.PythonServoDriver(
-                self._wheel_servos, self._steer_servos)
-
-        # @ARDUINO
+        # Select whether to use the Python or Arduino servo driver
         if USE_ARDUINO_DRIVER:
             self._servo_driver = BaseController.ArduinoServoDriver(
+                self._wheel_servos, self._steer_servos)
+        else:
+            self._servo_driver = BaseController.PythonServoDriver(
                 self._wheel_servos, self._steer_servos)
 
         # Commanded velocity
@@ -1042,18 +1102,16 @@ class BaseController(object):
             servo = self._wheel_servos[i]
             if servo.lat_label == Servo.RIGHT:
                 self._encoder_filters[i].set_invert(True)
-            
+
         self._reset_encoders()
+
+        # Encoder messages (primarily for debugging)
+        self._encoders_msg = CurioServoEncoders()
+        self._encoders_pub = rospy.Publisher('/servo/encoders', CurioServoEncoders, queue_size=10)
+        self._wheel_encoders = [LX16AEncoder() for i in range(BaseController.NUM_WHEELS)] 
 
         # Transform
         self._odom_broadcaster = TransformBroadcaster()
-
-        # Robot status
-        # @SERVO_STATUS
-        # self._curio_servo_status_msg = CurioServoStatus()
-        # self._curio_servo_status_pub = rospy.Publisher('servo/status', CurioServoStatus, queue_size=10)
-        # self._wheel_servo_states = [LX16AState() for x in range(BaseController.NUM_WHEELS)]
-        # self._steer_servo_states = [LX16AState() for x in range(BaseController.NUM_STEERS)]
 
     def move(self, lin_vel, ang_vel):
         ''' Move the robot given linear and angular velocities
@@ -1135,7 +1193,7 @@ class BaseController(object):
         # Update steer servos
         # @TODO link the time of the move to the angle which the servos turn through
         rospy.logdebug('Updating steer servos')
-        for i in range(len(self._steer_servos)):
+        for i in range(BaseController.NUM_STEERS):
             servo = self._steer_servos[i]
 
             # Input angles are in radians
@@ -1155,11 +1213,11 @@ class BaseController(object):
                 BaseController.SERVO_POS_MIN, BaseController.SERVO_POS_MAX))
 
             rospy.logdebug('id: {}, angle: {:.2f}, servo_pos: {}'.format(servo.id, angle_deg, servo_pos))
-            self._servo_driver.set_servo_steer_cmd(i, servo_pos)
+            self._servo_driver.set_steer_command(i, servo_pos)
 
         # Update wheel servos
         rospy.logdebug('Updating wheel servos')
-        for i in range(len(self._wheel_servos)):
+        for i in range(BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
 
             # Wheel angular velocity
@@ -1173,13 +1231,13 @@ class BaseController(object):
             # Set servo speed
             rospy.logdebug('id: {}, wheel_ang_vel: {:.2f}, servo_vel: {}'
                 .format(servo.id, wheel_ang_vel, duty))
-            self._servo_driver.set_servo_wheel_cmd(i, duty)
+            self._servo_driver.set_wheel_command(i, duty)
 
             # Update duty array (needed for servo position classifier)
             self._wheel_servo_duty[i] = duty
 
         # Publish the servo command
-        self._servo_driver.publish_servo_commands()
+        self._servo_driver.publish_commands()
 
     def set_steer_servo_offsets(self):
         ''' Set angle offsets for the steering servos.
@@ -1190,7 +1248,7 @@ class BaseController(object):
         '''
 
         # Set the steering servo offsets to centre the corner wheels
-        for i in range(len(self._steer_servos)):
+        for i in range(BaseController.NUM_STEERS):
             servo = self._steer_servos[i]
             rospy.loginfo('id: {}, offset: {}'.format(servo.id, servo.offset))
             self._servo_driver.set_angle_offset(i, servo.offset)
@@ -1200,10 +1258,10 @@ class BaseController(object):
         '''
 
         rospy.loginfo('Stopping all servos')
-        for i in range(len(self._wheel_servos)):
-            self._servo_driver.set_servo_wheel_cmd(i, 0)
+        for i in range(BaseController.NUM_WHEELS):
+            self._servo_driver.set_wheel_command(i, 0)
 
-        self._servo_driver.publish_servo_commands()
+        self._servo_driver.publish_commands()
 
     def _cmd_vel_callback(self, msg):
         ''' Callback for the subscription to `/cmd_vel`.
@@ -1226,7 +1284,7 @@ class BaseController(object):
 
         Parameters
         ----------
-        msg : curio_msgs.msg/CurioServoStatus
+        msg : curio_msgs.msg/CurioServoStates
             The message for the servo positions.
         '''
 
@@ -1250,16 +1308,33 @@ class BaseController(object):
 
         # Read and publish
         self._update_odometry(time)
-        # @TODO: move status update to a separate update loop with a lower update rate
-        # self._update_status(time)
         self._publish_odometry(time)
         self._publish_tf(time)
-        self._publish_status(time)
+        self._publish_encoders(time)
 
         # PID control would go here...
 
         # Write commands
         self.move(self._cmd_vel_msg.linear.x, self._cmd_vel_msg.angular.z)
+
+    def update_state(self, event):
+        ''' Callback for the status update loop.
+        
+        This to be called at the status update frequency by the node's
+        main function, usually managed by a rospy.Timer.
+
+        Parameters
+        ----------
+        event : rospy.Timer
+            A rospy.Timer event.
+        '''
+
+        # Get the current real time (just before this function
+        # was called)
+        time = event.current_real
+
+        self._update_state(time)
+        self._publish_states(time)
 
     def shutdown(self):
         ''' Called by the node shutdown hook on exit.
@@ -1268,7 +1343,7 @@ class BaseController(object):
         # Stop all servos - @TODO add e-stop with latch.
         self.stop()
 
-    ################################################################################ 
+    #################################################################### 
     # Odometry related
 
     def _reset_encoders(self):
@@ -1279,16 +1354,18 @@ class BaseController(object):
         for i in range(BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
             filter = self._encoder_filters[i]
-            pos = self._servo_driver.get_wheel_servo_position(i)
+            pos = self._servo_driver.get_wheel_position(i)
             filter.reset(pos)
 
-    # @TODO: Errors when running at low control loop update rate (e.g. < 15Hz).
+    # @TODO: Gives errors when running at low control loop update rate
+    #        (e.g. < 15Hz).
     # 
-    # The error is because the encoder filter is not updated fast enough to
-    # have two measurements close enough in time either side of a discontinuity 
-    # in the servo position to see a jump of 1000-1400 counts. Instead the
-    # encoder suffers from aliasing. As result the odometry will work at
-    # low velocities and then suddenly fail as it is increased.
+    # The error is because the encoder filter is not updated fast enough
+    # to make two measurements close enough in time either side of a
+    # discontinuity in the servo position to see a jump of 1000-1400
+    # counts. Instead the encoder suffers from aliasing. As result the
+    # odometry will work at low velocities and then suddenly fail as
+    # it is increased.
     # 
     def _update_all_wheel_servo_positions(self, time):
         ''' Get the servo positions in radians for all wheels.
@@ -1310,27 +1387,19 @@ class BaseController(object):
         for i in range (BaseController.NUM_WHEELS):
             servo = self._wheel_servos[i]
             filter = self._encoder_filters[i]
-            # @SERVO_STATUS
-            # state = self._wheel_servo_states[i]
 
             # Calculate the encoder count
             duty = self._wheel_servo_duty[i]
-            pos = self._servo_driver.get_wheel_servo_position(i)
+            pos = self._servo_driver.get_wheel_position(i)
             filter.update(time, duty, pos)
             count = filter.get_count()
             theta = filter.get_angular_position()
             servo_positions[i] = theta
 
-            # @SERVO_STATUS
-            # Update state
-            # state.duty = duty
-            # state.position = pos
-
             # Append to debug message
             msg = msg + "{}: {}, ".format(servo.id, count)
 
         rospy.loginfo(msg)
-
         return servo_positions
 
     def _update_mid_wheel_servo_positions(self, time):
@@ -1379,20 +1448,13 @@ class BaseController(object):
 
         servo = self._wheel_servos[i]
         filter = self._encoder_filters[i]
-        # @SERVO_STATUS
-        # state = self._wheel_servo_states[i]
 
         # Calculate the encoder count
         duty = self._wheel_servo_duty[i]
-        pos = self._servo_driver.get_wheel_servo_position(i)
+        pos = self._servo_driver.get_wheel_position(i)
         filter.update(time, duty, pos)
         count = filter.get_count()
         theta = filter.get_angular_position()
-
-        # @SERVO_STATUS
-        # Update state
-        # state.duty = duty
-        # state.position = pos
         return theta
 
     def _init_odometry(self):
@@ -1503,7 +1565,8 @@ class BaseController(object):
             'base_link',
             'odom')
 
-    def _update_status(self, time):
+    # @IMPLEMENT
+    def _update_state(self, time):
         ''' Update the rover's status
 
         Parameters
@@ -1512,27 +1575,10 @@ class BaseController(object):
             The current time.
         '''
 
-        for i in range (BaseController.NUM_WHEELS):
-            servo = self._wheel_servos[i]
-            # @SERVO_STATUS
-            # state = self._wheel_servo_states[i]
-            # state.id = servo.id
-            # state.temperature = self._servo_driver.temp_read(servo.id)
-            # state.voltage = self._servo_driver.vin_read(servo.id)
-            # state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
-            # state.mode = LX16AState.LX16A_MODE_MOTOR
+        pass
 
-        for i in range (BaseController.NUM_STEERS):
-            servo = self._steer_servos[i]
-            # @SERVO_STATUS
-            # state = self._steer_servo_state[i]
-            # state.id = servo.id
-            # state.temperature = self._servo_driver.temp_read(servo.id)
-            # state.voltage = self._servo_driver.vin_read(servo.id)
-            # state.angle_offset = self._servo_driver.angle_offset_read(servo.id)
-            # state.mode = LX16AState.LX16A_MODE_SERVO
-
-    def _publish_status(self, time):
+    # @IMPLEMENT
+    def _publish_states(self, time):
         ''' Publish the rover's status
 
         Parameters
@@ -1541,14 +1587,26 @@ class BaseController(object):
             The current time.
         '''
 
-        # @SERVO_STATUS
-        # Header
-        # self._curio_servo_status_msg.header.stamp = time
-        # self. _curio_servo_status_msg.header.frame_id = 'base_link'
+        pass
 
-        # LX16A state
-        # self._curio_servo_status_msg.wheel_servo_states = self._wheel_servo_states
-        # self._curio_servo_status_msg.steer_servo_states = self._steer_servo_states
+    def _publish_encoders(self, time):
+        ''' Publish the encoder state
+        '''
+        # Update the encoder messages
+        for i in range(BaseController.NUM_WHEELS):
+            servo = self._wheel_servos[i]
+            filter = self._encoder_filters[i]
+            pos, is_valid = filter.get_servo_pos(False)
+            msg = self._wheel_encoders[i]            
+            msg.id = servo.id
+            msg.duty = filter.get_duty()
+            msg.position = pos
+            msg.is_valid = is_valid
+            msg.count = filter.get_count()
+            msg.revolutions = filter.get_revolutions()
 
-        # Publish rover state
-        # self._curio_servo_status_pub.publish(self._curio_servo_status_msg)
+        # Publish
+        self._encoders_msg.header.stamp = time
+        self._encoders_msg.header.frame_id = 'base_link'
+        self._encoders_msg.wheel_encoders = self._wheel_encoders
+        self._encoders_pub.publish(self._encoders_msg)

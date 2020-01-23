@@ -239,6 +239,18 @@ class LX16AEncoderFilter(object):
         count = self._prev_valid_pos + ENCODER_MAX * self._revolutions 
         return self._invert * (count - self._count_offset) 
 
+    def get_duty(self):
+        ''' Get the current encoder duty.
+
+        Returns
+        -------
+        int
+            The current encoder duty.
+        '''
+
+        duty = pos = self._duty[self._index] 
+        return duty 
+
     def get_angular_position(self):
         ''' Get the angular position of the encoder (filtered)
 
