@@ -44,6 +44,10 @@ front_wheel_lon_separation: 0.28
 back_wheel_lat_separation: 0.47
 back_wheel_lon_separation: 0.25
 
+# Odometry calibration / tuning (default 1.0 - no adjustment)
+wheel_radius_multiplier: 1.0
+mid_wheel_lat_separation_multiplier: 0.96875
+
 # Wheel servo serial id mappings
 wheel_servos: [
     {

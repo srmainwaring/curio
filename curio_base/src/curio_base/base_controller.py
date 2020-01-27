@@ -408,7 +408,7 @@ class AckermannOdometry(object):
         self._wheel_radius = 0.06                           # [m]
         self._mid_wheel_lat_separation = 0.52               # [m]
         self._wheel_radius_multiplier = 1.0                 # [1]
-        self._mid_wheel_lat_separation_multiplier = 0.96875 # [1]
+        self._mid_wheel_lat_separation_multiplier = 1.0     # [1]
         self._num_wheels = 6
         self._wheel_cur_pos = [0.0 for x in range(self._num_wheels)] # [m]
         self._wheel_old_pos = [0.0 for x in range(self._num_wheels)] # [m]
@@ -585,7 +585,11 @@ class AckermannOdometry(object):
 
         return self._ang_vel_filter.get_mean()
 
-    def set_wheel_params(self, wheel_radius, mid_wheel_lat_separation):
+    def set_wheel_params(self,
+        wheel_radius,
+        mid_wheel_lat_separation,
+        wheel_radius_multiplier=1.0,
+        mid_wheel_lat_separation_multiplier=1.0):
         ''' Set the wheel and steering geometry.
 
         Note: all wheels are assumed to have the same radius, and the
@@ -597,10 +601,18 @@ class AckermannOdometry(object):
             The radius of the wheels [m].
         mid_wheel_lat_separation : float
             The lateral separation [m] of the mid wheels.
+        wheel_radius_multiplier : float
+            Wheel radius calibration multiplier to tune odometry,
+            has (default = 1.0).
+        mid_wheel_lat_separation_multiplier : float
+            Wheel separation calibration multiplier to tune odometry,
+            has (default = 1.0).
         '''
 
         self._wheel_radius = wheel_radius
         self._mid_wheel_lat_separation = mid_wheel_lat_separation
+        self._wheel_radius_multiplier = wheel_radius_multiplier
+        self._mid_wheel_lat_separation_multiplier = mid_wheel_lat_separation_multiplier
 
     def _integrate_velocities(self, lin_vel, ang_vel):
         ''' Integrate the current velocities to obtain the current
@@ -977,7 +989,7 @@ class BaseController(object):
         self._back_wheel_lon_separation   = 0.025
 
         if rospy.has_param('~wheel_radius'):
-            self._wheel_radius= rospy.get_param('~wheel_radius')
+            self._wheel_radius = rospy.get_param('~wheel_radius')
         if rospy.has_param('~mid_wheel_lat_separation'):
             self._mid_wheel_lat_separation = rospy.get_param('~mid_wheel_lat_separation')
         if rospy.has_param('~front_wheel_lat_separation'):
@@ -995,6 +1007,20 @@ class BaseController(object):
         rospy.loginfo('front_wheel_lon_separation: {:.2f}'.format(self._front_wheel_lon_separation))
         rospy.loginfo('back_wheel_lat_separation: {:.2f}'.format(self._back_wheel_lat_separation))
         rospy.loginfo('back_wheel_lon_separation: {:.2f}'.format(self._back_wheel_lon_separation))
+
+        # Odometry calibration parameters
+        self._wheel_radius_multiplier               = 1.0
+        self._mid_wheel_lat_separation_multiplier   = 1.0
+
+        if rospy.has_param('~wheel_radius_multiplier'):
+            self._wheel_radius_multiplier = rospy.get_param('~wheel_radius_multiplier')
+        if rospy.has_param('~mid_wheel_lat_separation_multiplier'):
+            self._mid_wheel_lat_separation_multiplier = rospy.get_param('~mid_wheel_lat_separation_multiplier')
+
+        rospy.loginfo('wheel_radius_multiplier: {:.2f}'
+            .format(self._wheel_radius_multiplier))
+        rospy.loginfo('mid_wheel_lat_separation_multiplier: {:.2f}'
+            .format(self._mid_wheel_lat_separation_multiplier))
 
         def calc_position(lon_label, lat_label):
             ''' Calculate servo positions using the wheel geometry parameters
@@ -1081,7 +1107,9 @@ class BaseController(object):
         self._odometry.reset(rospy.get_rostime())
         self._odometry.set_wheel_params(
             self._wheel_radius,
-            self._mid_wheel_lat_separation)
+            self._mid_wheel_lat_separation,
+            self._wheel_radius_multiplier,
+            self._mid_wheel_lat_separation_multiplier)
 
         self._odom_msg = Odometry()
         self._odom_pub = rospy.Publisher('/odom', Odometry, queue_size=10)
