@@ -713,6 +713,12 @@ class BaseController(object):
     ~back_wheel_lon_separation : float
         The longitudinal distance [m] from the back wheels to
         the mid wheels.
+    ~wheel_radius_multiplier : float
+        Wheel radius calibration multiplier to tune odometry,
+        has (default = 1.0).
+    ~mid_wheel_lat_separation_multiplier : float
+        Wheel separation calibration multiplier to tune odometry,
+        has (default = 1.0).
     ~wheel_servos : list
         A list of wheel servo settings. Each entry in the list is
         a dictionary specifying:

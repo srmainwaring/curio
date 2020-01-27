@@ -3,31 +3,41 @@
 This is a collection of ROS software packages to control a version of
 [Roger Chen's Sawppy Rover](https://github.com/Roger-random/Sawppy_Rover).
 
-These packages are intended to help get builders of Roger's Sawppy up and running on ROS
-while staying faithful to the original design using LX-16A servo motors. This presents some
-challenges with getting reliable odometry which we address with an encoder filter
-that identifies when the encoder position is outside its valid range.
+These packages are intended to help get builders of Roger's Sawppy up
+and running on ROS while staying faithful to the original design using LX-16A
+servo motors. This presents some challenges with getting reliable odometry
+which we address with an encoder filter that identifies when the encoder
+position is outside its valid range.
 
 ## Overview
 
 There are a number of ROS packages to control the rover, visualise it in rviz,
 and simulate it in [Gazebo](http://gazebosim.org/).
 
-- `ackermann_drive_controller` a 6 wheel, 4 steering controller consistent with the [`ros_control`](http://wiki.ros.org/ros_control) framework.
-- `curio_base` hardware drivers and a ROS motor controller node subscribing to [`geometry_msgs/Twist`](https://docs.ros.org/api/geometry_msgs/html/msg/Twist.html) on `/cmd_vel`.
+- `ackermann_drive_controller` a 6 wheel, 4 steering controller consistent
+with the [`ros_control`](http://wiki.ros.org/ros_control) framework.
+- `curio_base` hardware drivers and a ROS base controller node subscribing to
+[`geometry_msgs/Twist`](https://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)
+on `/cmd_vel`.
 - `curio_bringup` a set of launch files for bringing up the rover nodes
-- `curio_control` configuration and launch files using the [`ros_control`](http://wiki.ros.org/ros_control) framework
-- `curio_description` a URDF / xacro model for the robot using STL files from the Sawppy CAD model
-- `curio_gazebo` configuration and launch files for spawning the rover in [Gazebo with ROS control](http://gazebosim.org/tutorials/?tut=ros_control)
-- `curio_teleop` a telep node for interpreting PWM signals from a RC unit and publishing to `/cmd_vel`  
-- `curio_viz` configuration and launch files for loading the robot model into [`rviz`](http://wiki.ros.org/rviz).
+- `curio_control` configuration and launch files using the
+[`ros_control`](http://wiki.ros.org/ros_control) framework
+- `curio_description` a URDF / xacro model for the robot using STL files
+from the Sawppy CAD model
+- `curio_gazebo` configuration and launch files for spawning the rover in
+[Gazebo with ROS control](http://gazebosim.org/tutorials/?tut=ros_control)
+- `curio_teleop` a telep node for interpreting PWM signals from a RC unit
+and publishing to `/cmd_vel`  
+- `curio_viz` configuration and launch files for loading the robot model into
+[`rviz`](http://wiki.ros.org/rviz).
 
 For more detail see the sections below.
 
 ## Dependencies
 
-You will need a working installation of ROS and [Gazebo](http://gazebosim.org/) to use these packages.
-They have been built and tested on the following platforms / distributions:
+You will need a working installation of ROS and [Gazebo](http://gazebosim.org/)
+to use these packages. They have been built and tested on the following
+platforms / distributions:
 
 ### macOS
 
@@ -128,6 +138,8 @@ source devel/setup.bash
 
 ## Calibration
 
+### Encoder calibration
+
 The encoder filter uses a decision tree classifier and regressor from `scikit-learn`.
 The persistence approach supported natively in `scikit-learn` relies on
 Python pickle, which may not be compatible across Python and package versions.
@@ -161,18 +173,27 @@ included with the distribution. This will need to be run on the rover
 (and the desktop computer if you want to run the base controller
 from there while testing).
 
+### Odometry calibration
+
+The parameters:
+
+- `wheel_radius_multiplier`
+- `mid_wheel_lat_separation_multiplier`
+
+are used to tune the odometry. A value of 1.0 means no adjustment.
+
 ## Usage - Rover
 
 ### `curio_base`
 
 This package is used to control the rover. It contains a hardware interface
-for the LX-16A servos and a motor controller node that subscribes to ROS
+for the LX-16A servos and a base controller node that subscribes to ROS
 [`geometry_msgs/Twist`](https://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)
 messages published to the topic `/cmd_vel`.
 
 #### Configuration
 
-The motor controller is configured using the file `curio_base/config/motor_controller.yaml`.
+The base controller is configured using the file `curio_base/config/base_controller.yaml`.
 The most important parameters to check are the serial id's assigned to each servo, and to ensure
 that these are correct for your rover. The default configuration uses the following assignment:
 
@@ -191,9 +212,8 @@ that these are correct for your rover. The default configuration uses the follow
 
 #### Set up the hardware
 
-The first step is to check that the motor controller is working correctly.
-Make sure your rover is supported with it's wheels off the ground with all joints
-able to rotate / turn freely.
+The first step is to check that the base controller is working correctly.
+Place the rover on blocks and ensure all joints able to rotate / turn freely.
 
 Connect the LewanSoul BusLinker TTL/USB debug board to your computer with a USB cable and power
 it up. You can check the USB serial device names using:
@@ -208,7 +228,7 @@ $ python -m serial.tools.list_ports -v
 
 You'll get different device names according to the operating system and number of USB ports in use.
 
-### Launch the motor controller node
+### Launch the base controller node
 
 Start [`roscore`](http://wiki.ros.org/roscore):
 
@@ -216,10 +236,10 @@ Start [`roscore`](http://wiki.ros.org/roscore):
 roscore
 ```
 
-In another terminal launch the motor controller:
+In another terminal launch the base controller:
 
 ```bash
-roslaunch curio_base motor_controller.launch port:=/dev/ttyUSB0
+roslaunch curio_base base_controller.launch port:=/dev/ttyUSB0
 ```
 
 where you should substitute the correct port for the LewanSoul BusLinker board.
@@ -236,16 +256,16 @@ to resolve this you need to add yourself to the dialout group:
 sudo usermod -a -G dialout $USER
 ```
 
-then try re-launching the motor controller node.
+then try re-launching the base controller node.
 
-### Test the motor controller
+### Test the base controller
 
-Check the motor controller is subscribing to `/cmd_vel`:
+Check the base controller is subscribing to `/cmd_vel`:
 
 ```bash
-$ rosnode info /curio_motor_controller
+$ rosnode info /curio_base_controller
 --------------------------------------------------------------------------------
-Node [/curio_motor_controller]
+Node [/curio_base_controller]
 Publications:
  * /rosout [rosgraph_msgs/Log]
 
@@ -253,8 +273,8 @@ Subscriptions:
  * /cmd_vel [unknown type]
 
 Services:
- * /curio_motor_controller/get_loggers
- * /curio_motor_controller/set_logger_level
+ * /curio_base_controller/get_loggers
+ * /curio_base_controller/set_logger_level
 
 
 contacting node http://<your machine ip here>/ ...
@@ -359,7 +379,7 @@ configure and coordinate calling launch files from other packages in this distri
 To bringup the robot in a single command:
 
 ```bash
-roslaunch curio_bringup curio_robot.launch motor_port:=/dev/ttyUSB0 teleop_port:=/dev/ttyACM0
+roslaunch curio_bringup curio_robot.launch servo_port:=/dev/ttyUSB0 teleop_port:=/dev/ttyACM0
 ```
 
 ### `curio_control`
