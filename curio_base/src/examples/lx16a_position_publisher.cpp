@@ -37,14 +37,64 @@
 #include "curio_base/lx16a_driver.h"
 
 #include <ros/ros.h>
+#include "geometry_msgs/Twist.h"
+#include "std_msgs/Int64.h"
+
+// Servo ids
+std::vector<uint8_t> wheel_servo_ids = {
+    11, 12, 13, 21, 22, 23
+};
+
+std::vector<uint8_t> steer_servo_ids = {
+    111, 131, 211, 231
+};
+
+std::vector<uint16_t> wheel_positions(6);
+std::vector<uint16_t> steer_positions(4);
 
 // Servo driver
 curio_base::LX16ADriver servo_driver;
 
+// Subscriber
+geometry_msgs::Twist cmd_vel_msg;
+ros::Subscriber cmd_vel_sub;
+
+void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg)
+{
+    cmd_vel_msg = *msg;
+}
+
+// Publisher
+ros::Publisher position_pub;
+
 // Control loop
 void controlLoop(const ros::TimerEvent& event)
 {
-    ROS_INFO_STREAM("Control loop: time: " << event.current_real);
+    // Read and publish the position 
+    for (int i=0; i<1; ++i)
+    {
+        uint8_t id = wheel_servo_ids[i];
+        int pos = servo_driver.readPosition(id);
+        wheel_positions[i] = pos;
+    }
+    for (int i=0; i<0; ++i)
+    {
+        uint8_t id = steer_servo_ids[i];
+        int pos = servo_driver.readPosition(id);
+        steer_positions[i] = pos;
+    }
+
+    std_msgs::Int64 position_msg;
+    position_msg.data = wheel_positions[0];
+    position_pub.publish(position_msg);
+
+    // Send commands
+    int16_t duty = static_cast<int16_t>(cmd_vel_msg.linear.x * 1000); 
+    for (int i=0; i<6; ++i)
+    {
+        uint8_t id = wheel_servo_ids[i];
+        // servo_driver.setMode(id, 1, duty);    
+    }
 }
 
 // Entry point
@@ -57,10 +107,12 @@ int main(int argc, char *argv[])
 
     // Read parameters
     ROS_INFO("Loading parameters...");
-    std::string port("/dev/cu.wchusbserialfd5110");
+    // std::string port("/dev/cu.wchusbserialfd5110");
+    std::string port("/dev/cu.SLAB_USBtoUART");
+    // std::string port("/dev/cu.wchusbserial1d20");
     uint32_t baudrate = 115200;
     uint32_t timeout = 100;
-    double control_frequency = 20.0;
+    double control_frequency = 500.0;
 
     // Initialise driver
     ROS_INFO("Initialising LX-16A servo driver...");
@@ -72,6 +124,11 @@ int main(int argc, char *argv[])
     ROS_INFO_STREAM("baudrate: " << servo_driver.getBaudrate());
     ROS_INFO_STREAM("is_open: " << servo_driver.isOpen());
 
+    // Publisher
+    position_pub = nh.advertise<std_msgs::Int64>("servos/position", 100);
+
+    // Subscriber
+    cmd_vel_sub = nh.subscribe("cmd_vel", 100, cmdVelCallback);
 
     // Control loop timer
     ros::Timer control_timer = nh.createTimer(

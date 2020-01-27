@@ -17,15 +17,18 @@
             - geometry_msgs/Twist to cmd_vel
  -->
 <launch>
+    <!--
     <arg name="port" default="/dev/ttyACM1"/>
     <arg name="robot_name" default=""/>
-
+    -->
     <!-- ROS serial node connected to Arduino for radio control -->
+    <!--
     <node pkg="rosserial_python" type="serial_node.py" name="curio_rosserial_rc_channels"
         respawn="true" output="screen">
         <param name="port" value="$(arg port)"/>
         <param name="baud" value="115200"/>
     </node>
+    -->
 
     <!-- Launch RC teleoperation -->
     <node pkg="curio_teleop" type="curio_teleop_rc" name="curio_teleop_rc"

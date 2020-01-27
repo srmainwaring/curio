@@ -63,6 +63,22 @@ For the machine learning classifier used in the encoder filter:
 - [`scikit-learn`](https://pypi.org/project/scikit-learn/)
 - [`scipy`](https://pypi.org/project/scipy/)
 
+
+### C++
+
+For C++ serial communication we use:
+
+- [`serial`](https://github.com/wjwwood/serial).
+
+To install:
+
+```bash
+cd ~/curio_ws/src
+git clone https://github.com/wjwwood/serial.git
+cd ~/curio_ws
+catkin build
+```
+
 ## Installation
 
 ### Create and configure a workspace
@@ -76,8 +92,8 @@ source /opt/ros/melodic/setup.bash
 Create a catkin workspace:
 
 ```bash
-mkdir -p curio_ws/src
-cd curio_ws
+mkdir -p ~/curio_ws/src
+cd ~/curio_ws
 catkin init
 ```
 
@@ -87,7 +103,7 @@ Clone the [`curio_msgs`](https://github.com/srmainwaring/curio_msgs.git) and
 [`curio`](https://github.com/srmainwaring/curio.git) packages into `curio_ws/src`:
 
 ```bash
-cd src
+cd ~/curio_ws/src
 git clone https://github.com/srmainwaring/curio_msgs.git
 git clone https://github.com/srmainwaring/curio.git
 ```
@@ -95,6 +111,7 @@ git clone https://github.com/srmainwaring/curio.git
 Build the packages from the `curio_ws` directory:
 
 ```bash
+cd ~/curio_ws
 catkin build
 ```
 

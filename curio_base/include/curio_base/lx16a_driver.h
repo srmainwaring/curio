@@ -34,6 +34,12 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
+// 
+// Servo driver implementation adapted from Lewansoul Arduino examples. 
+// 
+// 
+// 
+
 #ifndef CURIO_BASE_LX16A_DRIVER_H_
 #define CURIO_BASE_LX16A_DRIVER_H_
 
@@ -52,6 +58,13 @@ namespace curio_base
 
         /// Constructor
         LX16ADriver();
+
+        void move(uint8_t id, int16_t position, uint16_t time);
+        void stopMove(serial::Serial &SerialX, uint8_t id);
+        void angleAdjust(uint8_t id, uint8_t deviation);
+        void setMode(uint8_t id, uint8_t mode, int16_t duty);
+        int readPosition(uint8_t id);
+        int readVin(uint8_t id);
 
         // Serial interface
         void open();

@@ -37,9 +37,9 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-USE_ARDUINO_DRIVER = False
+ENABLE_ARDUINO_LX16A_DRIVER = True
 
-if USE_ARDUINO_DRIVER:
+if ENABLE_ARDUINO_LX16A_DRIVER:
     # Load imports for the Arduino driver
     from curio_msgs.msg import CurioServoCommands
     from curio_msgs.msg import CurioServoPositions
@@ -1048,7 +1048,7 @@ class BaseController(object):
                 .format(servo.id, servo.lon_label, servo.lat_label, servo.orientation, servo.offset, servo.position))
 
         # Select whether to use the Python or Arduino servo driver
-        if USE_ARDUINO_DRIVER:
+        if ENABLE_ARDUINO_LX16A_DRIVER:
             self._servo_driver = BaseController.ArduinoServoDriver(
                 self._wheel_servos, self._steer_servos)
         else:

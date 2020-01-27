@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>curio_control</name>
-    <version>0.0.0</version>
-    <description>Controllers for Curio, a Sawppy Rover robot</description>
+    <version>0.2.0</version>
+    <description>Controllers for Curio, a Sawppy Rover</description>
     <maintainer email="rhys.manwaring@me.com">Rhys Mainwaring</maintainer>
     <license>BSD-3-Clause</license>
     <url type="website">https://github.com/srmainwaring/curio</url>
