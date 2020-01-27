@@ -403,10 +403,12 @@ class AckermannOdometry(object):
         self._heading = 0.0     # [rad]
         self._x       = 0.0     # [m]
         self._y       = 0.0     # [m]
-        self._lin_vel_filter = MeanWindowFilter(window=5) # [m/s]
-        self._ang_vel_filter = MeanWindowFilter(window=5) # [rad/s]
-        self._wheel_radius = 0.06               # [m]
-        self._mid_wheel_lat_separation = 0.52   # [m]
+        self._lin_vel_filter = MeanWindowFilter(window=5)   # [m/s]
+        self._ang_vel_filter = MeanWindowFilter(window=5)   # [rad/s]
+        self._wheel_radius = 0.06                           # [m]
+        self._mid_wheel_lat_separation = 0.52               # [m]
+        self._wheel_radius_multiplier = 1.0                 # [1]
+        self._mid_wheel_lat_separation_multiplier = 0.96875 # [1]
         self._num_wheels = 6
         self._wheel_cur_pos = [0.0 for x in range(self._num_wheels)] # [m]
         self._wheel_old_pos = [0.0 for x in range(self._num_wheels)] # [m]
@@ -435,9 +437,13 @@ class AckermannOdometry(object):
             The current time.
         '''
 
+        # Adjust the wheel radius and separation by the calibrated multipliers        
+        wheel_rad = self._wheel_radius * self._wheel_radius_multiplier
+        wheel_sep = self._mid_wheel_lat_separation * self._mid_wheel_lat_separation_multiplier
+
         for i in range(self._num_wheels):
             # Get the current wheel joint (linear) positions [m]
-            self._wheel_cur_pos[i] = wheel_servo_pos[i] * self._wheel_radius
+            self._wheel_cur_pos[i] = wheel_servo_pos[i] * wheel_rad
 
             # Estimate the velocity of the wheels using old and current positions
             self._wheel_est_vel[i] = self._wheel_cur_pos[i] - self._wheel_old_pos[i]
@@ -449,9 +455,9 @@ class AckermannOdometry(object):
         MID_RIGHT = 1
         MID_LEFT  = 4
 
-        # Compute linear and angular velocities of the mobile base (base_link frame)  
+        # Compute linear and angular velocities of the mobile base (base_link frame)
         lin_vel = (self._wheel_est_vel[MID_RIGHT] + self._wheel_est_vel[MID_LEFT]) * 0.5
-        ang_vel = (self._wheel_est_vel[MID_RIGHT] - self._wheel_est_vel[MID_LEFT]) / self._mid_wheel_lat_separation
+        ang_vel = (self._wheel_est_vel[MID_RIGHT] - self._wheel_est_vel[MID_LEFT]) / wheel_sep
 
         # Integrate the velocities to get the linear and angular positions
         self._integrate_velocities(lin_vel, ang_vel)
@@ -482,9 +488,13 @@ class AckermannOdometry(object):
             The current time.
         '''
 
+        # Adjust the wheel radius and separation by the calibrated multipliers        
+        wheel_rad = self._wheel_radius * self._wheel_radius_multiplier
+        wheel_sep = self._mid_wheel_lat_separation * self._mid_wheel_lat_separation_multiplier
+
         for i in range(2):
             # Get the current wheel joint (linear) positions [m]
-            self._wheel_cur_pos[i] = wheel_servo_pos[i] * self._wheel_radius
+            self._wheel_cur_pos[i] = wheel_servo_pos[i] * wheel_rad
 
             # Estimate the velocity of the wheels using old and current positions
             self._wheel_est_vel[i] = self._wheel_cur_pos[i] - self._wheel_old_pos[i]
@@ -495,9 +505,9 @@ class AckermannOdometry(object):
         LEFT  = Servo.LEFT
         RIGHT = Servo.RIGHT
 
-        # Compute linear and angular velocities of the mobile base (base_link frame)  
+        # Compute linear and angular velocities of the mobile base (base_link frame)
         lin_vel = (self._wheel_est_vel[RIGHT] + self._wheel_est_vel[LEFT]) * 0.5
-        ang_vel = (self._wheel_est_vel[RIGHT] - self._wheel_est_vel[LEFT]) / self._mid_wheel_lat_separation
+        ang_vel = (self._wheel_est_vel[RIGHT] - self._wheel_est_vel[LEFT]) / wheel_sep
 
         # Integrate the velocities to get the linear and angular positions
         self._integrate_velocities(lin_vel, ang_vel)

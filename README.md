@@ -99,13 +99,18 @@ catkin init
 
 ### Clone and build the packages
 
-Clone the [`curio_msgs`](https://github.com/srmainwaring/curio_msgs.git) and
-[`curio`](https://github.com/srmainwaring/curio.git) packages into `curio_ws/src`:
+Clone the
+[`curio`](https://github.com/srmainwaring/curio.git),
+[`curio_firmware`](https://github.com/srmainwaring/curio_firmware.git)
+and
+[`curio_msgs`](https://github.com/srmainwaring/curio_msgs.git)
+packages into `~/curio_ws/src`:
 
 ```bash
 cd ~/curio_ws/src
-git clone https://github.com/srmainwaring/curio_msgs.git
 git clone https://github.com/srmainwaring/curio.git
+git clone https://github.com/srmainwaring/curio_firmware.git
+git clone https://github.com/srmainwaring/curio_msgs.git
 ```
 
 Build the packages from the `curio_ws` directory:
@@ -225,10 +230,10 @@ On linux you may get an error such as:
 serial.serialutil.SerialException: [Errno 13] could not open port /dev/ttyUSB0: [Errno 13] permission denied: '/dev/ttyUSB0'
 ```
 
-to resolve this you need to set access permissions on the device with:
+to resolve this you need to add yourself to the dialout group:
 
 ```bash
-sudo chmod 777 /dev/ttyUSB0
+sudo usermod -a -G dialout $USER
 ```
 
 then try re-launching the motor controller node.

@@ -239,86 +239,6 @@ Visualization Manager:
       Value: true
     - Class: rviz/Group
       Displays:
-        - Alpha: 0.5
-          Buffer Length: 1
-          Class: rviz/Range
-          Color: 255; 112; 255
-          Enabled: true
-          Name: Sonar0
-          Queue Size: 100
-          Topic: /sensors/sonar0
-          Unreliable: false
-          Value: true
-        - Alpha: 0.5
-          Buffer Length: 1
-          Class: rviz/Range
-          Color: 255; 112; 255
-          Enabled: true
-          Name: Sonar1
-          Queue Size: 100
-          Topic: /sensors/sonar1
-          Unreliable: false
-          Value: true
-        - Alpha: 0.5
-          Buffer Length: 1
-          Class: rviz/Range
-          Color: 255; 112; 255
-          Enabled: true
-          Name: Sonar2
-          Queue Size: 100
-          Topic: /sensors/sonar2
-          Unreliable: false
-          Value: true
-        - Alpha: 0.5
-          Buffer Length: 1
-          Class: rviz/Range
-          Color: 255; 112; 255
-          Enabled: true
-          Name: Sonar3
-          Queue Size: 100
-          Topic: /sensors/sonar3
-          Unreliable: false
-          Value: true
-        - Alpha: 0.5
-          Buffer Length: 1
-          Class: rviz/Range
-          Color: 255; 112; 255
-          Enabled: true
-          Name: Sonar4
-          Queue Size: 100
-          Topic: /sensors/sonar4
-          Unreliable: false
-          Value: true
-        - Alpha: 0.5
-          Buffer Length: 1
-          Class: rviz/Range
-          Color: 255; 112; 255
-          Enabled: true
-          Name: Sonar5
-          Queue Size: 100
-          Topic: /sensors/sonar5
-          Unreliable: false
-          Value: true
-        - Alpha: 0.5
-          Buffer Length: 1
-          Class: rviz/Range
-          Color: 255; 0; 0
-          Enabled: true
-          Name: Infrared0
-          Queue Size: 100
-          Topic: /sensors/infrared0
-          Unreliable: false
-          Value: true
-        - Alpha: 0.5
-          Buffer Length: 1
-          Class: rviz/Range
-          Color: 255; 5; 0
-          Enabled: true
-          Name: Infrared1
-          Queue Size: 100
-          Topic: /sensors/infrared1
-          Unreliable: false
-          Value: true
         - Alpha: 1
           Autocompute Intensity Bounds: true
           Autocompute Value Bounds:
@@ -605,7 +525,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 6
+      Distance: 8
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -620,10 +540,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.7497965097427368
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.5500001311302185
+      Yaw: 0
     Saved: ~
 Window Geometry:
   Displays:
