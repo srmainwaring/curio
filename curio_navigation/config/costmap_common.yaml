@@ -1,8 +1,4 @@
 # 
-# 
-#   Resources:
-#     - [range_sensor_layer doesn't show obstacles on rviz map?](https://answers.ros.org/question/326995/range_sensor_layer-doesnt-show-obstacles-on-rviz-map/)
-# 
 obstacle_range: 5.5
 raytrace_range: 6.0
 footprint: [[-0.33, -0.31], [-0.33, 0.31], [0.33, 0.31], [0.33, -0.31]]
