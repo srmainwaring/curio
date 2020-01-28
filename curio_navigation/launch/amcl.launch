@@ -9,7 +9,7 @@
     <!-- Run ACML -->
     <node name="amcl" pkg="amcl" type="amcl"
         respawn="false" output="screen">
-        <remap from="scan" to="sensors/laser0_raw" />
+        <remap from="scan" to="sensors/laser" />
         <param name="transform_tolerance" value="0.5" />
         <param name="odom_model_type" value="diff" />
         <param name="odom_frame_id" value="odom" />
