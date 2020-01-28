@@ -44,9 +44,9 @@
             <visual>
                 <origin rpy="0 0 0" xyz="0 0 0" />
                 <geometry>
-                    <mesh filename="package://curio_description/meshes/sensors/rplidar_a1_low.stl" />
+                    <mesh filename="package://curio_description/meshes/sensors/rplidar_a1_assembly_low.stl" />
                 </geometry>
-                <material name="black" />
+                <material name="white" />
             </visual>
             <collision>
                 <origin rpy="0 0 0" xyz="0 0 0" />
@@ -59,7 +59,7 @@
         </link>
 
         <gazebo reference="laser">
-            <material>Gazebo/Black</material>
+            <material>Gazebo/White</material>
 
             <sensor type="ray" name="laser_sensor">
                 <always_on>true</always_on>

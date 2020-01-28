@@ -593,6 +593,6 @@
 
     <!-- Laser Scan Sensor -->
     <xacro:laser_link />
-    <xacro:laser_joint x="0.145" y="0.07" z="0.055" />
+    <xacro:laser_joint x="0.152" y="0.078" z="0.050" />
 
 </robot>
