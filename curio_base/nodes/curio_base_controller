@@ -35,52 +35,11 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-''' Mobile Base Controller node for Curio
+''' Base controller node
 
 A mobile base controller node for a Sawppy Rover using LX-16A servos.
 
-Subscribers
------------
-
-    topic:  /cmd_vel
-    type:   geometry_msgs/Twist
-
-Parameters
-----------
-
-    port: string
-        The USB serial port for the LX-16A servo bus board,
-        default /dev/ttyUSB0.
-    baudrate: int
-        The baudrate for for the LX-16A servo bus board,
-        default 115200.
-    timeout: float
-        The timeout for for the LX-16A servo bus board,
-        default 1.0 [s]
-    control_frequency: float
-        The control loop frequency, default 10 [Hz].
-
-    max_linear_speed: float
-        The maximum linear velocity for the robot,
-        default 1.0 [m/s]  
-    max_linear_accel: float
-        The maximum linear acceleration for the robot,
-        default 1.0 [m/s^2]  
-    wheel_radius: float
-        the wheel radius - used to convert wheel speed to angular speed.    
-
-    Wheel geometry - see curio_base/config/base_controller.yaml
-    for details.
-    mid_wheel_lat_separation: float 
-    front_wheel_lat_separation: float
-    front_wheel_lon_separation: float
-    back_wheel_lat_separation: float
-    back_wheel_lon_separation: float
-
-    Servo configuration - see curio_base/config/base_controller.yaml
-    for details.
-    steer_servo_offsets: list
-        An array of steering servo offsets.
+See curio_base/src/base_controller.py for documentation.  
 '''
 
 import rospy

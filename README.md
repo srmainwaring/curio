@@ -89,6 +89,16 @@ cd ~/curio_ws
 catkin build
 ```
 
+### Curio
+
+Firmware and custom messages for the rover are maintained in separate
+repositories:
+
+- [`curio_firmware`](https://github.com/srmainwaring/curio_firmware.git)
+Arduino firmware for the rover
+- [`curio_msgs`](https://github.com/srmainwaring/curio_msgs.git)
+ROS messages for the rover.
+
 ## Installation
 
 ### Create and configure a workspace
@@ -136,6 +146,32 @@ Source the build:
 source devel/setup.bash
 ```
 
+## Hardware
+
+Curio was constructed using off the shelf consumer electronics
+that require little or no modification (i.e. no custom boards):
+
+- Arduino Mega 2560
+- Raspberry Pi 4 4GB with 32GB SD card
+- LewanSoul BusLinker LX-16A Bus Servo  v2.4
+- Graupner mz-12 RC transmitter and Falcon 12 receiver
+- 4-49V DC to 1.5-35V DC voltage regulator
+- 7.2V NiMh 5000mAh battery
+- RPLidar A1 laser scanner
+
+Follow the wiring instructions in the
+[Curio firmware Readme](https://github.com/srmainwaring/curio_firmware.git)
+to set up the connections between the Arduino, BusLinker board and
+the radio control receiver.
+
+In the following we will assume that the rover has been configured
+to use the Arduino as the servo controller and radio control decoder.
+Note: this is a change from the previous version where the Python module
+communicated with the servo bus directly. The reason for the change is
+that the USB serial connection to the BusLinker board cannot provide
+updates on all servo positions fast enough for the encoder filter
+to work accurately.
+
 ## Calibration
 
 ### Encoder calibration
@@ -162,18 +198,18 @@ a new instance of the classifier and regressor:
 
 ```bash
 roslaunch curio_base train_classifier.launch
-```
-
-```bash
 roslaunch curio_base train_regressor.launch
 ```
 
 which will overwrite the default classifier and regresssor instances
-included with the distribution. This will need to be run on the rover
+included with the distribution. You will need to run this on the rover
 (and the desktop computer if you want to run the base controller
-from there while testing).
+from it while testing).
 
 ### Odometry calibration
+
+The parameters for the base controller are in the configuration
+file `curio_base/config/base_controller.yaml`.
 
 The parameters:
 
@@ -181,6 +217,20 @@ The parameters:
 - `mid_wheel_lat_separation_multiplier`
 
 are used to tune the odometry. A value of 1.0 means no adjustment.
+
+Using the given settings for the rovers wheel geometry we found
+the odometry linear measurement to be satisfactory. The angular
+measurement was underestimated by about a 1/4 revolution
+in every 8. To correct for this the wheel separation multiplier
+is set to 31/32 = 0.96875. 
+
+The reason for the adjustment can be explained as follows:
+when the rovers middle wheels are under load the rocker and bogie
+arms flex slighty, resulting in the wheels contact point with the
+gound moving from the centre of the wheel towards the inner edge.
+This reduces the effective lateral separation of the wheels and
+results in the rover turning in-place faster than it would
+otherwise.
 
 ## Usage - Rover
 
@@ -191,11 +241,13 @@ for the LX-16A servos and a base controller node that subscribes to ROS
 [`geometry_msgs/Twist`](https://docs.ros.org/api/geometry_msgs/html/msg/Twist.html)
 messages published to the topic `/cmd_vel`.
 
-#### Configuration
+#### *Configuration*
 
-The base controller is configured using the file `curio_base/config/base_controller.yaml`.
-The most important parameters to check are the serial id's assigned to each servo, and to ensure
-that these are correct for your rover. The default configuration uses the following assignment:
+The base and arduino controllers are configured using the file
+`curio_base/config/base_controller.yaml`.
+The most important parameters to check are the serial id's assigned to
+each servo, and to ensure that these are correct for your rover.
+The default configuration uses the following assignment:
 
 | Joint Name        |  Servo ID |
 | :---| :---: |
@@ -210,25 +262,29 @@ that these are correct for your rover. The default configuration uses the follow
 | Mid Right Steer   | 221 |
 | Back Right Steer  | 231 |
 
-#### Set up the hardware
+#### *Test the hardware*
 
-The first step is to check that the base controller is working correctly.
-Place the rover on blocks and ensure all joints able to rotate / turn freely.
+The first step is to check that the arduino controller is working correctly.
+Place the rover on blocks and ensure all joints are able to turn freely.
 
-Connect the LewanSoul BusLinker TTL/USB debug board to your computer with a USB cable and power
-it up. You can check the USB serial device names using:
+You can check the USB serial device names using:
 
 ```bash
 $ python -m serial.tools.list_ports -v
-/dev/ttyUSB0
-    desc: USB2.0-Serial
-    hwid: USB VID:PID=1A86:7523 LOCATION=1-2
-1 ports found
+/dev/ttyACM0
+    desc: ttyACM0
+    hwid: USB VID:PID=2341:0042 SER=75830333238351806212 LOCATION=1-1.4:1.0
+/dev/ttyAMA0
+    desc: ttyAMA0
+    hwid: fe201000.serial
+2 ports found
 ```
 
-You'll get different device names according to the operating system and number of USB ports in use.
+You'll get different device names according to the operating system
+and number of USB ports in use. In this example on a Raspberry Pi
+we see the Arduino is on `/dev/ttyACM0`.
 
-### Launch the base controller node
+#### *Test the arduino controller node*
 
 Start [`roscore`](http://wiki.ros.org/roscore):
 
@@ -236,18 +292,18 @@ Start [`roscore`](http://wiki.ros.org/roscore):
 roscore
 ```
 
-In another terminal launch the base controller:
+In a separate terminal launch the arduino controller:
 
 ```bash
-roslaunch curio_base base_controller.launch port:=/dev/ttyUSB0
+roslaunch curio_base arduino_controller.launch port:=/dev/ttyACM0
 ```
 
-where you should substitute the correct port for the LewanSoul BusLinker board.
+where you should substitute the correct port for the Arduino.
 
 On linux you may get an error such as:
 
 ```bash
-serial.serialutil.SerialException: [Errno 13] could not open port /dev/ttyUSB0: [Errno 13] permission denied: '/dev/ttyUSB0'
+serial.serialutil.SerialException: [Errno 13] could not open port /dev/ttyACM0: [Errno 13] permission denied: '/dev/ttyACM0'
 ```
 
 to resolve this you need to add yourself to the dialout group:
@@ -256,29 +312,31 @@ to resolve this you need to add yourself to the dialout group:
 sudo usermod -a -G dialout $USER
 ```
 
-then try re-launching the base controller node.
+then try re-launching the arduino controller node.
 
-### Test the base controller
-
-Check the base controller is subscribing to `/cmd_vel`:
+If the node is running correctly you should see:
 
 ```bash
-$ rosnode info /curio_base_controller
---------------------------------------------------------------------------------
-Node [/curio_base_controller]
+$ rosnode info /curio_arduino_controller
+------------------------------------------------------------
+Node [/curio_arduino_controller]
 Publications:
+ * /diagnostics [diagnostic_msgs/DiagnosticArray]
+ * /radio/channels [curio_msgs/Channels]
  * /rosout [rosgraph_msgs/Log]
+ * /servo/positions [curio_msgs/CurioServoPositions]
+ * /servo/states [curio_msgs/CurioServoStates]
 
 Subscriptions:
- * /cmd_vel [unknown type]
+ * /servo/commands [unknown type]
 
 Services:
- * /curio_base_controller/get_loggers
- * /curio_base_controller/set_logger_level
+ * /curio_arduino_controller/get_loggers
+ * /curio_arduino_controller/set_logger_level
 
 
-contacting node http://<your machine ip here>/ ...
-Pid: 67587
+contacting node http://curio:40719/ ...
+Pid: 2964
 Connections:
  * topic: /rosout
     * to: /rosout
@@ -286,15 +344,65 @@ Connections:
     * transport: TCPROS
 ```
 
-Start [`rqt_robot_steering`](http://wiki.ros.org/rqt_robot_steering) and send commands:
+#### *Test the base controller node*
+
+Launch the base controller:
+
+```bash
+roslaunch curio_base base_controller.launch
+```
+
+Inspecting the node you should see:
+
+```bash
+$ rosnode info /curio_base_controller
+------------------------------------------------------------
+Node [/curio_base_controller]
+Publications:
+ * /odom [nav_msgs/Odometry]
+ * /rosout [rosgraph_msgs/Log]
+ * /servo/commands [curio_msgs/CurioServoCommands]
+ * /servo/encoders [curio_msgs/CurioServoEncoders]
+ * /tf [tf2_msgs/TFMessage]
+
+Subscriptions:
+ * /cmd_vel [unknown type]
+ * /servo/positions [curio_msgs/CurioServoPositions]
+
+Services:
+ * /curio_base_controller/get_loggers
+ * /curio_base_controller/set_logger_level
+
+
+contacting node http://curio:43269/ ...
+Pid: 3249
+Connections:
+ * topic: /servo/commands
+    * to: /curio_arduino_controller
+    * direction: outbound
+    * transport: TCPROS
+ * topic: /rosout
+    * to: /rosout
+    * direction: outbound
+    * transport: TCPROS
+ * topic: /servo/positions
+    * to: /curio_arduino_controller (http://curio:40719/)
+    * direction: inbound
+    * transport: TCPROS
+```
+
+#### *Test the Ackermann steering*
+
+Start [`rqt_robot_steering`](http://wiki.ros.org/rqt_robot_steering)
+and send commands:
 
 ```bash
 rosrun rqt_robot_steering rqt_robot_steering
 ```
 
 You should see the robot steering widget.
-Setting the linear velocity should cause the wheels to move forwards / backwards.
-Setting the angular velocity should cause the corner steering joints to rotate
+Adjusting the linear velocity should cause the wheels to move forwards / backwards.
+Adjusting the angular velocity should cause the corner steering joints to rotate
 and the wheels turn.
 
 ### `curio_teleop`

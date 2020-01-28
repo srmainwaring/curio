@@ -1,18 +1,5 @@
-# Curio (python) mobile base controller node parameters
-
-# Servo driver port settings
-# port: /dev/cu.wchusbserialfd5110
-port: /dev/ttyUSB0
-baudrate: 115200
-timeout: 1.0
-
-# Update frequencies: control loop
-control_frequency: 20.0
-
-# Robot dimensions and limits
-max_linear_velocity:  0.37   # [m/s]
-max_angular_velocity: 1.45   # [rad/s]
-
+# Curio base controller parameters
+# 
 #  ROS frame convention for mobile robots:
 # 
 #                         x
@@ -37,6 +24,20 @@ max_angular_velocity: 1.45   # [rad/s]
 #   13 / 131 |------|------| 23 / 233  ---
 #      <- back wheel lat separation ->
 # 
+
+# Servo driver port settings
+# port: /dev/cu.wchusbserialfd5110
+port: /dev/ttyACM0
+baudrate: 115200
+timeout: 1.0
+
+# Update frequencies: control loop
+control_frequency: 20.0
+
+# Robot dimensions and limits
+max_linear_velocity:  0.37   # [m/s]
+max_angular_velocity: 1.45   # [rad/s]
+
 wheel_radius: 0.060
 mid_wheel_lat_separation: 0.52
 front_wheel_lat_separation: 0.47 
@@ -48,67 +49,13 @@ back_wheel_lon_separation: 0.25
 wheel_radius_multiplier: 1.0
 mid_wheel_lat_separation_multiplier: 0.96875
 
-# Wheel servo serial id mappings
-wheel_servos: [
-    {
-        id: 11,
-        lon_label: front,
-        lat_label: left,
-    },
-    {
-        id: 12,
-        lon_label: mid,
-        lat_label: left,
-    },
-    {
-        id: 13,
-        lon_label: back,
-        lat_label: left,
-    },
-    {
-        id: 21,
-        lon_label: front,
-        lat_label: right,
-    },
-    {
-        id: 22,
-        lon_label: mid,
-        lat_label: right,
-    },
-    {
-        id: 23,
-        lon_label: back,
-        lat_label: right,
-    },
-]
+# Wheel servo parameters
+wheel_servo_ids:           [     11,     12,      13,      21,      22,      23]
+wheel_servo_lon_labels:    ['front',  'mid',  'back', 'front',   'mid',  'back']
+wheel_servo_lat_labels:    [ 'left', 'left',  'left', 'right', 'right', 'right']
 
-# Steer servo serial id mappings and angle adjustments. The offsets
-# should be set so that the corner wheel rotation axis is parallel to
-# the rover's y-axis when the commanded angular velocity is zero. 
-steer_servos: [
-    {
-        id: 111,
-        lon_label: front,
-        lat_label: left,
-        offset: -10,
-    },
-    {
-        id: 131,
-        lon_label: back,
-        lat_label: left,
-        offset: -5,
-    },
-    {
-        id: 211,
-        lon_label: front,
-        lat_label: right,
-        offset: 40,
-    },
-    {
-        id: 231,
-        lon_label: back,
-        lat_label: right,
-        offset: 20,
-    },
-]
-
+# Steering servo parameters
+steer_servo_ids:           [    111,    131,     211,     231]
+steer_servo_lon_labels:    ['front', 'back', 'front',  'back']
+steer_servo_lat_labels:    [ 'left', 'left', 'right', 'right']
+steer_servo_angle_offsets: [    -10,     -5,      40,      20]

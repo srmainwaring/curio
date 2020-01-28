@@ -1,9 +1,12 @@
 <!-- Launch the LX-16A regressor training node
 
 Parameters
-    labeldata_filename              the name of the zipped labelled data csv file
-    dataset_filename                the name of the zipped dataset csv file
-    regressor_filename              the name of the output model file (python pickled format)
+    labeldata_filename : str
+        The name of the zipped labelled data csv file
+    dataset_filename : str
+        The name of the zipped dataset csv file
+    regressor_filename : str
+        The name of the output model file (python pickled format)
 -->
 <launch>
     <arg name="labeldata_filename" default="$(find curio_base)/data/lx16a_labelled_data.zip" />

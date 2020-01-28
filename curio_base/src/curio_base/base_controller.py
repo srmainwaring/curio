@@ -719,21 +719,25 @@ class BaseController(object):
     ~mid_wheel_lat_separation_multiplier : float
         Wheel separation calibration multiplier to tune odometry,
         has (default = 1.0).
-    ~wheel_servos : list
-        A list of wheel servo settings. Each entry in the list is
-        a dictionary specifying:
-            id : int
-                The servo serial id : 0 - 253
-            lon_label: str
-                The longitudinal label: 'front', 'mid', 'right'
-            lat_label: str
-                The lateral label: 'left', 'right'
-            offset: int
-                The angle adjustment used to centre steering servos,
-                has (default 0) 
-    ~steer_servos : list
-        A list of wheel servo settings. See ~wheel_servos for 
-        a description of the elements.
+    ~wheel_servo_ids : list
+        An array of integer wheel servo serial ids : 0 - 253
+    ~wheel_servo_lon_labels : list
+        An array of wheel servo longitudinal position labels:
+        'front', 'mid', 'right'
+    ~wheel_servo_lat_labels : list
+        An array of wheel servo lateral position labels:
+        'left', 'right'
+    ~steer_servo_ids : list
+        An array of integer steering servo serial ids : 0 - 253
+    ~steer_servo_lon_labels : list
+        An array of steering servo longitudinal position labels:
+        'front', 'mid', 'right'
+    ~steer_servo_lat_labels : list
+        An array of steering servo lateral position labels:
+        'left', 'right'
+    ~steer_servo_angle_offsets : list
+        An array of integer steering servo angle adjustments,
+        used to trim of the steering angle.
     ~port : str
         The device name for the serial port (e.g. /dev/ttyUSB0)
     ~baudrate : int
@@ -1049,44 +1053,56 @@ class BaseController(object):
 
             return [0.0, 0.0]
 
-        # Servo parameters - required
-        wheel_servo_params = rospy.get_param('~wheel_servos')
-        if len(wheel_servo_params) != BaseController.NUM_WHEELS:
-            rospy.logerr("Parameter 'wheel_servos' must be an array length 6, got: {}"
-                .format(len(wheel_servo_params)))
-            return
-        rospy.logdebug('wheel servo params: {}'.format(wheel_servo_params))
+        # Utility for validating servo parameters
+        def validate_servo_param(param, name, expected_length):
+            if len(param) != expected_length:
+                rospy.logerr("Parameter '{}' must be an array length {}, got: {}"
+                    .format(name, expected_length, len(param)))
+                exit()
 
-        steer_servo_params = rospy.get_param('~steer_servos')
-        if len(steer_servo_params) != BaseController.NUM_STEERS:
-            rospy.logerr("parameter 'steer_servos' must be an array length 4, got: {}"
-                .format(len(steer_servo_params)))
-            return
-        rospy.logdebug('steer servo params: {}'.format(steer_servo_params))
+        # Wheel servo parameters - required
+        wheel_servo_ids           = rospy.get_param('~wheel_servo_ids')
+        wheel_servo_lon_labels    = rospy.get_param('~wheel_servo_lon_labels')
+        wheel_servo_lat_labels    = rospy.get_param('~wheel_servo_lat_labels')
+
+        validate_servo_param(wheel_servo_ids, 'wheel_servo_ids', BaseController.NUM_WHEELS)
+        validate_servo_param(wheel_servo_lon_labels, 'wheel_servo_lon_labels', BaseController.NUM_WHEELS)
+        validate_servo_param(wheel_servo_lat_labels, 'wheel_servo_lat_labels', BaseController.NUM_WHEELS)
 
         self._wheel_servos = []
-        for params in wheel_servo_params:
-            id = params['id']
-            lon_label = Servo.to_lon_label(params['lon_label'])
-            lat_label = Servo.to_lat_label(params['lat_label'])
+        for i in range(BaseController.NUM_WHEELS):
+            id = wheel_servo_ids[i]
+            lon_label = Servo.to_lon_label(wheel_servo_lon_labels[i])
+            lat_label = Servo.to_lat_label(wheel_servo_lat_labels[i])
             orientation = 1 if lat_label == Servo.LEFT else -1
             servo = Servo(id, lon_label, lat_label, orientation)
             servo.position = calc_position(lon_label, lat_label)
             self._wheel_servos.append(servo)
-            rospy.logdebug('servo: id: {}, lon_label: {}, lat_label: {}, orientation: {}, offset: {}, position: {}'
+            rospy.loginfo('servo: id: {}, lon_label: {}, lat_label: {}, orientation: {}, offset: {}, position: {}'
                 .format(servo.id, servo.lon_label, servo.lat_label, servo.orientation, servo.offset, servo.position))
 
+        # Steer servo parameters - required
+        steer_servo_ids           = rospy.get_param('~steer_servo_ids')
+        steer_servo_lon_labels    = rospy.get_param('~steer_servo_lon_labels')
+        steer_servo_lat_labels    = rospy.get_param('~steer_servo_lat_labels')
+        steer_servo_angle_offsets = rospy.get_param('~steer_servo_angle_offsets')
+
+        validate_servo_param(steer_servo_ids, 'steer_servo_ids', BaseController.NUM_STEERS)
+        validate_servo_param(steer_servo_lon_labels, 'steer_servo_lon_labels', BaseController.NUM_STEERS)
+        validate_servo_param(steer_servo_lat_labels, 'steer_servo_lat_labels', BaseController.NUM_STEERS)
+        validate_servo_param(steer_servo_angle_offsets, 'steer_servo_angle_offsets', BaseController.NUM_STEERS)
+
         self._steer_servos = []
-        for params in steer_servo_params:
-            id = params['id']
-            lon_label = Servo.to_lon_label(params['lon_label'])
-            lat_label = Servo.to_lat_label(params['lat_label'])
+        for i in range(BaseController.NUM_STEERS):
+            id = steer_servo_ids[i]
+            lon_label = Servo.to_lon_label(steer_servo_lon_labels[i])
+            lat_label = Servo.to_lat_label(steer_servo_lat_labels[i])
             orientation = -1
             servo = Servo(id, lon_label, lat_label, orientation)            
-            servo.offset = params['offset']
+            servo.offset = steer_servo_angle_offsets[i]
             servo.position = calc_position(lon_label, lat_label)
             self._steer_servos.append(servo)
-            rospy.logdebug('servo: id: {}, lon_label: {}, lat_label: {}, orientation: {}, offset: {}, position: {}'
+            rospy.loginfo('servo: id: {}, lon_label: {}, lat_label: {}, orientation: {}, offset: {}, position: {}'
                 .format(servo.id, servo.lon_label, servo.lat_label, servo.orientation, servo.offset, servo.position))
 
         # Select whether to use the Python or Arduino servo driver

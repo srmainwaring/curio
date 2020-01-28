@@ -1,10 +1,14 @@
 <!-- Launch the LX-16A classifier training node
 
 Parameters
-    check_accuracy_score            set to true to run the accuracy score
-    check_cross_validation_score    set to true to run the cross validation score (takes time)
-    dataset_filename                the name of the zipped dataset csv file
-    classifier_filename             the name of the output model file (python pickled format)
+    check_accuracy_score : bool
+        Set to true to run the accuracy score
+    check_cross_validation_score : bool
+        Set to true to run the cross validation score (takes time)
+    dataset_filename : str
+        The name of the zipped dataset csv file
+    classifier_filename : str
+        The name of the output model file (python pickled format)
 -->
 <launch>
     <arg name="check_accuracy_score" default="false" />

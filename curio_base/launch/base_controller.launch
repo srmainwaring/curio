@@ -1,4 +1,20 @@
-<!-- Launch the base controller node -->
+<!-- Launch the base controller node
+
+Parameters
+    classifier_filename : str
+        The full filepath for the `scikit-learn` classifier model.
+    classifier_window : int
+        The size of the classifier window, this sets the number of
+        entries in the servo history used to train the classifier.
+        The classifier and regressor models must correspond to this
+        setting. (default 10)
+    regressor_filename : str
+        The full filepath for the `scikit-learn` regressor model.
+    model : str
+        The full filepath to the URDF robot description
+    port : str
+        The device name for the serial port
+-->
 <launch>
     <arg name="classifier_filename" default="$(find curio_base)/data/lx16a_tree_classifier.joblib" />
     <arg name="classifier_window" default="10" />

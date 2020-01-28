@@ -1,23 +1,20 @@
 <!-- Bringup the robot -->
 <launch>
     <!-- linux -->
-    <arg name="servo_port" default="/dev/ttyUSB0"/>
-    <arg name="teleop_port" default="/dev/ttyACM0"/>
+    <arg name="arduino_port" default="/dev/ttyACM0"/>
     <arg name="laser_scan_port" default="/dev/ttyUSB1"/>
     <!-- macOS
-    <arg name="servo_port" default="/dev/cu.wchusbserialfd5110"/>
-    <arg name="radio_control_port" default="/dev/cu.usbmodemFD5121"/>
+    <arg name="arduino_port" default="/dev/cu.usbmodemFD5121"/>
     <arg name="laser_scan_port" default="/dev/cu.SLAB_USBtoUART"/>
     -->
 
     <!-- Base -->
     <include file="$(find curio_bringup)/launch/curio_base.launch">
-        <arg name="port" value="$(arg servo_port)"/>
+        <arg name="port" value="$(arg arduino_port)"/>
     </include>
 
     <!-- Radio Control Teleoperation -->
     <include file="$(find curio_bringup)/launch/curio_teleop.launch">
-        <arg name="port" value="$(arg teleop_port)"/>
     </include> 
    
     <!-- Laser Scan -->

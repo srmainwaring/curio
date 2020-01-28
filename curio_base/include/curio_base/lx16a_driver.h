@@ -37,8 +37,6 @@
 // 
 // Servo driver implementation adapted from Lewansoul Arduino examples. 
 // 
-// 
-// 
 
 #ifndef CURIO_BASE_LX16A_DRIVER_H_
 #define CURIO_BASE_LX16A_DRIVER_H_

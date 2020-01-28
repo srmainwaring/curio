@@ -1,7 +1,8 @@
+<!-- Bringup the robot's laser scanner  -->
 <launch>
+    <arg name="frame_id" default="laser"/>
     <arg name="port" default="/dev/ttyUSB1"/>
     <arg name="robot_name" default=""/>
-    <arg name="frame_id" default="laser"/>
 
     <!-- Laser Scan node (RPLidar A1) -->
     <node pkg="rplidar_ros" type="rplidarNode" name="curio_laser_scan" output="screen">
