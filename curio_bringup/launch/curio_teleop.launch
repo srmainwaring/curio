@@ -1,10 +1,13 @@
 <!-- Bringup robot radio control teleoperation 
+
+This launch file assumes that the Arduino controller
+configured in curio_base_launch will capture the radio
+control signals and publish them to curio_msgs/Channels.
+
+This converts the PWM data in curio_msgs/Channels to
+geometry_msgs/Twist published on cmd_vel
 -->
 <launch>
-    <arg name="port" default="/dev/ttyACM0"/>
-
     <include file="$(find curio_teleop)/launch/teleop_rc.launch">
-        <arg name="port" value="$(arg port)"/>
     </include>
-
 </launch>

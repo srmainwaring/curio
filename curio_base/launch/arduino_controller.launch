@@ -1,0 +1,41 @@
+<!-- Curio Arduino controller
+
+Parameters
+    port : str
+        The device name for the serial port
+    baud : int
+        The baudrate, has default (115200)
+ -->
+<launch>
+    <arg name="port" default="/dev/ttyACM0"/>
+    <arg name="robot_name" default=""/>
+
+    <!-- Locally defined parameters
+    <arg name="wheel_servo_ids" default="[11, 12, 13, 21, 22, 23]"/>
+    <arg name="steer_servo_ids" default="[111, 131, 211, 231]"/>
+    <arg name="steer_servo_angle_offsets" default="[-10, -5, 40, 20]"/> 
+    -->
+
+    <!-- ROS serial node connected to Arduino for radio control -->
+    <node pkg="rosserial_python" type="serial_node.py" name="curio_arduino_controller"
+        respawn="true" output="screen">
+        <param name="port" value="$(arg port)" />
+        <param name="baud" value="115200" />
+        
+        <!-- Load base controller parameters -->
+        <rosparam command="load" file="$(find curio_base)/config/base_controller.yaml" />
+        
+        <!-- Override using locally defined parameters
+        <rosparam param="wheel_servo_ids" subst_value="True">
+            $(arg wheel_servo_ids)
+        </rosparam>
+        <rosparam param="steer_servo_ids" subst_value="True">
+            $(arg steer_servo_ids)
+        </rosparam>
+        <rosparam param="steer_servo_angle_offsets" subst_value="True">
+            $(arg steer_servo_angle_offsets)
+        </rosparam>
+        -->
+    </node>
+
+</launch>

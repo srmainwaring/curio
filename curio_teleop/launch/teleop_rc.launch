@@ -1,36 +1,40 @@
 <!-- Radio control tele-operation
 
-    - curio_rosserial_rc_channels: 
-        A rosserial_python / rosserial_arduino node capturing RC receiver pulses
+curio_rosserial_rc_channels : ROS node 
+    A rosserial_python / rosserial_arduino node capturing
+    RC receiver pulses
 
-        Publish:
-            - curio_msgs/Channels to radio_ctrl/channels
+    Publications
+    radio/channels : curio_msgs/Channels
 
-    - curio_teleop_rc
-        Subscribe to a curio_msgs/Channel message and calculate an appropriate
-        geometry_msgs/Twist to publish to cmd_vel.
+curio_teleop_rc : ROS node
+    Subscribe to a curio_msgs/Channel message and calculate an appropriate
+    geometry_msgs/Twist to publish to cmd_vel.
 
-        Subscribe:
-            - curio_msgs/Channels from channels
+    Publications
+        cmd_vel : geometry_msgs/Twist
 
-        Publish:
-            - geometry_msgs/Twist to cmd_vel
+    Subsciptions
+        channels : curio_msgs/Channels
  -->
 <launch>
+    <!--
     <arg name="port" default="/dev/ttyACM1"/>
     <arg name="robot_name" default=""/>
-
+    -->
     <!-- ROS serial node connected to Arduino for radio control -->
+    <!--
     <node pkg="rosserial_python" type="serial_node.py" name="curio_rosserial_rc_channels"
         respawn="true" output="screen">
         <param name="port" value="$(arg port)"/>
-        <param name="baud" value="57600"/>
+        <param name="baud" value="115200"/>
     </node>
+    -->
 
-    <!-- Launch RC teleoperation -->
+    <!-- Radio control teleoperation -->
     <node pkg="curio_teleop" type="curio_teleop_rc" name="curio_teleop_rc"
         respawn="true" output="screen">
         <rosparam command="load" file="$(find curio_teleop)/config/teleop_rc.yaml" />
-        <remap from="channels" to="radio_ctrl/channels" />
+        <remap from="channels" to="radio/channels" />
     </node>
 </launch>

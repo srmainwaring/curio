@@ -1,0 +1,61 @@
+# Curio base controller parameters
+# 
+#  ROS frame convention for mobile robots:
+# 
+#                         x
+#                         ^
+#                         | longatudinal dir
+#                         |
+#  lateral dir  y <-------
+# 
+# 
+# Wheel geometry / servo location. The numbers are servo serial ids:
+# two digits for wheel servos, three digits for steering servos.
+# 
+#     <- front wheel lat separation ->
+#    11 / 111 |-----|-----| 21 / 212   ---
+#                   |                   ^
+#                   |             front wheel lon separation
+#       <- mid wheel lat separation ->  v
+#        12 |-------|-------| 22       ---
+#                   |                   ^
+#                   |             back wheel lon separation
+#                   |                   v
+#   13 / 131 |------|------| 23 / 233  ---
+#      <- back wheel lat separation ->
+# 
+
+# Servo driver port settings
+# port: /dev/cu.wchusbserialfd5110
+port: /dev/ttyACM0
+baudrate: 115200
+timeout: 1.0
+
+# Update frequencies: control loop
+control_frequency: 20.0
+
+# Robot dimensions and limits
+max_linear_velocity:  0.37   # [m/s]
+max_angular_velocity: 1.45   # [rad/s]
+
+wheel_radius: 0.060
+mid_wheel_lat_separation: 0.52
+front_wheel_lat_separation: 0.47 
+front_wheel_lon_separation: 0.28
+back_wheel_lat_separation: 0.47
+back_wheel_lon_separation: 0.25
+
+# Odometry calibration / tuning (default 1.0 - no adjustment)
+wheel_radius_multiplier: 1.0
+mid_wheel_lat_separation_multiplier: 0.96875
+
+# Wheel servo parameters
+wheel_servo_ids:           [     11,     12,      13,      21,      22,      23]
+wheel_servo_lon_labels:    ['front',  'mid',  'back', 'front',   'mid',  'back']
+wheel_servo_lat_labels:    [ 'left', 'left',  'left', 'right', 'right', 'right']
+
+# Steering servo parameters
+steer_servo_ids:           [    111,    131,     211,     231]
+steer_servo_lon_labels:    ['front', 'back', 'front',  'back']
+steer_servo_lat_labels:    [ 'left', 'left', 'right', 'right']
+steer_servo_angle_offsets: [    -10,     -5,      40,      20]

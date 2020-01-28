@@ -10,18 +10,26 @@
 num_channels: 12
 
 # Set the RC channel and limits for linear velocity.
-# 
-#   \param channel        RC channel. Valid values are 1 - 4.
-#   \param max_velocity   max linear velocity.
+#
+# Parameters
+# ---------- 
+# channel : int
+#   RC channel. Valid values are 1 - 4.
+# max_velocity : float
+#   max linear velocity.
 linear:
     x:
         channel: 3  # Assigned to left vertical stick. Ch1 when using PWM, Ch3 when using SUMD
         max_velocity: 0.37
 
 # Set the RC channel and limits for angular velocity.
-# 
-#   \param channel        RC channel. Valid values are 1 - 4.
-#   \param max_velocity   max angular velocity.
+#
+# Parameters
+# ---------- 
+# channel : int
+#   RC channel. Valid values are 1 - 4.
+# max_velocity : float
+#   max angular velocity.
 angular:
     z:
         channel: 1  # Assigned to right horizontal stick. Ch2 when using PWM, Ch1 when using SUMD
@@ -29,7 +37,10 @@ angular:
 
 # Toggle the RC teleoperation on/off. 
 # 
-#   \param channel  RC channel assigned to switch. Valid values are 5 - 12.
+# Parameters
+# ----------
+# channel : int
+#   RC channel assigned to switch. Valid values are 5 - 12.
 disable_teleop:
     channel: 5  # Assigned to switch S3. Ch6 when using PWM, Ch5 when using SUMD
 

@@ -1,9 +1,22 @@
-<!-- Bringup the robot base's motor controller
- -->
-<launch>
-    <arg name="port" default="/dev/ttyUSB0"/>
+<!-- Bringup the robot's base controller
 
-    <include file="$(find curio_base)/launch/motor_controller.launch">
+Bring up the robot's Python and Arduino base controllers.
+
+This launch file is configured to use the Arduino as the
+servo controller with the Python base controller managing
+odometry and communicating with the servo driver via
+ROS messages (so the base_controller node does not receive
+a 'port' argument) 
+-->
+<launch>
+    <arg name="port" default="/dev/ttyACM0"/>
+
+    <!-- curio_base_controller node -->
+    <include file="$(find curio_base)/launch/base_controller.launch">
+    </include>
+
+    <!-- curio_arduino_controller node -->
+    <include file="$(find curio_base)/launch/arduino_controller.launch">
         <arg name="port" value="$(arg port)"/>
     </include>
 </launch>

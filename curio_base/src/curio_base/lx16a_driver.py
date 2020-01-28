@@ -42,7 +42,8 @@
     The LX16ADriver does not explicitly raise exceptions, but may raise
     exceptions implicitly via the modules it uses (i.e. serial).
     Instead warnings and errors are logged to ROS and an error state -1
-    is returned for the caller to test and handle or ignore as they wish.    
+    is returned for the caller to test and handle or ignore
+    as they wish.    
 
     The protocol specifications may be found here:
         http://www.lewansoul.com/product/detail-17.html
@@ -59,22 +60,24 @@
 
     Copyright (c) 2018 Roger Cheng
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
+    Permission is hereby granted, free of charge, to any person
+    obtaining a copy of this software and associated documentation files
+    (the "Software"), to deal in the Software without restriction,
+    including without limitation the rights to use, copy, modify, merge,
+    publish, distribute, sublicense, and/or sell copies of the Software,
+    and to permit persons to whom the Software is furnished to do so,
+    subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+    BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+    ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 '''
 
@@ -83,9 +86,13 @@ import serial
 import struct
 
 class LX16ADriver(object):
+    ''' LewanSoul Bus Servo Communication Protocol
+
+    A hardware interface to the LewanSoul LX-16A servo.
+    This driver is a fairly literal implementation of the commands
+    specified in the LewanSoul Bus Servo Communication Protocol.
     '''
-    LewanSoul Bus Servo Communication Protocol
-    '''
+
     SERVO_BUS_HEADER            = 0x55
     SERVO_BUS_MIN_ID            = 0x00
     SERVO_BUS_MAX_ID            = 0xfe
@@ -121,39 +128,117 @@ class LX16ADriver(object):
     SERVO_LED_ERROR_READ        = 36
 
     def __init__(self):
+        ''' Constructor
+        '''
+
         self._serial = serial.Serial()
     
     # Serial port 
     def open(self):
+        ''' Open the serial port for communication.
+        '''
+
         self._serial.open()
 
     def close(self):
+        ''' Close the serial port immediatelty.
+        '''
+
         if self._serial.is_open:
             self._serial.close()
 
     def is_open(self):
+        ''' Return True if the serial port is open.
+
+        Returns
+        -------
+        bool
+            True if the port is open
+        '''
+
         return self._serial.is_open
 
     def get_port(self):
+        ''' Get the serial device.
+
+        Returns
+        -------
+        string
+            The name of the serial device.
+        '''
+        
         return self._serial.port
 
     def set_port(self, port):
+        ''' Set the serial device.
+
+        Parameters
+        ----------
+        port : str
+            The name of the serial device.
+        '''
+
         self._serial.port = port
 
     def get_baudrate(self):
+        ''' Get the baudrate.
+
+        Returns
+        -------
+        int
+            The baudrate for the serial connection.
+        '''
+
         return self._serial.baudrate
 
     def set_baudrate(self, baudrate):
+        ''' Set the baudrate.
+
+        Parameters
+        ----------
+        baudrate : int
+            The baudrate for the serial connection.
+        '''
+
         self._serial.baudrate = baudrate
 
     def get_timeout(self):
+        ''' Get the serial timeout [s]
+
+        Returns
+        -------
+        float
+            The serial port timeout.
+        '''
+
         return self._serial.timeout
 
     def set_timeout(self, timeout):
+        ''' Set the serial timeout [s]
+
+        Parameters
+        -------
+        timeout : float
+            The serial port timeout in seconds.
+        '''
+
         self._serial.timeout = timeout
 
     # Commands
     def move_time_write(self, servo_id, servo_pos, move_time=0):
+        ''' Move a servo to the commanded position in a given time.
+
+        Parameters
+        ----------
+        servo_id : int
+            The servo serial identifier, in [0, 253]
+        servo_pos : int
+            The commanded servo position, in [0, 1000]
+        move_time : int
+            The desired time for the servo to move from its
+            position to the commanded position, in [0, 30000] ms
+        '''
+
         pos_lsb = servo_pos & 0xff
         pos_hsb = (servo_pos >> 8) & 0xff
         move_time_lsb = move_time & 0xff
@@ -163,6 +248,23 @@ class LX16ADriver(object):
             rospy.logwarn('Servo command error: move_time_write')
 
     def move_time_read(self, servo_id):
+        ''' Read the current commanded position and move time.
+
+        Parameters
+        ----------
+        servo_id : int
+            The servo serial identifier, in [0, 253]
+
+        Returns:
+        list
+            A two element list containing:
+            servo_pos : int
+                The commanded servo position, in [0, 1000]
+            move_time : int
+                The desired time for the servo to move from its
+                position to the commanded position, in [0, 30000] ms
+        '''
+
         self._serial.reset_input_buffer()
         if self.send_command(servo_id, 3, LX16ADriver.SERVO_MOVE_TIME_READ) == -1:
             rospy.logwarn('Servo command error: move_time_read')
@@ -184,8 +286,9 @@ class LX16ADriver(object):
             (pos_lsb, pos_hsb, move_time_lsb, move_time_hsb)) == -1:
             rospy.logwarn('Servo command error: move_time_wait_write')
 
-    # @TOOD: there appears to be a problem with this command - the response from the servo
-    #        is badly formed (and it also affects the execution of the write version of this command).
+    # @TOOD: there appears to be a problem with this command
+    #        - the response from the servo is badly formed (and it also
+    #        affects the execution of the write version of this command)
     def move_time_wait_read(self, servo_id):
         # @TODO investigate issue further
         self._serial.reset_input_buffer()
@@ -204,8 +307,9 @@ class LX16ADriver(object):
         if self.send_command(servo_id, 3, LX16ADriver.SERVO_MOVE_START) == -1:
             rospy.logwarn('Servo command error: move_start')
 
-    # @NOTE: The servo must be in servo mode for the move_stop to be effective.
-    #        When in motor_mode you must set the speed to zero instead.
+    # @NOTE: The servo must be in servo mode for the move_stop to be
+    #        effective. When in motor_mode you must set the speed to
+    #        zero instead.
     def move_stop(self, servo_id):
         if self.send_command(servo_id, 3, LX16ADriver.SERVO_MOVE_STOP) == -1:
             rospy.logwarn('Servo command error: move_stop')
@@ -374,8 +478,8 @@ class LX16ADriver(object):
             (is_loaded_lsb,)) == -1:
             rospy.logwarn('Servo command error: load_or_unload_write')
 
-    # @TODO: there appears to be a problem with this command - there is no response
-    #        to the read request command. 
+    # @TODO: there appears to be a problem with this command
+    #        - there is no response to the read request command. 
     def load_or_unload_read(self, servo_id):
         # @TODO investigate issue further
         self._serial.reset_input_buffer()
@@ -495,6 +599,99 @@ class LX16ADriver(object):
 
         # Read OK - return data (bytearray)
         return data
+
+    # Here we use the same algorithm used in the Lewansoul Arduino
+    # examples to see if the approach makes a difference (it doesn't).
+    # def read_response2(self, servo_id, length, command):
+    #     data_count = 0
+    #     data_length = 2
+    #     frame_count = 0
+    #     frame_started = False
+    #     recv_buf = [0 for i in range(32)]
+
+    #     while self._serial.in_waiting:
+    #         rx_buf = self._serial.read()
+    #         rx_buf = ord(rx_buf)
+
+    #         if not frame_started:
+    #             if rx_buf == LX16ADriver.SERVO_BUS_HEADER:
+    #                 frame_count = frame_count + 1
+    #                 if frame_count == 2:
+    #                     data_count = 1
+    #                     frame_count = 0
+    #                     frame_started = True
+    #             else:
+    #                 data_count = 0
+    #                 frame_count = 0
+    #                 frame_started = False
+
+    #         if frame_started:
+    #             recv_buf[data_count] = rx_buf
+    #             if data_count == 3:
+    #                 data_length = recv_buf[data_count]
+    #                 if data_length < 3 or data_length > 7:
+    #                     data_length = 2
+    #                     frame_started = False
+    #             data_count = data_count + 1
+    #             if data_count == data_length + 3:
+    #                 if True:
+    #                     frame_started = False
+    #                     data = bytearray(recv_buf[5: data_length + 2])
+    #                     return data
+    #                 return -1
+        
+    # Read all bytes in one call instead of a byte at a time
+    #  - no noticeable performance change
+    # 
+    # def read_response2(self, servo_id, length, command):
+    #     Check port is open
+    #     if not self.is_open():
+    #         rospy.logwarn("Serial port not open")
+    #         return -1
+
+    #     # Read length + 3 bytes
+    #     bytes = self.read_bytearray(length + 3)
+
+    #     # Header (bytes 0 and 1)
+    #     if bytes[0] != LX16ADriver.SERVO_BUS_HEADER:
+    #         rospy.logwarn("Invalid 1st header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
+    #         return -1
+
+    #     if bytes[1] != LX16ADriver.SERVO_BUS_HEADER:
+    #         rospy.logwarn("Invalid 2nd header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
+    #         return -1
+
+    #     # Read id (byte 2)
+    #     if bytes[2] != servo_id:
+    #         rospy.logwarn("Invalid servo_id: expecting: {}, got: {}".format(servo_id, byte))
+    #         return -1
+
+    #     # Read length (byte 3)
+    #     if bytes[3] != length:
+    #         rospy.logwarn("Invalid length: expecting: {}, got: {}".format(length, byte))
+    #         return -1
+
+    #     # Read command (byte 4)
+    #     if bytes[4] != command:
+    #         rospy.logwarn("Invalid command: expecting: {}, got: {}".format(command, byte))
+    #         return -1
+
+    #     # Read data (byte 5 - (length + 1))
+    #     data = bytes[5:length+2]
+    #     if len(data) != length - 3:
+    #         rospy.logwarn("Invalid len(data): expecting: {}, got: {}".format(length - 3, len(data)))
+    #         return -1
+
+    #     # Calculate checksum
+    #     checksum = self.checksum(servo_id, length, command, data)
+
+    #     # Read checksum (byte (length + 2))
+    #     if bytes[length+2] != checksum:
+    #         rospy.logwarn("Invalid checksum: expecting: {}, got: ".format(checksum, byte))
+    #         return -1
+
+    #     # Read OK - return data (bytearray)
+    #     return data
 
     def send_command(self, servo_id, length, command, data=None):
         # Check the port is open

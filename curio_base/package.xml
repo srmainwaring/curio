@@ -1,16 +1,28 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>curio_base</name>
-    <version>0.0.0</version>
-    <description>Hardware controllers for Curio, a Swappy Rover robot</description>
+    <version>0.2.0</version>
+    <description>Hardware controllers for Curio, a Swappy Rover</description>
     <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
     <license>BSD-3-Clause</license>
+    <url type="website">https://github.com/srmainwaring/curio</url>
+    <url type="repository">https://github.com/srmainwaring/curio</url>
+    <url type="bugtracker">https://github.com/srmainwaring/curio/issues</url>
     <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
 
     <buildtool_depend>catkin</buildtool_depend>
 
-    <depend>rospy</depend>
-    <!-- <depend>serial</depend> -->
+    <depend>curio_description</depend>
+    <depend>curio_control</depend>
+    <depend>curio_msgs</depend>
     <depend>geometry_msgs</depend>
+    <depend>joint_state_publisher</depend>
+    <depend>nav_msgs</depend>
+    <depend>robot_state_publisher</depend>
+    <depend>roscpp</depend>
+    <depend>rospy</depend>
+    <depend>serial</depend>
     <depend>std_msgs</depend>
+    <depend>tf</depend>
+
 </package>

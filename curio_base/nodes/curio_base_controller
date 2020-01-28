@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+# 
+#   Software License Agreement (BSD-3-Clause)
+#    
+#   Copyright (c) 2019 Rhys Mainwaring
+#   All rights reserved
+#    
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions
+#   are met:
+# 
+#   1.  Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+# 
+#   2.  Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials provided
+#       with the distribution.
+# 
+#   3.  Neither the name of the copyright holder nor the names of its
+#       contributors may be used to endorse or promote products derived
+#       from this software without specific prior written permission.
+#  
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+#   FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+#   COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+#   INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+#   BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+#   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#   CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+#   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+# 
+
+''' Base controller node
+
+A mobile base controller node for a Sawppy Rover using LX-16A servos.
+
+See curio_base/src/base_controller.py for documentation.  
+'''
+
+import rospy
+import curio_base.base_controller
+
+if __name__ == '__main__':
+    rospy.init_node('curio_base_controller')
+    rospy.loginfo('Starting Curio base controller')
+
+    # Base controller
+    base_controller = curio_base.base_controller.BaseController()
+
+    # Register shutdown behaviour
+    def shutdown_callback():
+        rospy.loginfo('Shutdown Curio base controller...')
+        base_controller.shutdown()
+
+    rospy.on_shutdown(shutdown_callback)
+
+    # Start the control loop
+    control_frequency = 10.0
+    if rospy.has_param('~control_frequency'):
+        control_frequency = rospy.get_param('~control_frequency')
+
+    rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
+    control_timer = rospy.Timer(
+        rospy.Duration(1.0 / control_frequency),
+        base_controller.update)
+
+    # Wait for shutdown
+    rospy.spin()
