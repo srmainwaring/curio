@@ -78,7 +78,7 @@ def update(event):
 
     # Startup
     curr_t = rospy.get_rostime()
-    if curr_t < init_t + rospy.Duration(STARTUP_DURATION):
+    if curr_t - init_t < rospy.Duration(STARTUP_DURATION):
         cmd_vel_msg.linear.x = STARTUP_CMD_VEL
         cmd_vel_pub.publish(cmd_vel_msg)
         return

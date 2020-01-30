@@ -89,7 +89,7 @@ def update(event):
         return
 
     # Update level
-    if curr_t > prev_t + rospy.Duration(SAMPLE_DURATION):
+    if curr_t - prev_t > rospy.Duration(SAMPLE_DURATION):
         prev_t = curr_t
 
         # Constrained path - reverse direction when we hit the boundaries

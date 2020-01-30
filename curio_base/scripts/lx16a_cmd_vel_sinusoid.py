@@ -88,14 +88,14 @@ def update(event):
 
     # Startup
     curr_t = rospy.get_rostime()
-    if curr_t < init_t + rospy.Duration(STARTUP_DURATION):
+    if curr_t - init_t < rospy.Duration(STARTUP_DURATION):
         prev_t = curr_t
         cmd_vel_msg.linear.x = STARTUP_CMD_VEL
         cmd_vel_pub.publish(cmd_vel_msg)
         return
 
     # Update amplitude
-    if curr_t > prev_t + rospy.Duration(SAMPLE_DURATION):
+    if curr_t - prev_t > rospy.Duration(SAMPLE_DURATION):
         prev_t = curr_t
 
         # Update period whenever the amplitudes cycle round

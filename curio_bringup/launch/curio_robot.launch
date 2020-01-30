@@ -2,7 +2,7 @@
 <launch>
     <!-- linux -->
     <arg name="arduino_port" default="/dev/ttyACM0"/>
-    <arg name="laser_scan_port" default="/dev/ttyUSB1"/>
+    <arg name="laser_scan_port" default="/dev/ttyUSB0"/>
     <!-- macOS
     <arg name="arduino_port" default="/dev/cu.usbmodemFD5121"/>
     <arg name="laser_scan_port" default="/dev/cu.SLAB_USBtoUART"/>
@@ -17,12 +17,11 @@
     <include file="$(find curio_bringup)/launch/curio_teleop.launch">
     </include> 
    
-    <!-- Laser Scan -->
-    <!-- 
+    <!-- Laser Scan -->    
     <include file="$(find curio_bringup)/launch/curio_laser_scan.launch">
         <arg name="port" value="$(arg laser_scan_port)"/>
         <arg name="frame_id" value="laser"/>
     </include>
-   -->
+  
    
 </launch>
