@@ -1,0 +1,17 @@
+controller_frequency: 5.0
+
+TrajectoryPlannerROS:
+  max_vel_x: 0.5
+  min_vel_x: 0.0
+
+  max_vel_theta: 8.0
+  min_in_place_vel_theta: 0.5
+
+  acc_lim_x: 0.8
+  acc_lim_theta: 3.0
+  holonomic_robot: false
+
+  # Trajectory scoring parameters
+  meter_scoring: true
+
+  controller_frequency: 5.0

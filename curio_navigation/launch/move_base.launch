@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--     
+ -->
+<launch>
+    <!-- Launch Move Base -->
+    <node pkg="move_base" type="move_base" name="move_base"
+        respawn="false" output="screen">
+        <rosparam
+            file="$(find curio_navigation)/config/costmap_common.yaml"
+            command="load"
+            ns="global_costmap" />
+        <rosparam
+            file="$(find curio_navigation)/config/costmap_common.yaml"
+            command="load"
+            ns="local_costmap" />
+        <rosparam
+            file="$(find curio_navigation)/config/costmap_global.yaml"
+            command="load" />
+        <rosparam
+            file="$(find curio_navigation)/config/costmap_local.yaml"
+            command="load" />
+        <rosparam
+            file="$(find curio_navigation)/config/planner_local.yaml"
+            command="load" />
+    </node>
+
+</launch>

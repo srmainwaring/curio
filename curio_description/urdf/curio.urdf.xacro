@@ -42,6 +42,7 @@
     <!-- Include macros for materials, inertials, sensors -->
     <xacro:include filename="$(find curio_description)/urdf/curio_materials.xacro"/>
     <xacro:include filename="$(find curio_description)/urdf/curio_inertials.xacro"/>
+    <xacro:include filename="$(find curio_description)/urdf/curio_laser.xacro"/>
 
     <!-- Gazebo plugins -->
     <gazebo>
@@ -589,5 +590,9 @@
 
     <xacro:corner_wheel_joint lon_label="back" lat_label="left" reflect="1"/>
     <xacro:corner_wheel_joint lon_label="back" lat_label="right" reflect="-1"/>
+
+    <!-- Laser Scan Sensor -->
+    <xacro:laser_link />
+    <xacro:laser_joint x="0.152" y="0.078" z="0.050" />
 
 </robot>

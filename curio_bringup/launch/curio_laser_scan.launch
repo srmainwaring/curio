@@ -1,7 +1,7 @@
 <!-- Bringup the robot's laser scanner  -->
 <launch>
     <arg name="frame_id" default="laser"/>
-    <arg name="port" default="/dev/ttyUSB1"/>
+    <arg name="port" default="/dev/ttyUSB0"/>
     <arg name="robot_name" default=""/>
 
     <!-- Laser Scan node (RPLidar A1) -->

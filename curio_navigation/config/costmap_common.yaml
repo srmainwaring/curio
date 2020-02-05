@@ -1,0 +1,20 @@
+# 
+obstacle_range: 5.5
+raytrace_range: 6.0
+footprint: [[-0.33, -0.31], [-0.33, 0.31], [0.33, 0.31], [0.33, -0.31]]
+footprint_padding: 0.01
+
+# NOTE: Only topics that use point clouds or laser scans are currently supported 
+laser_sensor_layer:
+  observation_sources: laser
+  laser:
+    sensor_frame: laser
+    data_type: LaserScan
+    topic: '/sensors/laser'
+    marking: true
+    clearing: true
+    inf_is_valid: true
+
+inflation_layer:
+  inflation_radius: 0.25
+  # cost_scaling_factor: 1.0

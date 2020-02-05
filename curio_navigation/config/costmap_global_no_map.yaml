@@ -1,0 +1,16 @@
+global_costmap:
+  # Without static map 
+  global_frame: odom
+  robot_base_frame: base_link
+  update_frequency: 2.0
+  publish_frequency: 2.0
+  static_map: false
+  rolling_window: true
+  width: 6.0
+  height: 6.0
+  resolution: 0.05
+  transform_tolerance: 0.5
+
+  plugins:
+    - {name: laser_sensor_layer,      type: "costmap_2d::ObstacleLayer"}
+    - {name: inflation_layer,         type: "costmap_2d::InflationLayer"}
