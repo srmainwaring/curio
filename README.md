@@ -26,6 +26,8 @@ on `/cmd_vel`.
 from the Sawppy CAD model
 - `curio_gazebo` configuration and launch files for spawning the rover in
 [Gazebo with ROS control](http://gazebosim.org/tutorials/?tut=ros_control)
+- `curio_navigation` configuration and launch files for the
+[ROS navigation stack](http://wiki.ros.org/navigation).
 - `curio_teleop` a telep node for interpreting PWM signals from a RC unit
 and publishing to `/cmd_vel`  
 - `curio_viz` configuration and launch files for loading the robot model into
@@ -73,7 +75,6 @@ For the machine learning classifier used in the encoder filter:
 - [`scikit-learn`](https://pypi.org/project/scikit-learn/)
 - [`scipy`](https://pypi.org/project/scipy/)
 
-
 ### C++
 
 For C++ serial communication we use:
@@ -88,6 +89,23 @@ git clone https://github.com/wjwwood/serial.git
 cd ~/curio_ws
 catkin build
 ```
+
+### ROS
+
+We use [`rosserial_arduino`](http://wiki.ros.org/rosserial_arduino)
+to communicate with the Arduino controller. It is included in the
+[`rosserial`](http://wiki.ros.org/rosserial) stack and available
+from GitHub:
+
+- [https://github.com/ros-drivers/rosserial](https://github.com/ros-drivers/rosserial)
+
+If you wish to use the navigation stack you will need a laser scanner
+and a ROS driver for it. We use the [`rplidar`](http://wiki.ros.org/rplidar) driver:
+
+- [https://github.com/Slamtec/rplidar_ros](https://github.com/Slamtec/rplidar_ros)
+
+As usual, clone the source into your catkin source folder `~/curio/src`
+and build with `catkin build`.
 
 ### Curio
 
@@ -468,6 +486,26 @@ places the rover in a Mars terrain model sourced from
 
 ![Gazebo Mars World](https://github.com/srmainwaring/curio/wiki/images/curio_gazebo_mars_terrain.jpg)
 
+
+## Usage - Navigation
+
+### `curio_navigation`
+
+This package contains configuration and launch files for running the
+[ROS navigation](http://wiki.ros.org/navigation) stack on the rover.
+
+Currently we provide basic navigation support using the `move_base`
+and `amcl` packages. For full details and tutorials please see the
+[ROS navigation tutorials](http://wiki.ros.org/navigation/Tutorials).
+
+The launch file `curio_navigation/launch/move_base_no_map.launch` and
+associated configuration files are provided so you can observe the
+[cost map](http://wiki.ros.org/costmap_2d) being created
+in [`rviz`](http://wiki.ros.org/rviz) while driving the rover around.
+See the tutorial
+["How to Build a Map Using Logged Data"](http://wiki.ros.org/slam_gmapping/Tutorials/MappingFromLoggedData)
+for more detail.
+
 ## Other packages
 
 ### `ackermann_drive_controller`
@@ -487,8 +525,10 @@ configure and coordinate calling launch files from other packages in this distri
 To bringup the robot in a single command:
 
 ```bash
-roslaunch curio_bringup curio_robot.launch servo_port:=/dev/ttyUSB0 teleop_port:=/dev/ttyACM0
+roslaunch curio_bringup curio_robot.launch arduino_port:=/dev/ttyACM0 laser_scan_port:=/dev/ttyUSB0
 ```
+
+It will start the base controller, arduino controller, and the laser scanner.
 
 ### `curio_control`
 
