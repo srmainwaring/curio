@@ -35,39 +35,70 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-''' Curio base controller node
+''' Lewansoul LX-16A failsafe test.
 
-A mobile base controller node for a Sawppy Rover using LX-16A servos.
+This test node connects to the Lewansoul Servo BusLinker board via USB
+and attempts to stop all servos in the WHEEL_SERVO_IDS list at the
+rate given by CONTROL_FREQUENCY.
 
-See curio_base/src/base_controller.py for documentation.  
+See curio_base/base_failsafe.py for motivation and more detail.
+
+Here is a guide to Arduino bootloaders:
+https://www.instructables.com/id/Overview-the-Arduino-sketch-uploading-process-and-/
 '''
 
+import curio_base.lx16a_driver
 import rospy
-import curio_base.base_controller
+import serial
+
+SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
+SERVO_BAUDRATE      = 115200
+SERVO_TIMEOUT       = 1.0 # [s]
+NUM_WHEELS          = 6
+WHEEL_SERVO_IDS     = [11, 12, 13, 21, 22, 23]
+CONTROL_FREQUENCY   = 20  # [Hz]
+
+class LX16AFailsafe(object):
+
+    def __init__(self):
+        # Initialise servo driver
+        self._servo_driver = curio_base.lx16a_driver.LX16ADriver()
+        self._servo_driver.set_port(SERVO_SERIAL_PORT)
+        self._servo_driver.set_baudrate(SERVO_BAUDRATE)
+        self._servo_driver.set_timeout(SERVO_TIMEOUT)
+        self._servo_driver.open()
+        
+        rospy.loginfo('Open connection to servo bus board')
+        rospy.loginfo('is_open: {}'.format(self._servo_driver.is_open()))
+        rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
+        rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
+        rospy.loginfo('timeout: {}'.format(self._servo_driver.get_timeout()))
+
+    def update(self, event):
+        ''' Update will stop all wheel servos.
+
+        Parameters
+        ----------
+        event : rospy.Timer
+            A rospy.Timer event.
+        '''
+        for i in range(NUM_WHEELS):
+            servo_id = WHEEL_SERVO_IDS[i]
+            self._servo_driver.motor_mode_write(servo_id, 0)
 
 if __name__ == '__main__':
-    rospy.init_node('curio_base_controller')
-    rospy.loginfo('Starting Curio base controller')
+    rospy.init_node('lx16a_failsafe')
+    rospy.loginfo('Starting Lewansoul LX-16A failsafe')
 
-    # Base controller
-    base_controller = curio_base.base_controller.BaseController()
-
-    # Register shutdown behaviour
-    def shutdown_callback():
-        rospy.loginfo('Shutdown Curio base controller...')
-        base_controller.shutdown()
-
-    rospy.on_shutdown(shutdown_callback)
+    # Servo failsafe
+    lx16a_failsafe = LX16AFailsafe()
 
     # Start the control loop
-    control_frequency = 10.0
-    if rospy.has_param('~control_frequency'):
-        control_frequency = rospy.get_param('~control_frequency')
+    control_frequency = CONTROL_FREQUENCY
 
     rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
     control_timer = rospy.Timer(
         rospy.Duration(1.0 / control_frequency),
-        base_controller.update)
+        lx16a_failsafe.update)
 
-    # Wait for shutdown
     rospy.spin()

@@ -423,6 +423,61 @@ Adjusting the linear velocity should cause the wheels to move forwards / backwar
 Adjusting the angular velocity should cause the corner steering joints to rotate
 and the wheels turn.
 
+#### *Test the base failsafe node [optional]*
+
+When using an Arduino to communicate with the servo bus board there
+are situations when the controller can leave the servos in a runaway
+state if you use the Arduino IDE and bootloader to upload sketches:
+
+- Arduino hardware reset
+- Arduino watchdog timer reset
+- rosserial error: 'Lost sync with device, restarting...'
+
+The Arduino may fail to run the curio firmware after the reset
+(i.e. setup()) is not called). This happens when rosserial continues
+to publish data to the Arduino via USB serial after the reset
+(i.e. rosserial_arduino has registered one or more subscribers).
+rosserial does not stop transmitting data while it attempts
+to resync, and this seems to be confusing the Arduino so that it
+never moves on from its bootloader sequence.
+
+As a result the servos are left powered on and running at
+whatever duty was last set in the Arduino control loop.
+
+The failsafe node takes advantage of the fact that communication via
+the serial header on the Lewansoul BusLinker board appears to have
+priority over the USB-to-TTL circuit. As a result we are able to run
+a background process that attempts to stop the servos which is ignored
+under usual operating conditions. However as soon as the Arduino is
+reset and stops transmitting and receiving to the servo board, the
+failsafe becomes effective and stops the servos.
+
+To use the failsafe node connect the micro USB to the
+Lewansoul BusLinker board *in addition* to the connection between
+the Arduino and the serial header:
+
+```bash
+roslaunch curio_base base_failsafe.launch port:=/dev/ttyUSB0
+```
+
+where you will need to substitute the appropriate port for your
+configuration.
+
+To test the failsafe follow the instructions above for testing the
+Ackermann steering and set the rover to move forward at half speed.
+When you press the reset button on the Arduino the drive servos
+should stop immediately. If you are monitoring the topic
+`servos/positions` you will notice the messages stop. The RX LED
+on the Arduino will continue to flash, and the `arduino_controller` node
+will report that it has lost sync and is attempting to restart. You will
+need to restart the `arduino_controller` node to re-stablish the
+connection.
+
+If you upload the curio firmware without a bootloader using ICSP then
+the firmware should run immediately after reset, the initialisation
+sequence should stop the servos without requiring the failsafe,
+and rosserial should resync automatically.
+
 ### `curio_teleop`
 
 This package is used to control the robot using a radio control setup.

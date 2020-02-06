@@ -694,7 +694,7 @@ class BaseController(object):
         Maximum servo position (servo units), has (constant 1000)
     NUM_WHEELS : int
         The number of wheel servos), has (constant 6)
-    NUM_WHEELS : int
+    NUM_STEERS : int
         The number of steering servos), has (constant 4)
 
     ROS Parameters
@@ -988,7 +988,7 @@ class BaseController(object):
         ''' Constructor
         '''
 
-        rospy.loginfo('Initialising mobile base controller...')
+        rospy.loginfo('Initialising BaseController...')
 
         # Wheel geometry on a flat surface - defaults
         self._wheel_radius                = 0.060

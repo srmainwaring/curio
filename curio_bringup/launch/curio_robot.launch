@@ -2,7 +2,8 @@
 <launch>
     <!-- linux -->
     <arg name="arduino_port" default="/dev/ttyACM0"/>
-    <arg name="laser_scan_port" default="/dev/ttyUSB0"/>
+    <arg name="laser_scan_port" default="/dev/ttyUSB1"/>
+    <arg name="servo_bus_port" default="/dev/ttyUSB0"/>
     <!-- macOS
     <arg name="arduino_port" default="/dev/cu.usbmodemFD5121"/>
     <arg name="laser_scan_port" default="/dev/cu.SLAB_USBtoUART"/>
@@ -10,7 +11,8 @@
 
     <!-- Base -->
     <include file="$(find curio_bringup)/launch/curio_base.launch">
-        <arg name="port" value="$(arg arduino_port)"/>
+        <arg name="arduino_port" value="$(arg arduino_port)"/>
+        <arg name="servo_bus_port" value="$(arg servo_bus_port)"/>
     </include>
 
     <!-- Radio Control Teleoperation -->
