@@ -10,7 +10,7 @@ a 'port' argument)
 -->
 <launch>
     <arg name="arduino_port" default="/dev/ttyACM0"/>
-    <arg name="servo_bus_port" default="/dev/ttyUSB0"/>
+    <arg name="servo_bus_port" default="/dev/ttyUSB1"/>
 
     <!-- curio_base_controller node -->
     <include file="$(find curio_base)/launch/base_controller.launch">
