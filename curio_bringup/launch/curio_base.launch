@@ -9,14 +9,20 @@ ROS messages (so the base_controller node does not receive
 a 'port' argument) 
 -->
 <launch>
-    <arg name="port" default="/dev/ttyACM0"/>
+    <arg name="arduino_port" default="/dev/ttyACM0"/>
+    <arg name="servo_bus_port" default="/dev/ttyUSB1"/>
 
     <!-- curio_base_controller node -->
     <include file="$(find curio_base)/launch/base_controller.launch">
     </include>
 
+    <!-- curio_base_failsafe node -->
+    <include file="$(find curio_base)/launch/base_failsafe.launch">
+        <arg name="port" value="$(arg servo_bus_port)"/>
+    </include>
+
     <!-- curio_arduino_controller node -->
     <include file="$(find curio_base)/launch/arduino_controller.launch">
-        <arg name="port" value="$(arg port)"/>
+        <arg name="port" value="$(arg arduino_port)"/>
     </include>
 </launch>

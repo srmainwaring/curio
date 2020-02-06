@@ -83,12 +83,14 @@ install(DIRECTORY include/curio_base/
 
 catkin_install_python(PROGRAMS
     nodes/curio_base_controller
+    nodes/curio_base_failsafe
     scripts/lx16a_cmd_vel_random.py
     scripts/lx16a_cmd_vel_sinusoid.py
     scripts/lx16a_cmd_vel_stepped.py
     scripts/lx16a_driver_test.py
     scripts/lx16a_encoder_filter_test.py
     scripts/lx16a_encoder_logger.py
+    scripts/lx16a_failsafe_test.py
     scripts/lx16a_mean_filter_test.py
     scripts/lx16a_odometry_test.py
     scripts/lx16a_train_classifier.py

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
     <name>curio_viz</name>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
     <description>Visualisation configuration for Curio, a Sawppy Rover</description>
     <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
     <license>BSD-3-Clause</license>

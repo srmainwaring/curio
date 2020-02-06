@@ -1,0 +1,24 @@
+<!-- Launch the base failsafe node
+
+Parameters
+    port : str
+        The device name for the serial port
+    control_frequency : str
+        The frequency for the failsafe control loop
+-->
+<launch>
+    <arg name="port" default="/dev/ttyUSB1" />
+    <arg name="control_frequency" default="20" />
+
+    <!-- Controller for the mobile base  -->
+    <node pkg="curio_base" type="curio_base_failsafe" name="curio_base_failsafe"
+        respawn="true" output="screen">
+        <rosparam command="load" file="$(find curio_base)/config/base_controller.yaml" />
+        <rosparam subst_value="true">
+            port: $(arg port)
+        </rosparam>
+        <rosparam subst_value="true">
+            failsafe_control_frequency: $(arg control_frequency)
+        </rosparam>
+    </node>
+</launch>
