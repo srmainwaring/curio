@@ -12,6 +12,8 @@
 
     <buildtool_depend>catkin</buildtool_depend>
 
+    <depend>action_lib</depend>
+    <depend>action_lib_msgs</depend>
     <depend>curio_description</depend>
     <depend>curio_control</depend>
     <depend>curio_msgs</depend>

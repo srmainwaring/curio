@@ -1,0 +1,8 @@
+# Goal
+uint8 calibration_type
+---
+# Result
+uint8 calibration_status
+---
+# Feedback
+uint8 calibration_status

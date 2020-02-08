@@ -8,6 +8,8 @@ add_compile_options(-std=c++11)
 # Find dependent catkin packages
 
 find_package(catkin REQUIRED COMPONENTS
+    actionlib
+    actionlib_msgs
     curio_description
     curio_control
     curio_msgs
@@ -26,6 +28,16 @@ find_package(catkin REQUIRED COMPONENTS
 # Setup python modules
 
 catkin_python_setup()
+
+################################################################################
+# Define meeages, services, actions
+
+add_action_files(DIRECTORY action
+    FILES
+    CalibrateImu.action
+)
+
+generate_messages(DEPENDENCIES actionlib_msgs)
 
 ################################################################################
 # Declare catkin configuration
