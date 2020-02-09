@@ -45,7 +45,6 @@ import actionlib
 from curio_base.msg import CalibrateImuAction, CalibrateImuGoal 
 from actionlib_msgs.msg import GoalStatus 
 
-
 def goal_state_to_string(state):
     ''' http://docs.ros.org/melodic/api/actionlib_msgs/html/msg/GoalStatus.html
     '''

@@ -11,9 +11,10 @@
     <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
 
     <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>message_generation</buildtool_depend>
 
-    <depend>action_lib</depend>
-    <depend>action_lib_msgs</depend>
+    <depend>actionlib</depend>
+    <depend>actionlib_msgs</depend>
     <depend>curio_description</depend>
     <depend>curio_control</depend>
     <depend>curio_msgs</depend>
@@ -26,5 +27,7 @@
     <depend>serial</depend>
     <depend>std_msgs</depend>
     <depend>tf</depend>
+
+    <exec_depend>message_runtime</exec_depend>
 
 </package>
