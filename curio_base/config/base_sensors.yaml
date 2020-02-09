@@ -1,0 +1,11 @@
+# Curio base sensors parameters
+# 
+
+# IMU parameters
+imu:
+    hardware_id: 'BNO080'
+    orientation_covariance: 0.000001
+    angular_velocity_covariance: 0.001
+    linear_acceleration_covariance: 0.001
+    magnetic_field_covariance: 0.001
+

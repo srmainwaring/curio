@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp
     rospy
     serial
+    sensor_msgs
     std_msgs
     tf
 )
@@ -31,17 +32,17 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_python_setup()
 
 ################################################################################
-# Define meeages, services, actions
+# Generate messages, services, actions
 
 add_action_files(DIRECTORY action FILES
     CalibrateImu.action
 )
 
-add_message_files(DIRECTORY msg FILES
-)
+# add_message_files(DIRECTORY msg FILES
+# )
 
-add_service_files(DIRECTORY srv FILES
-)
+# add_service_files(DIRECTORY srv FILES
+# )
 
 generate_messages(DEPENDENCIES actionlib_msgs std_msgs)
 
@@ -66,6 +67,7 @@ catkin_package(
         roscpp
         rospy
         serial
+        sensor_msgs
         std_msgs
         tf
 )
@@ -104,6 +106,7 @@ install(DIRECTORY include/curio_base/
 catkin_install_python(PROGRAMS
     nodes/curio_base_controller
     nodes/curio_base_failsafe
+    nodes/curio_base_sensors
     scripts/lx16a_cmd_vel_random.py
     scripts/lx16a_cmd_vel_sinusoid.py
     scripts/lx16a_cmd_vel_stepped.py

@@ -1,0 +1,10 @@
+<!-- Launch the base sensors node
+
+-->
+<launch>
+    <!-- Base sensor node. Diagnostics and publishing sensor data  -->
+    <node pkg="curio_base" type="curio_base_sensors" name="curio_base_sensors"
+        respawn="true" output="screen">
+        <rosparam command="load" file="$(find curio_base)/config/base_sensors.yaml" />
+    </node>
+</launch>
