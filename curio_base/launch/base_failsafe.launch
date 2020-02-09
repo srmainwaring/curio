@@ -10,7 +10,7 @@ Parameters
     <arg name="port" default="/dev/ttyUSB1" />
     <arg name="control_frequency" default="20" />
 
-    <!-- Controller for the mobile base  -->
+    <!-- Failsafe for the mobile base servo bus controller  -->
     <node pkg="curio_base" type="curio_base_failsafe" name="curio_base_failsafe"
         respawn="true" output="screen">
         <rosparam command="load" file="$(find curio_base)/config/base_controller.yaml" />
