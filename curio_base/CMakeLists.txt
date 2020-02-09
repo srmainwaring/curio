@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     joint_state_publisher
     nav_msgs
+    message_generation
     robot_state_publisher
     roscpp
     rospy
@@ -32,12 +33,17 @@ catkin_python_setup()
 ################################################################################
 # Define meeages, services, actions
 
-add_action_files(DIRECTORY action
-    FILES
+add_action_files(DIRECTORY action FILES
     CalibrateImu.action
 )
 
-generate_messages(DEPENDENCIES actionlib_msgs)
+add_message_files(DIRECTORY msg FILES
+)
+
+add_service_files(DIRECTORY srv FILES
+)
+
+generate_messages(DEPENDENCIES actionlib_msgs std_msgs)
 
 ################################################################################
 # Declare catkin configuration
@@ -48,11 +54,13 @@ catkin_package(
     LIBRARIES
         curio_base
     CATKIN_DEPENDS
+        actionlib_msgs
         curio_description
         curio_control
         curio_msgs
         geometry_msgs
         joint_state_publisher
+        message_runtime
         nav_msgs
         robot_state_publisher
         roscpp

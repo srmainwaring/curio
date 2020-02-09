@@ -74,7 +74,7 @@ class CalibrateImuServer(object):
 
         # Mock calibration
         for i in  range(5):
-            # Check that prempt has not been requested by the client
+            # Check that preempt has not been requested by the client
             if self.server_.is_preempt_requested():
                 rospy.loginfo('{}: Preempted'.format(self.action_name_))
                 self.server_.set_preempted()
