@@ -58,6 +58,18 @@ Parameters
         <param name="publish_default_velocities" value="true" />
     </node>
 
+    <!-- EKF localization
+        The robot_localization node also broadcasts the transform from:
+            odom -> base_link
+
+        Note: when using EKF localiztion:
+            1. ensure the base_controller publishes odometry to base_controller/odom
+            2. disable the base_controller from broadcasting the tf for odom -> base_link
+    -->    
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_local">
+        <rosparam command="load" file="$(find curio_base)/config/ekf_localization_local.yaml" />
+    </node>
+
     <!-- Publish robot state
     
         Publish the robot state and transforms to topics /tf and /tf_static.

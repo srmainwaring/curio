@@ -6,11 +6,10 @@ Panels:
       Expanded:
         - /Global Options1
         - /TF1/Frames1
-        - /Sensors1/Laser1
+        - /Sensors1
+        - /Odometry1
         - /Odometry1/Base1/Shape1
         - /Odometry1/Local EKF Base1/Shape1
-        - /Navigation1
-        - /Navigation1/Local Costmap1/Status1
       Splitter Ratio: 0.6600566506385803
     Tree Height: 805
   - Class: rviz/Selection
@@ -31,7 +30,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Laser
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Visualization Manager:
@@ -127,6 +126,11 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        imu:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         laser:
           Alpha: 1
           Show Axes: false
@@ -195,6 +199,8 @@ Visualization Manager:
           Value: true
         front_right_wheel_link:
           Value: true
+        imu:
+          Value: true
         laser:
           Value: true
         left_bogie_link:
@@ -222,6 +228,8 @@ Visualization Manager:
             body_box_link:
               {}
             diff_brace_link:
+              {}
+            imu:
               {}
             laser:
               {}
@@ -344,7 +352,7 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.019999999552965164
             Value: Arrow
-          Topic: /odom
+          Topic: /base_controller/odom
           Unreliable: false
           Value: true
         - Angle Tolerance: 0.10000000149011612

@@ -755,9 +755,19 @@ class BaseController(object):
     ~regressor_filename : str
         The full filepath for the `scikit-learn` regressor model.
 
+    ~base_frame_id : str
+        The name of the top level frame (link) in the robot description,
+        has (default 'base_link')
+    ~odom_frame_id : str
+        The name of the odometry frame, has (default 'odom')
+    ~enable_odom_tf : bool
+        If true broadcast the transform from odom -> base_link,
+        has (default true)
+
+
     Publications
     ------------
-    odom : nav_msgs/Odometry
+    base_controller/odom : nav_msgs/Odometry
         Publish the odometry.
     tf : geometry_msgs/TransformStamped
         Broadcast the transfrom from `odom` to `base_link`
@@ -1018,6 +1028,22 @@ class BaseController(object):
         rospy.loginfo('back_wheel_lat_separation: {:.2f}'.format(self._back_wheel_lat_separation))
         rospy.loginfo('back_wheel_lon_separation: {:.2f}'.format(self._back_wheel_lon_separation))
 
+        # Top level frame (link) in the robot description
+        self._base_frame_id = 'base_link'
+        if rospy.has_param('~base_frame_id'):
+            self._base_frame_id = rospy.get_param('~base_frame_id')
+        rospy.loginfo('base_frame_id: {}'.format(self._base_frame_id))
+
+        self._odom_frame_id = 'odom'
+        if rospy.has_param('~odom_frame_id'):
+            self._odom_frame_id = rospy.get_param('~odom_frame_id')
+        rospy.loginfo('odom_frame_id: {}'.format(self._odom_frame_id))
+
+        self._enable_odom_tf = True
+        if rospy.has_param('~enable_odom_tf'):
+            self._enable_odom_tf = rospy.get_param('~enable_odom_tf')
+        rospy.loginfo('enable_odom_tf: {}'.format(self._enable_odom_tf))
+
         # Odometry calibration parameters
         self._wheel_radius_multiplier               = 1.0
         self._mid_wheel_lat_separation_multiplier   = 1.0
@@ -1134,7 +1160,7 @@ class BaseController(object):
             self._mid_wheel_lat_separation_multiplier)
 
         self._odom_msg = Odometry()
-        self._odom_pub = rospy.Publisher('/odom', Odometry, queue_size=10)
+        self._odom_pub = rospy.Publisher('/base_controller/odom', Odometry, queue_size=10)
         self._init_odometry()
 
         # Encoder filters
@@ -1369,8 +1395,9 @@ class BaseController(object):
         # Read and publish
         self._update_odometry(time)
         self._publish_odometry(time)
-        self._publish_tf(time)
         self._publish_encoders(time)
+        if self._enable_odom_tf:
+            self._publish_tf(time)
 
         # PID control would go here...
 
@@ -1524,8 +1551,8 @@ class BaseController(object):
         odometry message.
         '''
 
-        odom_frame_id = 'odom'
-        base_frame_id = 'base_link'
+        odom_frame_id = self._odom_frame_id
+        base_frame_id = self._base_frame_id
         pose_cov_diag = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01] 
         twist_cov_diag = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01] 
 
@@ -1622,8 +1649,8 @@ class BaseController(object):
             (self._odometry.get_x(), self._odometry.get_y(), 0.0),
             quaternion_from_euler(0.0, 0.0, self._odometry.get_heading()),
             time,
-            'base_link',
-            'odom')
+            self._base_frame_id,
+            self._odom_frame_id)
 
     # @IMPLEMENT
     def _update_state(self, time):
@@ -1667,6 +1694,6 @@ class BaseController(object):
 
         # Publish
         self._encoders_msg.header.stamp = time
-        self._encoders_msg.header.frame_id = 'base_link'
+        self._encoders_msg.header.frame_id = self._base_frame_id
         self._encoders_msg.wheel_encoders = self._wheel_encoders
         self._encoders_pub.publish(self._encoders_msg)

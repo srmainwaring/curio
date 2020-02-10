@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
     joint_state_publisher
     nav_msgs
     message_generation
+    robot_localization
     robot_state_publisher
     roscpp
     rospy
@@ -63,6 +64,7 @@ catkin_package(
         joint_state_publisher
         message_runtime
         nav_msgs
+        robot_localization
         robot_state_publisher
         roscpp
         rospy
