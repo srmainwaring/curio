@@ -45,9 +45,27 @@ front_wheel_lon_separation: 0.28
 back_wheel_lat_separation: 0.47
 back_wheel_lon_separation: 0.25
 
+# Top level frame (link) in the robot description
+base_frame_id: 'base_link'
+
 # Odometry calibration / tuning (default 1.0 - no adjustment)
 wheel_radius_multiplier: 1.0
 mid_wheel_lat_separation_multiplier: 0.96875
+
+# Odometry covariances for the encoder output of the robot.
+# These values should be tuned to your robot's sample odometry data,
+# but these values are a good place to start
+pose_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+
+# NOT using ekf_localization:
+# Enable transform from odom -> base_link
+# odom_frame_id: 'odom'
+# enable_odom_tf: true
+
+# USING ekf_localization.
+# Disable transform from odom -> base_link 
+enable_odom_tf: false
 
 # Wheel servo parameters
 wheel_servo_ids:           [     11,     12,      13,      21,      22,      23]
