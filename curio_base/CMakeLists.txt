@@ -92,12 +92,29 @@ add_executable(lx16a_position_publisher
 )
 target_link_libraries(lx16a_position_publisher curio_base ${catkin_LIBRARIES})
 
+add_executable(lx16a_driver_test
+    src/examples/lx16a_driver_test.cpp
+)
+target_link_libraries(lx16a_driver_test curio_base ${catkin_LIBRARIES})
+
+add_executable(serial_test
+    src/examples/serial_test.cpp
+)
+target_link_libraries(serial_test curio_base ${catkin_LIBRARIES})
+
+add_executable(ros_serial_test
+    src/examples/ros_serial_test.cpp
+)
+target_link_libraries(ros_serial_test curio_base ${catkin_LIBRARIES})
+
 ################################################################################
 # Install
 
 install(TARGETS
     curio_base
     lx16a_position_publisher
+    lx16a_driver_test
+    serial_test
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

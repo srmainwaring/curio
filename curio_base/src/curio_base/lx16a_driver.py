@@ -127,6 +127,11 @@ class LX16ADriver(object):
     SERVO_LED_ERROR_WRITE       = 35
     SERVO_LED_ERROR_READ        = 36
 
+    ERROR_VALUE_POS             = -2048
+    ERROR_VALUE_VIN             = -2048
+    ERROR_VALUE_TEMP            = -2048
+
+
     def __init__(self):
         ''' Constructor
         '''
@@ -427,6 +432,10 @@ class LX16ADriver(object):
         if self.send_command(servo_id, 3, LX16ADriver.SERVO_VIN_READ) == -1:
             rospy.logwarn('Servo command error: vin_read')
             return -1
+
+        # @TEENSY_TEST
+        # return 0
+
         data = self.read_response(servo_id, 5, LX16ADriver.SERVO_VIN_READ)
         if data == -1:
             rospy.logwarn('Servo read error: vin_read')
@@ -439,11 +448,11 @@ class LX16ADriver(object):
         self._serial.reset_input_buffer()
         if self.send_command(servo_id, 3, LX16ADriver.SERVO_POS_READ) == -1:
             rospy.logwarn('Servo command error: pos_read')
-            return -1
+            return LX16ADriver.ERROR_VALUE_POS
         data = self.read_response(servo_id, 5, LX16ADriver.SERVO_POS_READ)
         if data == -1:
             rospy.logwarn('Servo read error: pos_read')
-            return -1
+            return LX16ADriver.ERROR_VALUE_POS
         pos = struct.unpack('h', data)[0]
         return pos
 
@@ -539,159 +548,111 @@ class LX16ADriver(object):
         return checksum
 
     def read_byte(self):
-        byte = self._serial.read()
-        if len(byte) != 1:
-            rospy.logerr('Serial read error, expecting 1 byte: got: {}'.format(byte))
-        return ord(byte) if len(byte) == 1 else byte
+        bytes_read = self._serial.read()
+        if len(bytes_read) == 0:
+            # rospy.logerr('Serial read error, expecting 1 byte: got none')
+            return -1
+        else:
+            return ord(bytes_read[0])
 
     def read_bytearray(self, length):
         return bytearray(self._serial.read(length))
 
     def read_response(self, servo_id, length, command):
+        # State machine states
+        READ_WAIT_FOR_RESPONSE = 0
+        READ_HEADER_1 = 1
+        READ_HEADER_2 = 2
+        READ_SERVO_ID = 3
+        READ_LENGTH = 4
+        READ_COMMAND = 5
+        READ_DATA = 6
+        READ_CHECKSUM = 7
+        READ_COMPLETE = 8
+        READ_ERROR = 9
+        READ_TIMED_OUT = 10
+
         # Check port is open
         if not self.is_open():
             rospy.logwarn("Serial port not open")
             return -1
 
-        # Read header (2 bytes)
-        byte = self.read_byte()
-        if byte != LX16ADriver.SERVO_BUS_HEADER:
-            rospy.logwarn("Invalid 1st header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
-            return -1
+        # Timeout
+        READ_TIMEOUT = 0.01 # [s]
+        read_timeout = rospy.Duration.from_sec(READ_TIMEOUT)
+        start = rospy.Time.now()
 
-        byte = self.read_byte()
-        if byte != LX16ADriver.SERVO_BUS_HEADER:
-            rospy.logwarn("Invalid 2nd header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
-            return -1
+        state = READ_WAIT_FOR_RESPONSE
+        error_msg = 'No response'
+        data = []
+        while True:
+            # Check for timeout
+            if rospy.Time.now() - start > read_timeout:
+               state = READ_TIMED_OUT               
 
-        # Read id
-        byte = self.read_byte()
-        if byte != servo_id:
-            rospy.logwarn("Invalid servo_id: expecting: {}, got: {}".format(servo_id, byte))
-            return -1
-
-        # Read length
-        byte = self.read_byte()
-        if byte != length:
-            rospy.logwarn("Invalid length: expecting: {}, got: {}".format(length, byte))
-            return -1
-
-        # Read command
-        byte = self.read_byte()
-        if byte != command:
-            rospy.logwarn("Invalid command: expecting: {}, got: {}".format(command, byte))
-            return -1
-
-        # Read data. There should be length - 3 parameters in the data block
-        data = self.read_bytearray(length - 3)
-        if len(data) != length - 3:
-            rospy.logwarn("Invalid len(data): expecting: {}, got: {}".format(length - 3, len(data)))
-            return -1
-
-        # Calculate checksum
-        checksum = self.checksum(servo_id, length, command, data)
-
-        # Read checksum
-        byte = self.read_byte()
-        if byte != checksum:
-            rospy.logwarn("Invalid checksum: expecting: {}, got: ".format(checksum, byte))
-            return -1
-
-        # Read OK - return data (bytearray)
-        return data
-
-    # Here we use the same algorithm used in the Lewansoul Arduino
-    # examples to see if the approach makes a difference (it doesn't).
-    # def read_response2(self, servo_id, length, command):
-    #     data_count = 0
-    #     data_length = 2
-    #     frame_count = 0
-    #     frame_started = False
-    #     recv_buf = [0 for i in range(32)]
-
-    #     while self._serial.in_waiting:
-    #         rx_buf = self._serial.read()
-    #         rx_buf = ord(rx_buf)
-
-    #         if not frame_started:
-    #             if rx_buf == LX16ADriver.SERVO_BUS_HEADER:
-    #                 frame_count = frame_count + 1
-    #                 if frame_count == 2:
-    #                     data_count = 1
-    #                     frame_count = 0
-    #                     frame_started = True
-    #             else:
-    #                 data_count = 0
-    #                 frame_count = 0
-    #                 frame_started = False
-
-    #         if frame_started:
-    #             recv_buf[data_count] = rx_buf
-    #             if data_count == 3:
-    #                 data_length = recv_buf[data_count]
-    #                 if data_length < 3 or data_length > 7:
-    #                     data_length = 2
-    #                     frame_started = False
-    #             data_count = data_count + 1
-    #             if data_count == data_length + 3:
-    #                 if True:
-    #                     frame_started = False
-    #                     data = bytearray(recv_buf[5: data_length + 2])
-    #                     return data
-    #                 return -1
-        
-    # Read all bytes in one call instead of a byte at a time
-    #  - no noticeable performance change
-    # 
-    # def read_response2(self, servo_id, length, command):
-    #     Check port is open
-    #     if not self.is_open():
-    #         rospy.logwarn("Serial port not open")
-    #         return -1
-
-    #     # Read length + 3 bytes
-    #     bytes = self.read_bytearray(length + 3)
-
-    #     # Header (bytes 0 and 1)
-    #     if bytes[0] != LX16ADriver.SERVO_BUS_HEADER:
-    #         rospy.logwarn("Invalid 1st header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
-    #         return -1
-
-    #     if bytes[1] != LX16ADriver.SERVO_BUS_HEADER:
-    #         rospy.logwarn("Invalid 2nd header byte: expecting: {}, got: {}".format(LX16ADriver.SERVO_BUS_HEADER, byte))
-    #         return -1
-
-    #     # Read id (byte 2)
-    #     if bytes[2] != servo_id:
-    #         rospy.logwarn("Invalid servo_id: expecting: {}, got: {}".format(servo_id, byte))
-    #         return -1
-
-    #     # Read length (byte 3)
-    #     if bytes[3] != length:
-    #         rospy.logwarn("Invalid length: expecting: {}, got: {}".format(length, byte))
-    #         return -1
-
-    #     # Read command (byte 4)
-    #     if bytes[4] != command:
-    #         rospy.logwarn("Invalid command: expecting: {}, got: {}".format(command, byte))
-    #         return -1
-
-    #     # Read data (byte 5 - (length + 1))
-    #     data = bytes[5:length+2]
-    #     if len(data) != length - 3:
-    #         rospy.logwarn("Invalid len(data): expecting: {}, got: {}".format(length - 3, len(data)))
-    #         return -1
-
-    #     # Calculate checksum
-    #     checksum = self.checksum(servo_id, length, command, data)
-
-    #     # Read checksum (byte (length + 2))
-    #     if bytes[length+2] != checksum:
-    #         rospy.logwarn("Invalid checksum: expecting: {}, got: ".format(checksum, byte))
-    #         return -1
-
-    #     # Read OK - return data (bytearray)
-    #     return data
+            # State machine
+            if state == READ_WAIT_FOR_RESPONSE:
+                if self._serial.in_waiting > 0:
+                    state = READ_HEADER_1
+            elif state == READ_HEADER_1:
+                byte = self.read_byte()
+                if byte == LX16ADriver.SERVO_BUS_HEADER:
+                    state = READ_HEADER_2
+                else:
+                    state = READ_HEADER_1
+                    error_msg = 'Invalid 1st header byte: expecting: {}, got: {}'.format(LX16ADriver.SERVO_BUS_HEADER, byte)
+            elif state == READ_HEADER_2:
+                byte = self.read_byte()
+                if byte == LX16ADriver.SERVO_BUS_HEADER:
+                    state = READ_SERVO_ID
+                else:
+                    state = READ_HEADER_1
+                    error_msg = 'Invalid 2nd header byte: expecting: {}, got: {}'.format(LX16ADriver.SERVO_BUS_HEADER, byte)
+            elif state == READ_SERVO_ID:
+                byte = self.read_byte()
+                if byte == servo_id:
+                    state = READ_LENGTH
+                else:
+                    state = READ_HEADER_1
+                    error_msg = 'Invalid servo_id: expecting: {}, got: {}'.format(servo_id, byte)
+            elif state == READ_LENGTH:
+                byte = self.read_byte()
+                if byte == length:
+                    state = READ_COMMAND
+                else:
+                    state = READ_HEADER_1
+                    error_msg = 'Invalid length: expecting: {}, got: {}'.format(length, byte)
+            elif state == READ_COMMAND:
+                byte = self.read_byte()
+                if byte == command:
+                    state = READ_DATA
+                else:
+                    state = READ_HEADER_1
+                    error_msg = 'Invalid command: expecting: {}, got: {}'.format(command, byte)
+            elif state == READ_DATA:
+                data = self.read_bytearray(length - 3)
+                if len(data) == length - 3:
+                    state = READ_CHECKSUM
+                else:
+                    state = READ_ERROR
+                    error_msg = 'Invalid data size: expecting: {}, got: {}'.format(length - 3, byte)
+            elif state == READ_CHECKSUM:
+                checksum = self.checksum(servo_id, length, command, data)
+                byte = self.read_byte()
+                if byte == checksum:
+                    state = READ_COMPLETE
+                else:
+                    state = READ_ERROR
+                    error_msg = 'Invalid checksum: expecting: {}, got: {}'.format(checksum, byte)
+            elif state == READ_COMPLETE:
+                # rospy.loginfo('OK: id: {}, cmd: {}'.format(servo_id, command))
+                return data
+            elif state == READ_ERROR:
+                rospy.logwarn('ERROR: id: {}, cmd: {}, msg: {}'.format(servo_id, command, error_msg))
+                return -1
+            elif state == READ_TIMED_OUT:
+                rospy.logwarn('TIMED_OUT: id: {}, cmd: {}, msg: {}'.format(servo_id, command, error_msg))
+                return -1
 
     def send_command(self, servo_id, length, command, data=None):
         # Check the port is open
@@ -725,10 +686,13 @@ class LX16ADriver(object):
 
         # Send command
         packet_bytes = bytearray(packet)
-        num_bytes = self._serial.write(packet_bytes)
+        bytes_sent = self._serial.write(packet_bytes)
 
         # DEBUG INFO
-        # rospy.logdebug("servo_id: {}, commmand: {}, data: {}".format(servo_id, command, data))
-        # rospy.logdebug("checksum: {}".format(checksum))
-        # rospy.logdebug("packet: {}".format(packet))
-        # rospy.logdebug("sent: {} bytes".format(num_bytes))
+        # rospy.loginfo("servo_id: {}, commmand: {}, data: {}".format(servo_id, command, data))
+        # rospy.loginfo("checksum: {}".format(checksum))
+        # rospy.loginfo("packet: {}".format(packet))
+        # rospy.loginfo("bytes_sent: {}".format(bytes_sent))
+        # rospy.loginfo("out_waiting: {} bytes".format(self._serial.out_waiting))
+
+        return bytes_sent

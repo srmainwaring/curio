@@ -58,7 +58,7 @@ namespace curio_base
         LX16ADriver();
 
         void move(uint8_t id, int16_t position, uint16_t time);
-        void stopMove(serial::Serial &SerialX, uint8_t id);
+        void stopMove(uint8_t id);
         void angleAdjust(uint8_t id, uint8_t deviation);
         void setMode(uint8_t id, uint8_t mode, int16_t duty);
         int readPosition(uint8_t id);

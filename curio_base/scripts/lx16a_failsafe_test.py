@@ -61,6 +61,9 @@ CONTROL_FREQUENCY   = 20  # [Hz]
 class LX16AFailsafe(object):
 
     def __init__(self):
+        ''' Constructor
+        '''
+
         # Initialise servo driver
         self._servo_driver = curio_base.lx16a_driver.LX16ADriver()
         self._servo_driver.set_port(SERVO_SERIAL_PORT)
@@ -82,6 +85,7 @@ class LX16AFailsafe(object):
         event : rospy.Timer
             A rospy.Timer event.
         '''
+
         for i in range(NUM_WHEELS):
             servo_id = WHEEL_SERVO_IDS[i]
             self._servo_driver.motor_mode_write(servo_id, 0)

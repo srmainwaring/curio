@@ -1,0 +1,23 @@
+<!-- Curio Arduino Servo controller
+
+Parameters
+    port : str
+        The device name for the serial port
+    baud : int
+        The baudrate, has default (115200)
+ -->
+<launch>
+    <arg name="port" default="/dev/ttyACM0"/>
+    <arg name="robot_name" default=""/>
+
+    <!-- ROS serial node connected to Arduino for servo control -->
+    <node pkg="rosserial_python" type="serial_node.py" name="curio_servo_controller"
+        respawn="true" output="screen">
+        <param name="port" value="$(arg port)" />
+        <param name="baud" value="115200" />
+        
+        <!-- Load base controller parameters -->
+        <rosparam command="load" file="$(find curio_base)/config/base_controller.yaml" />        
+    </node>
+
+</launch>
