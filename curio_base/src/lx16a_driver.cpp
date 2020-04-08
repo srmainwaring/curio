@@ -84,7 +84,7 @@
 #define LOBOT_SERVO_LED_ERROR_WRITE      35
 #define LOBOT_SERVO_LED_ERROR_READ       36
 
-#define LOBOT_DEBUG 1  /*Debug ：print debug value*/
+// #define LOBOT_DEBUG 1  /*Debug ：print debug value*/
 
 uint8_t LobotCheckSum(uint8_t buf[])
 {
@@ -257,9 +257,19 @@ int LobotSerialServoReceiveHandle(serial::Serial &SerialX, uint8_t *ret)
 
   while (SerialX.available())
   {
-    SerialX.read(&rxBuf, 1);
+    uint8_t bytes_read = SerialX.read(&rxBuf, 1);
+
+
+#ifdef LOBOT_DEBUG
+    std::stringstream ss;
+    ss << "Bytes Read: " << static_cast<int>(bytes_read)
+      << ", RX: 0x" << std::hex << static_cast<int>(rxBuf);
+    ROS_INFO_STREAM(ss.str());
+#endif 
+
     // delayMicroseconds(100);
-    // ros::Duration(0.0001).sleep();
+    bool is_readable = SerialX.waitReadable();
+    
     if (!frameStarted)
     {
       if (rxBuf == LOBOT_SERVO_FRAME_HEADER)
@@ -369,7 +379,7 @@ int LobotSerialServoReadPosition(serial::Serial &SerialX, uint8_t id)
 #ifdef LOBOT_DEBUG
       ROS_INFO("LOBOT NO RESPONSE");
 #endif
-      return -1;
+      return -1000;
     }
   }
 
@@ -385,7 +395,7 @@ int LobotSerialServoReadPosition(serial::Serial &SerialX, uint8_t id)
 #ifdef LOBOT_DEBUG
     ROS_INFO("LOBOT INVALID RESPONSE");
 #endif
-    ret = -1;
+    ret = -1000;
   }
 
 #ifdef LOBOT_DEBUG
@@ -440,7 +450,7 @@ int LobotSerialServoReadVin(serial::Serial &SerialX, uint8_t id)
   }
   else
   {
-    ret = -2048;
+    ret = -2044;
   }
 #ifdef LOBOT_DEBUG
   ROS_INFO_STREAM("" << ret);
@@ -464,7 +474,7 @@ namespace curio_base
         LobotSerialServoMove(serial_, id, position, time);
     }
 
-    void LX16ADriver::stopMove(serial::Serial &SerialX, uint8_t id)
+    void LX16ADriver::stopMove(uint8_t id)
     {
         LobotSerialServoStopMove(serial_, id);
     }

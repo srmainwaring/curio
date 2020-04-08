@@ -1,0 +1,20 @@
+<!-- Curio controller for IMU and RC
+
+Parameters
+    port : str
+        The device name for the serial port
+    baud : int
+        The baudrate, has default (115200)
+ -->
+<launch>
+    <arg name="port" default="/dev/ttyACM0"/>
+    <arg name="robot_name" default=""/>
+
+    <!-- ROS serial node connected to Arduino for IMU and radio control -->
+    <node pkg="rosserial_python" type="serial_node.py" name="curio_imu_and_rc_controller"
+        respawn="true" output="screen">
+        <param name="port" value="$(arg port)" />
+        <param name="baud" value="115200" />        
+    </node>
+
+</launch>
