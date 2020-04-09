@@ -74,13 +74,13 @@ void controlLoop(const ros::TimerEvent& event)
     for (int i=0; i<1; ++i)
     {
         uint8_t id = wheel_servo_ids[i];
-        int pos = servo_driver.readPosition(id);
+        int pos = servo_driver.posRead(id);
         wheel_positions[i] = pos;
     }
     for (int i=0; i<0; ++i)
     {
         uint8_t id = steer_servo_ids[i];
-        int pos = servo_driver.readPosition(id);
+        int pos = servo_driver.posRead(id);
         steer_positions[i] = pos;
     }
 
@@ -116,9 +116,10 @@ int main(int argc, char *argv[])
 
     // Initialise driver
     ROS_INFO("Initialising LX-16A servo driver...");
+    serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout);
     servo_driver.setPort(port);
     servo_driver.setBaudrate(baudrate);
-    servo_driver.setTimeout(timeout);
+    servo_driver.setTimeout(serial_timeout);
     servo_driver.open();
     ROS_INFO_STREAM("port: " << servo_driver.getPort());
     ROS_INFO_STREAM("baudrate: " << servo_driver.getBaudrate());
