@@ -50,23 +50,29 @@ const uint8_t SERVO_ID = 11;
 // Servo driver
 curio_base::LX16ADriver servo_driver;
 
-void testReadVin()
+void testReadVoltage()
 {
-    double vin = servo_driver.vinRead(SERVO_ID);
-    ROS_INFO_STREAM("vin: " << vin);
+    double voltage = servo_driver.getVoltage(SERVO_ID);
+    ROS_INFO_STREAM("voltage: " << voltage);
 }
 
-void testReadPos()
+void testReadPosition()
 {
-    int16_t pos = servo_driver.posRead(SERVO_ID);
-    ROS_INFO_STREAM("pos: " << pos);
+    int16_t position = servo_driver.getPosition(SERVO_ID);
+    ROS_INFO_STREAM("position: " << position);
 }
 
-void testReadModeAndDuty()
+void testReadTemperature()
+{
+    double temperature = servo_driver.getTemperature(SERVO_ID);
+    ROS_INFO_STREAM("temperature: " << temperature);
+}
+
+void testReadMode()
 {
     uint8_t mode;
     int16_t duty;
-    servo_driver.modeRead(SERVO_ID, mode, duty);
+    servo_driver.getMode(SERVO_ID, mode, duty);
     ROS_INFO_STREAM("mode: " << static_cast<int>(mode) <<  ", duty: " << duty);
 }
 
@@ -77,7 +83,7 @@ void sigintHandler(int sig)
     ROS_INFO_STREAM("Stopping node lx16a_driver_test...");
   
     ROS_INFO_STREAM("Stop motor");
-    servo_driver.motorModeWrite(SERVO_ID, 0);
+    servo_driver.setMotorMode(SERVO_ID, 0);
 
     // Wait for serial out to clear.
     ros::Duration(1.0).sleep();
@@ -106,7 +112,7 @@ int main(int argc, char *argv[])
     const uint32_t baudrate = 115200;
     const uint32_t timeout = 1000;       // [ms]
     const uint32_t read_rate = 10;       // [Hz]
-    double control_frequency = 10.0;     // [Hz]
+    double control_frequency = 20.0;     // [Hz]
 
     // Serial
     serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout);
@@ -124,7 +130,7 @@ int main(int argc, char *argv[])
     ros::Duration(1.0).sleep();
 
     // Start motor
-    servo_driver.motorModeWrite(SERVO_ID, 500);
+    servo_driver.setMotorMode(SERVO_ID, 500);
 
     // Loop
     ros::Rate rate(read_rate);
@@ -132,9 +138,10 @@ int main(int argc, char *argv[])
     uint32_t count = 0;
     while (ros::ok())
     {
-        testReadVin();
-        testReadPos();
-        testReadModeAndDuty();
+        testReadVoltage();
+        testReadPosition();
+        testReadTemperature();
+        testReadMode();
         double sec = (ros::Time::now() - start).toSec();
         double cps = count/sec;
         count++;
