@@ -52,34 +52,34 @@ namespace curio_base
     const uint8_t SERVO_BUS_MAX_ID            = 0xFE;
     const uint8_t SERVO_BUS_BROADCAST_ID      = 0xFE;
     
-    const uint8_t SERVO_MOVE_TIME_WRITE       = 1;  // 0x01
-    const uint8_t SERVO_MOVE_TIME_READ        = 2;  // 0x02
-    const uint8_t SERVO_MOVE_TIME_WAIT_WRITE  = 7;  // 0x07
-    const uint8_t SERVO_MOVE_TIME_WAIT_READ   = 8;  // 0x08
-    const uint8_t SERVO_MOVE_START            = 11; // 0x0B
-    const uint8_t SERVO_MOVE_STOP             = 12; // 0x0C
-    const uint8_t SERVO_ID_WRITE              = 13; // 0x0D
-    const uint8_t SERVO_ID_READ               = 14; // 0x0E
-    const uint8_t SERVO_ANGLE_OFFSET_ADJUST   = 17; // 0x11
-    const uint8_t SERVO_ANGLE_OFFSET_WRITE    = 18; // 0x12
-    const uint8_t SERVO_ANGLE_OFFSET_READ     = 19; // 0x13
-    const uint8_t SERVO_ANGLE_LIMIT_WRITE     = 20; // 0x14
-    const uint8_t SERVO_ANGLE_LIMIT_READ      = 21; // 0x15
-    const uint8_t SERVO_VIN_LIMIT_WRITE       = 22; // 0x16
-    const uint8_t SERVO_VIN_LIMIT_READ        = 23; // 0x17
-    const uint8_t SERVO_TEMP_MAX_LIMIT_WRITE  = 24; // 0x18
-    const uint8_t SERVO_TEMP_MAX_LIMIT_READ   = 25; // 0x19
-    const uint8_t SERVO_TEMP_READ             = 26; // 0x1A
-    const uint8_t SERVO_VIN_READ              = 27; // 0x1B
-    const uint8_t SERVO_POS_READ              = 28; // 0x1C
-    const uint8_t SERVO_OR_MOTOR_MODE_WRITE   = 29; // 0x1D
-    const uint8_t SERVO_OR_MOTOR_MODE_READ    = 30; // 0x1E
-    const uint8_t SERVO_LOAD_OR_UNLOAD_WRITE  = 31; // 0x1F
-    const uint8_t SERVO_LOAD_OR_UNLOAD_READ   = 32; // 0x20
-    const uint8_t SERVO_LED_CTRL_WRITE        = 33; // 0x21
-    const uint8_t SERVO_LED_CTRL_READ         = 34; // 0x22
-    const uint8_t SERVO_LED_ERROR_WRITE       = 35; // 0x23
-    const uint8_t SERVO_LED_ERROR_READ        = 36; // 0x24
+    const uint8_t SERVO_MOVE_TIME_WRITE       = 1;  // 0x01 move
+    const uint8_t SERVO_MOVE_TIME_READ        = 2;  // 0x02 getMove
+    const uint8_t SERVO_MOVE_TIME_WAIT_WRITE  = 7;  // 0x07 setPreparedMove
+    const uint8_t SERVO_MOVE_TIME_WAIT_READ   = 8;  // 0x08 getPreparedMove
+    const uint8_t SERVO_MOVE_START            = 11; // 0x0B moveStart
+    const uint8_t SERVO_MOVE_STOP             = 12; // 0x0C moveStop 
+    const uint8_t SERVO_ID_WRITE              = 13; // 0x0D setServoId 
+    const uint8_t SERVO_ID_READ               = 14; // 0x0E getServoId
+    const uint8_t SERVO_ANGLE_OFFSET_ADJUST   = 17; // 0x11 setPositionOffset
+    const uint8_t SERVO_ANGLE_OFFSET_WRITE    = 18; // 0x12 savePositionOffset
+    const uint8_t SERVO_ANGLE_OFFSET_READ     = 19; // 0x13 getPositionOffset
+    const uint8_t SERVO_ANGLE_LIMIT_WRITE     = 20; // 0x14 setPositionLimits
+    const uint8_t SERVO_ANGLE_LIMIT_READ      = 21; // 0x15 getPositionLimits
+    const uint8_t SERVO_VIN_LIMIT_WRITE       = 22; // 0x16 setVoltageLimits
+    const uint8_t SERVO_VIN_LIMIT_READ        = 23; // 0x17 getVoltageLimits
+    const uint8_t SERVO_TEMP_MAX_LIMIT_WRITE  = 24; // 0x18 setMaxTemperatureLimit
+    const uint8_t SERVO_TEMP_MAX_LIMIT_READ   = 25; // 0x19 getMaxTemperatureLimit
+    const uint8_t SERVO_TEMP_READ             = 26; // 0x1A getTemperature
+    const uint8_t SERVO_VIN_READ              = 27; // 0x1B getVoltage
+    const uint8_t SERVO_POS_READ              = 28; // 0x1C getPosition
+    const uint8_t SERVO_OR_MOTOR_MODE_WRITE   = 29; // 0x1D setMotorMode, setServoMode
+    const uint8_t SERVO_OR_MOTOR_MODE_READ    = 30; // 0x1E getMode
+    const uint8_t SERVO_LOAD_OR_UNLOAD_WRITE  = 31; // 0x1F isMotorOn
+    const uint8_t SERVO_LOAD_OR_UNLOAD_READ   = 32; // 0x20 setMotorOn, setMotorOff
+    const uint8_t SERVO_LED_CTRL_WRITE        = 33; // 0x21 setLedOn, setLedOff
+    const uint8_t SERVO_LED_CTRL_READ         = 34; // 0x22 isLedOn
+    const uint8_t SERVO_LED_ERROR_WRITE       = 35; // 0x23 getLedErrors
+    const uint8_t SERVO_LED_ERROR_READ        = 36; // 0x24 setLedErrors
 
     LX16ADriver::~LX16ADriver()
     {
@@ -147,7 +147,7 @@ namespace curio_base
         response_timeout_ = response_timeout;
     }
 
-    bool LX16ADriver::moveTimeWrite(uint8_t servo_id, uint16_t servo_pos, uint16_t move_time)
+    bool LX16ADriver::move(uint8_t servo_id, uint16_t servo_pos, uint16_t move_time)
     {    
         uint8_t pos_lsb = servo_pos & 0xff;
         uint8_t pos_hsb = (servo_pos >> 8) & 0xff;
@@ -162,7 +162,7 @@ namespace curio_base
         return true;
     }
 
-    bool LX16ADriver::moveTimeRead(uint8_t servo_id, int16_t &pos, int16_t &move_time)
+    bool LX16ADriver::getMove(uint8_t servo_id, int16_t &pos, int16_t &move_time)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_MOVE_TIME_READ) == 0)
@@ -183,7 +183,7 @@ namespace curio_base
         return true;
     }
 
-    bool LX16ADriver::moveTimeWaitWrite(uint8_t servo_id, uint16_t servo_pos, uint16_t move_time)
+    bool LX16ADriver::setPreparedMove(uint8_t servo_id, uint16_t servo_pos, uint16_t move_time)
     {
         uint8_t pos_lsb = servo_pos & 0xff;
         uint8_t pos_hsb = (servo_pos >> 8) & 0xff;
@@ -198,7 +198,7 @@ namespace curio_base
         return true;
     }
 
-    uint16_t LX16ADriver::moveTimeWaitRead(uint8_t servo_id)
+    uint16_t LX16ADriver::getPreparedMove(uint8_t servo_id)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_ANGLE_OFFSET_READ) == 0)
@@ -216,35 +216,39 @@ namespace curio_base
         return move_time_wait;
     }
 
-    void LX16ADriver::moveStart(uint8_t servo_id)
+    bool LX16ADriver::moveStart(uint8_t servo_id)
     {
         if(sendCommand(servo_id, 3, SERVO_MOVE_START) == 0)
         {
             ROS_WARN_STREAM("Servo command error: moveStart");
+            return false;
         }
+        return true;
     }
 
-    void LX16ADriver::moveStop(uint8_t servo_id)
+    bool LX16ADriver::moveStop(uint8_t servo_id)
     {
         if (sendCommand(servo_id, 3, SERVO_MOVE_STOP) == 0)
         {
             ROS_WARN_STREAM("Servo command error: moveStop");
+            return false;
         }
+        return true;
     }
 
-    bool LX16ADriver::idWrite(uint8_t servo_id)
+    bool LX16ADriver::setServoId(uint8_t servo_id)
     {
         // TODO_IMPLEMENT
         return false;
     }
 
-    uint8_t LX16ADriver::idRead(uint8_t servo_id)
+    uint8_t LX16ADriver::getServoId(uint8_t servo_id)
     {
         // TODO_IMPLEMENT
         return SERVO_BUS_BROADCAST_ID;
     }
 
-    bool LX16ADriver::angleOffsetAdjust(uint8_t servo_id, int16_t deviation)
+    bool LX16ADriver::setPositionOffset(uint8_t servo_id, int16_t deviation)
     {
         uint8_t deviation_lsb = deviation & 0xff;
         std::vector<uint8_t> data = { deviation_lsb };
@@ -256,7 +260,7 @@ namespace curio_base
         return true;
     }
 
-    bool LX16ADriver::angleOffsetWrite(uint8_t servo_id)
+    bool LX16ADriver::savePositionOffset(uint8_t servo_id)
     {
         if (sendCommand(servo_id, 3, SERVO_ANGLE_OFFSET_WRITE) == 0)
         {
@@ -266,7 +270,7 @@ namespace curio_base
         return true;
     }
 
-    int16_t LX16ADriver::angleOffsetRead(int8_t servo_id)
+    int16_t LX16ADriver::getPositionOffset(int8_t servo_id)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_ANGLE_OFFSET_READ) == 0)
@@ -284,7 +288,7 @@ namespace curio_base
         return static_cast<int16_t>(angle_offset_raw);
     }
 
-    bool LX16ADriver::angleLimitWrite(uint8_t servo_id, uint16_t min_angle, uint16_t max_angle)
+    bool LX16ADriver::setPositionLimits(uint8_t servo_id, uint16_t min_angle, uint16_t max_angle)
     {
         uint8_t min_angle_lsb = min_angle & 0xff;
         uint8_t min_angle_hsb = (min_angle >> 8) & 0xff;
@@ -299,7 +303,7 @@ namespace curio_base
         return true;
     }
 
-    bool LX16ADriver::angleLimitRead(uint8_t servo_id, uint16_t &min_angle, uint16_t &max_angle)
+    bool LX16ADriver::getPositionLimits(uint8_t servo_id, uint16_t &min_angle, uint16_t &max_angle)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_ANGLE_LIMIT_READ) == 0)
@@ -320,7 +324,7 @@ namespace curio_base
         return true;
     }
 
-    bool LX16ADriver::vinLimitWrite(uint8_t servo_id, double min_vin, double max_vin)
+    bool LX16ADriver::setVoltageLimits(uint8_t servo_id, double min_vin, double max_vin)
     {
         uint16_t min_vin_int = uint16_t(min_vin * 1000);
         uint16_t max_vin_int = uint16_t(max_vin * 1000);
@@ -337,7 +341,7 @@ namespace curio_base
         return true;
     }
 
-    bool LX16ADriver::vinLimitRead(uint8_t servo_id, double &min_vin, double &max_vin)
+    bool LX16ADriver::getVoltageLimits(uint8_t servo_id, double &min_vin, double &max_vin)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_VIN_LIMIT_READ) == 0)
@@ -358,9 +362,9 @@ namespace curio_base
         return true;
     }
 
-    void LX16ADriver::tempMaxLimitWrite(uint8_t servo_id, uint8_t max_temp)
+    void LX16ADriver::setMaxTemperatureLimit(uint8_t servo_id, double max_temp)
     {
-        uint8_t max_temp_lsb = max_temp & 0xff;
+        uint8_t max_temp_lsb = static_cast<uint8_t>(max_temp) & 0xff;
         std::vector<uint8_t> data(max_temp_lsb);
         if (sendCommand(servo_id, 4, SERVO_TEMP_MAX_LIMIT_WRITE, data) == 0)
         {
@@ -368,7 +372,7 @@ namespace curio_base
         }
     }
 
-    int16_t LX16ADriver::tempMaxLimitRead(uint8_t servo_id)
+    double LX16ADriver::getMaxTemperatureLimit(uint8_t servo_id)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_TEMP_MAX_LIMIT_READ) == 0)
@@ -383,10 +387,10 @@ namespace curio_base
             return -1;
         }
         uint8_t temp_max_limit = data[0];
-        return static_cast<int16_t>(temp_max_limit);
+        return static_cast<double>(temp_max_limit);
     }
 
-    int16_t LX16ADriver::tempRead(uint8_t servo_id)
+    double LX16ADriver::getTemperature(uint8_t servo_id)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_TEMP_READ) == 0)
@@ -401,10 +405,10 @@ namespace curio_base
             return -1;
         }
         uint8_t temp = data[0];
-        return static_cast<int16_t>(temp);
+        return static_cast<double>(temp);
     }
 
-    double LX16ADriver::vinRead(uint8_t servo_id)
+    double LX16ADriver::getVoltage(uint8_t servo_id)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_VIN_READ) == 0)
@@ -422,7 +426,7 @@ namespace curio_base
         return static_cast<double>(vin_raw) / 1000.0;
     }
 
-    int16_t LX16ADriver::posRead(uint8_t servo_id)
+    int16_t LX16ADriver::getPosition(uint8_t servo_id)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_POS_READ) == 0)
@@ -440,7 +444,7 @@ namespace curio_base
         return static_cast<int16_t>(pos);
     }
 
-    bool LX16ADriver::motorModeWrite(uint8_t servo_id, int16_t duty)
+    bool LX16ADriver::setMotorMode(uint8_t servo_id, int16_t duty)
     {
         uint8_t duty_lsb = duty & 0xff;
         uint8_t duty_hsb = (duty >> 8) & 0xff; 
@@ -453,7 +457,7 @@ namespace curio_base
         return true;
     }
 
-    void LX16ADriver::servoModeWrite(uint8_t servo_id)
+    void LX16ADriver::setServoMode(uint8_t servo_id)
     {
         std::vector<uint8_t> data = { 0, 0, 0, 0 };
         if (sendCommand(servo_id, 7, SERVO_OR_MOTOR_MODE_WRITE, data) == 0)
@@ -462,7 +466,7 @@ namespace curio_base
         }
     }
 
-    bool LX16ADriver::modeRead(uint8_t servo_id, uint8_t &mode, int16_t &duty)
+    bool LX16ADriver::getMode(uint8_t servo_id, uint8_t &mode, int16_t &duty)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_OR_MOTOR_MODE_READ) == 0)
@@ -482,17 +486,33 @@ namespace curio_base
         return true;
     }
 
-    void LX16ADriver::loadOrUnloadWrite(uint8_t servo_id, uint8_t is_loaded)
+    bool LX16ADriver::setMotorOn(uint8_t servo_id)
     {
+        uint8_t is_loaded = 1;
         uint8_t is_loaded_lsb = is_loaded & 0xff;
         std::vector<uint8_t> data = { is_loaded_lsb };
         if (sendCommand(servo_id, 4, SERVO_LOAD_OR_UNLOAD_WRITE, data) == 0)
         {
             ROS_WARN_STREAM("Servo command error: loadOrUnloadWrite");
+            return false;
         }
+        return true;
     }
 
-    uint8_t LX16ADriver::loadOrUnloadRead(uint8_t servo_id)
+    bool LX16ADriver::setMotorOff(uint8_t servo_id)
+    {
+        uint8_t is_loaded = 0;
+        uint8_t is_loaded_lsb = is_loaded & 0xff;
+        std::vector<uint8_t> data = { is_loaded_lsb };
+        if (sendCommand(servo_id, 4, SERVO_LOAD_OR_UNLOAD_WRITE, data) == 0)
+        {
+            ROS_WARN_STREAM("Servo command error: loadOrUnloadWrite");
+            return false;
+        }
+        return true;
+    }
+
+    bool LX16ADriver::isMotorOn(uint8_t servo_id)
     {
         if (sendCommand(servo_id, 3, SERVO_LOAD_OR_UNLOAD_READ) == 0)
         {
@@ -506,11 +526,12 @@ namespace curio_base
             return false;
         }
         uint8_t load_or_unload = data[0];
-        return load_or_unload;
+        return static_cast<bool>(load_or_unload);
     }
 
-    void LX16ADriver::ledCtrlWrite(uint8_t servo_id, uint8_t is_light_off)
+    void LX16ADriver::setLedOn(uint8_t servo_id)
     {
+        uint8_t is_light_off = 0;
         uint8_t is_light_off_lsb = is_light_off & 0xff;
         std::vector<uint8_t> data = { is_light_off_lsb };
         if (sendCommand(servo_id, 4, SERVO_LED_CTRL_WRITE, data) == 0)
@@ -519,7 +540,18 @@ namespace curio_base
         }
     }
 
-    uint8_t LX16ADriver::ledCtrlRead(uint8_t servo_id)
+    void LX16ADriver::setLedOff(uint8_t servo_id)
+    {
+        uint8_t is_light_off = 1;
+        uint8_t is_light_off_lsb = is_light_off & 0xff;
+        std::vector<uint8_t> data = { is_light_off_lsb };
+        if (sendCommand(servo_id, 4, SERVO_LED_CTRL_WRITE, data) == 0)
+        {
+            ROS_WARN_STREAM("Servo command error: ledCtrlWrite");
+        }
+    }
+
+    bool LX16ADriver::isLedOn(uint8_t servo_id)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_LED_CTRL_READ) == 0)
@@ -534,10 +566,10 @@ namespace curio_base
             return -1;
         }
         uint8_t is_light_off = data[0];
-        return is_light_off;
+        return static_cast<bool>(!is_light_off);
     }
 
-    void LX16ADriver::ledErrorWrite(uint8_t servo_id, uint8_t fault_code)
+    void LX16ADriver::setLedErrors(uint8_t servo_id, uint8_t fault_code)
     {
         uint8_t fault_code_lsb = fault_code & 0xff;
         std::vector<uint8_t> data = { fault_code_lsb }; 
@@ -547,7 +579,7 @@ namespace curio_base
         }
     }
 
-    uint8_t LX16ADriver::ledErrorRead(uint8_t servo_id)
+    uint8_t LX16ADriver::getLedErrors(uint8_t servo_id)
     {
         serial_.flushInput();
         if (sendCommand(servo_id, 3, SERVO_LED_ERROR_READ) == 0)

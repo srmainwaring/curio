@@ -74,13 +74,13 @@ void controlLoop(const ros::TimerEvent& event)
     for (int i=0; i<1; ++i)
     {
         uint8_t id = wheel_servo_ids[i];
-        int pos = servo_driver.posRead(id);
+        int pos = servo_driver.getPosition(id);
         wheel_positions[i] = pos;
     }
     for (int i=0; i<0; ++i)
     {
         uint8_t id = steer_servo_ids[i];
-        int pos = servo_driver.posRead(id);
+        int pos = servo_driver.getPosition(id);
         steer_positions[i] = pos;
     }
 
