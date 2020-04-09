@@ -51,11 +51,11 @@ class ServoController(object):
             rospy.loginfo('Loaded params: wheel_servo_ids')
 
         if rospy.has_param('~steer_servo_ids'):
-            self._wheel_ids = rospy.get_param('~steer_servo_ids')
+            self._steer_ids = rospy.get_param('~steer_servo_ids')
             rospy.loginfo('Loaded params: steer_servo_ids')
 
         if rospy.has_param('~steer_angle_offsets'):
-            self._wheel_ids = rospy.get_param('~steer_angle_offsets')
+            self._steer_angle_offsets = rospy.get_param('~steer_angle_offsets')
             rospy.loginfo('Loaded params: steer_angle_offsets')
 
         # Publications

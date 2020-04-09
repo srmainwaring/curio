@@ -83,14 +83,22 @@
 import curio_base.lx16a_driver
 import rospy
 
-SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
+# SERVO_SERIAL_PORT   = '/dev/cu.usbmodem7197691' # Teensy 4.0
+# SERVO_SERIAL_PORT   = '/dev/cu.wchusbserialfd5110'
+# SERVO_SERIAL_PORT   = '/dev/cu.SLAB_USBtoUART'
+SERVO_SERIAL_PORT   = '/dev/cu.usbmodemFD5121'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0
-SERVO_ID            = 11
+SERVO_ID            = 21
 
 # Convert LX-16A position to angle in deg
 def pos_to_deg(pos):
     return pos * 240.0 / 1000.0
+
+def test_read_vin(servo_driver):
+    vin = servo_driver.vin_read(SERVO_ID)
+    pos = servo_driver.pos_read(SERVO_ID)
+    rospy.loginfo('vin: {}, pos: {}'.format(vin, pos))
 
 def test_servo_properties(servo_driver):
     rospy.loginfo('Test Servo Properties')
@@ -549,6 +557,15 @@ if __name__ == '__main__':
     rospy.init_node('lx_16a_driver_test_node')
     rospy.loginfo('Lewansoul LX-16A driver test')
  
+    # Register shutdown behaviour
+    def shutdown_callback():
+        rospy.loginfo('Shutdown Lewansoul LX-16A driver test...')
+
+        # Start motor
+        servo_driver.motor_mode_write(SERVO_ID, 0)
+
+    rospy.on_shutdown(shutdown_callback)
+
     # Initialise servo driver
     servo_driver = curio_base.lx16a_driver.LX16ADriver()
     servo_driver.set_port(SERVO_SERIAL_PORT)
@@ -562,27 +579,52 @@ if __name__ == '__main__':
     rospy.loginfo('baudrate: {}'.format(servo_driver.get_baudrate()))
     rospy.loginfo('timeout: {}'.format(servo_driver.get_timeout()))
 
+    # Arduino reboots when a serial connection is established
+    # wait for bootloader to complete scanning the serial port
+    # before sending data.
+    rospy.sleep(1)
+
+    # Start motor
+    servo_driver.motor_mode_write(SERVO_ID, 500)
+
+    count = 0
+    rate = rospy.Rate(150) # Hz
+    start = rospy.Time().now()
+    while not rospy.is_shutdown():
+        test_read_vin(servo_driver)
+        sec = rospy.Time().now().to_sec() - start.to_sec()
+        cps = count/sec
+        rospy.loginfo('reads/sec: {:.4}'.format(cps))
+
+        # Update count / reset averaging window 
+        count = count + 1
+        if count > 100:
+            count = 0
+            start = rospy.Time().now()
+
+        rate.sleep()
+
     # Tests.
-    test_servo_properties(servo_driver)
-    test_move_time_write(servo_driver)
-    test_move_time_read(servo_driver)
-    test_move_time_wait_write(servo_driver)
+    # test_servo_properties(servo_driver)
+    # test_move_time_write(servo_driver)
+    # test_move_time_read(servo_driver)
+    # test_move_time_wait_write(servo_driver)
 
     # Not working...
     # test_move_time_wait_read(servo_driver)
 
-    test_move_stop(servo_driver)
-    test_angle_offset(servo_driver)
-    test_angle_limit(servo_driver)
-    test_vin_limit(servo_driver)
-    test_temp_max_limit(servo_driver)
-    test_mode_read(servo_driver)
+    # test_move_stop(servo_driver)
+    # test_angle_offset(servo_driver)
+    # test_angle_limit(servo_driver)
+    # test_vin_limit(servo_driver)
+    # test_temp_max_limit(servo_driver)
+    # test_mode_read(servo_driver)
 
     # Not working...
     # test_load_or_unload(servo_driver)
 
-    test_led_ctrl(servo_driver)
-    test_led_error(servo_driver)
+    # test_led_ctrl(servo_driver)
+    # test_led_error(servo_driver)
     
     # Shutdown
     servo_driver.close()

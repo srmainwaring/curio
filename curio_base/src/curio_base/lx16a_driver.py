@@ -635,7 +635,7 @@ class LX16ADriver(object):
                     state = READ_CHECKSUM
                 else:
                     state = READ_ERROR
-                    error_msg = 'Invalid data size: expecting: {}, got: {}'.format(length - 3, byte)
+                    error_msg = 'Invalid data size: expecting: {}, got: {}'.format(length - 3, len(data))
             elif state == READ_CHECKSUM:
                 checksum = self.checksum(servo_id, length, command, data)
                 byte = self.read_byte()
