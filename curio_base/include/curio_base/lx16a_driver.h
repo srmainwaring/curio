@@ -132,64 +132,94 @@ namespace curio_base
         ///
         bool getMove(uint8_t servo_id, int16_t &position, int16_t &move_time);
 
+        /// \brief Prepare a servo for a move to a new position.
         bool setPreparedMove(uint8_t servo_id, uint16_t position, uint16_t move_time);
 
+        /// \brief Get the move time of a prepared servo move.
         uint16_t getPreparedMove(uint8_t servo_id);
 
+        /// \brief Start a prepared servo move.
         bool moveStart(uint8_t servo_id);
 
+        /// \brief Immediately stop the servo from moving.
+        ///
         /// The servo must be in servo mode for the move_stop to be effective.
-        /// When in motor_mode you must set the speed to zero instead.
+        /// When in motor mode you must set the duty to zero instead.
         bool moveStop(uint8_t servo_id);
 
+        /// \brief Set the servo serial identifier.
         bool setServoId(uint8_t servo_id);
 
+        /// \brief Get the servo serial identifier.
         uint8_t getServoId(uint8_t servo_id);
 
+        /// \brief Set the servo position offset.
         bool setPositionOffset(uint8_t servo_id, int16_t position_offset);
 
+        /// \brief Save the current servo position offset.
         bool savePositionOffset(uint8_t servo_id);
 
+        /// \brief Get the current servo position offset.
         int16_t getPositionOffset(int8_t servo_id);
 
+        /// \brief Set the servo position minimum and maximum limits.
         bool setPositionLimits(uint8_t servo_id, uint16_t min_position, uint16_t max_position);
 
+        /// \brief Get the servo position minimum and maximum limits.
         bool getPositionLimits(uint8_t servo_id, uint16_t &min_position, uint16_t &max_position);
 
+        /// \brief Set the servo voltage minimum and maximum limits.
         bool setVoltageLimits(uint8_t servo_id, double min_voltage, double max_voltage);
 
+        /// \brief Get the servo voltage minimum and maximum limits.
         bool getVoltageLimits(uint8_t servo_id, double &min_voltage, double &max_voltage);
 
+        /// \brief Set the servo maximum temperature limit.
         void setMaxTemperatureLimit(uint8_t servo_id, double max_temperature);
 
+        /// \brief Get the servo maximum temperature limit.
         double getMaxTemperatureLimit(uint8_t servo_id);
 
+        /// \brief Get the servo temperature.
         double getTemperature(uint8_t servo_id);
 
+        /// \brief Get the servo voltage.
         double getVoltage(uint8_t servo_id);
 
+        /// \brief Get the servo position.
         int16_t getPosition(uint8_t servo_id);
 
+        /// \brief Set the servo to 'motor' mode.
         bool setMotorMode(uint8_t servo_id, int16_t duty);
 
+        /// \brief Set the servo to 'servo' mode.
         void setServoMode(uint8_t servo_id);
 
+        /// \brief Get the servo mode.
         bool getMode(uint8_t servo_id, uint8_t &mode, int16_t &duty);
 
+        /// \brief Power the servo motor on.
         bool setMotorOn(uint8_t servo_id);
 
+        /// \brief Power the servo motor off.
         bool setMotorOff(uint8_t servo_id);
 
+        /// \brief Get the servo motor power state.
         bool isMotorOn(uint8_t servo_id);
 
+        /// \brief Turn the servo LED on.
         void setLedOn(uint8_t servo_id);
 
+        /// \brief Turn the servo LED off.
         void setLedOff(uint8_t servo_id);
 
+        /// \brief Get the state of the servo LED.
         bool isLedOn(uint8_t servo_id);
 
+        /// \brief Set the list of faults that cause the LED to flash.
         void setLedErrors(uint8_t servo_id, uint8_t fault_code);
 
+        /// \brief Get the list of faults that cause the LED to flash.
         uint8_t getLedErrors(uint8_t servo_id);
 
     private:
@@ -198,10 +228,13 @@ namespace curio_base
 
         // Serial communication protocol
 
+        /// \brief Calculate the checksum for a servo serial message.
         static uint8_t checksum(uint8_t servo_id, uint8_t length, uint8_t command, const std::vector<uint8_t> &data);
 
+        /// \brief Read a servo response (to be called immediately after calling sendCommand).
         bool readResponse(uint8_t servo_id, uint8_t length, uint8_t command, std::vector<uint8_t> &data);
 
+        /// \brief Send a command to a servo. Read commands should be immediately followed by readResponse.
         size_t sendCommand(uint8_t servo_id, uint8_t length, uint8_t command, const std::vector<uint8_t> &data = std::vector<uint8_t>());
     };
 

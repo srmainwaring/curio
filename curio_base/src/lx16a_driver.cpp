@@ -43,7 +43,7 @@
 #include <string>
 #include <sstream>
 
-#define LX16A_DEBUG
+// #define LX16A_DEBUG
 
 namespace curio_base
 {
@@ -326,8 +326,8 @@ namespace curio_base
 
     bool LX16ADriver::setVoltageLimits(uint8_t servo_id, double min_vin, double max_vin)
     {
-        uint16_t min_vin_int = uint16_t(min_vin * 1000);
-        uint16_t max_vin_int = uint16_t(max_vin * 1000);
+        uint16_t min_vin_int = static_cast<uint16_t>(min_vin * 1000);
+        uint16_t max_vin_int = static_cast<uint16_t>(max_vin * 1000);
         uint8_t min_vin_lsb = min_vin_int & 0xff;
         uint8_t min_vin_hsb = (min_vin_int >> 8) & 0xff;
         uint8_t max_vin_lsb = max_vin_int & 0xff;

@@ -50,30 +50,69 @@ const uint8_t SERVO_ID = 11;
 // Servo driver
 curio_base::LX16ADriver servo_driver;
 
-void testReadVoltage()
+void testGetPositionOffset()
+{
+    int16_t position_offset = 0;
+    servo_driver.getPositionOffset(SERVO_ID);
+    ROS_INFO_STREAM("position_offset: " << position_offset);
+}
+
+void testGetPositionLimits()
+{
+    uint16_t min_position = 0, max_position = 0;
+    servo_driver.getPositionLimits(SERVO_ID, min_position, max_position);
+    ROS_INFO_STREAM("min_position: " << min_position << ", max_position: " << max_position);
+}
+
+void testGetVoltageLimits()
+{
+    double min_voltage = 0, max_voltage = 0;
+    servo_driver.getVoltageLimits(SERVO_ID, min_voltage, max_voltage);
+    ROS_INFO_STREAM("min_voltage: " << min_voltage << ", max_voltage: " << max_voltage);
+}
+
+void testGetMaxTemperatureLimit()
+{
+    double max_temperature = servo_driver.getMaxTemperatureLimit(SERVO_ID);
+    ROS_INFO_STREAM("max_temperature: " << max_temperature);
+}
+
+void testGetVoltage()
 {
     double voltage = servo_driver.getVoltage(SERVO_ID);
     ROS_INFO_STREAM("voltage: " << voltage);
 }
 
-void testReadPosition()
+void testGetPosition()
 {
     int16_t position = servo_driver.getPosition(SERVO_ID);
     ROS_INFO_STREAM("position: " << position);
 }
 
-void testReadTemperature()
+void testGetTemperature()
 {
     double temperature = servo_driver.getTemperature(SERVO_ID);
     ROS_INFO_STREAM("temperature: " << temperature);
 }
 
-void testReadMode()
+void testGetMode()
 {
     uint8_t mode;
     int16_t duty;
     servo_driver.getMode(SERVO_ID, mode, duty);
     ROS_INFO_STREAM("mode: " << static_cast<int>(mode) <<  ", duty: " << duty);
+}
+
+void testIsMotorOn()
+{
+    bool is_motor_on = servo_driver.isMotorOn(SERVO_ID);
+    ROS_INFO_STREAM("is_motor_on: " << is_motor_on);
+}
+
+void testIsLedOn()
+{
+    bool is_led_on = servo_driver.isLedOn(SERVO_ID);
+    ROS_INFO_STREAM("is_led_on: " << is_led_on);
 }
 
 // Custom interrupt signal handler
@@ -111,8 +150,7 @@ int main(int argc, char *argv[])
     // const std::string port("/dev/cu.SLAB_USBtoUART");
     const uint32_t baudrate = 115200;
     const uint32_t timeout = 1000;       // [ms]
-    const uint32_t read_rate = 10;       // [Hz]
-    double control_frequency = 20.0;     // [Hz]
+    const uint32_t read_rate = 100;      // [Hz]
 
     // Serial
     serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout);
@@ -138,10 +176,17 @@ int main(int argc, char *argv[])
     uint32_t count = 0;
     while (ros::ok())
     {
-        testReadVoltage();
-        testReadPosition();
-        testReadTemperature();
-        testReadMode();
+        testGetPositionOffset();
+        testGetPositionLimits();
+        testGetVoltageLimits();
+        testGetMaxTemperatureLimit();
+        testGetVoltage();
+        testGetPosition();
+        testGetTemperature();
+        testGetMode();
+        testIsMotorOn();
+        testIsLedOn();
+
         double sec = (ros::Time::now() - start).toSec();
         double cps = count/sec;
         count++;
