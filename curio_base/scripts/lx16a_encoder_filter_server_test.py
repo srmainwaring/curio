@@ -64,7 +64,7 @@ WINDOW = 10
 RAW_DATA_FILENAME = "./data/lx16a_raw_data_05.csv"
 
 # File locations for persisted ML models
-DATA_DIR = "/Users/rhys/Code/robotics/curio/curio_ws/src/curio/curio_base/data"
+DATA_DIR = "./src/curio/curio_base/data"
 CLASSIFIER_FILENAME = "lx16a_tree_classifier.joblib"
 REGRESSOR_FILENAME  = "lx16a_tree_regressor.joblib"
 
@@ -117,8 +117,8 @@ if __name__ == '__main__':
             resp = filter_get_servo_pos(SERVO_ID)
             servo_pos = resp.position
             is_valid = resp.is_valid 
-            count = filter_get_count(SERVO_ID)
-            revolutions = filter_get_revolutions(SERVO_ID)
+            count = filter_get_count(SERVO_ID).count
+            revolutions = filter_get_revolutions(SERVO_ID).revolutions
 
             rospy.logdebug('time: {:.2f}, duty: {}, pos: {}, is_valid: {}'
                 .format(dt, row['duty'], servo_pos, is_valid))

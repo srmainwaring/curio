@@ -1,4 +1,4 @@
 # Get a servo encoder filter's current angular position in radians. 
-int32 servo_id
+int8 servo_id
 ---
-float64 angle
+float64 position

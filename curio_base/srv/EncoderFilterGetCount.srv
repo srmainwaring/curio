@@ -1,4 +1,4 @@
 # Get a servo encoder filter's current position count. 
-int32 servo_id
+int8 servo_id
 ---
-int32 count
+int16 count

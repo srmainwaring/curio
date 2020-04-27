@@ -96,6 +96,8 @@ include_directories(
 
 # Library
 add_library(curio_base
+    src/lx16a_encoder_filter_client.cpp
+    src/lx16a_encoder_filter_impl.cpp
     src/lx16a_encoder_filter.cpp
     src/lx16a_driver.cpp
     src/rover_base_hal.cpp
@@ -122,6 +124,11 @@ add_executable(lx16a_driver_test
 )
 target_link_libraries(lx16a_driver_test curio_base ${catkin_LIBRARIES})
 
+add_executable(lx16a_encoder_filter_test
+    src/examples/lx16a_encoder_filter_test.cpp
+)
+target_link_libraries(lx16a_encoder_filter_test curio_base ${catkin_LIBRARIES})
+
 add_executable(serial_test
     src/examples/serial_test.cpp
 )
@@ -139,6 +146,7 @@ install(TARGETS
     curio_base
     lx16a_position_publisher
     lx16a_driver_test
+    lx16a_encoder_filter_test
     serial_test
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

@@ -34,10 +34,12 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
-/// \brief Interface of lx16a_encoder_filter.py to C++.
+/// \brief Port of lx16a_encoder_filter.py to C++.
 
-#ifndef CURIO_BASE_LX16A_ENCODER_FILTER_H_
-#define CURIO_BASE_LX16A_ENCODER_FILTER_H_
+#ifndef CURIO_BASE_LX16A_ENCODER_FILTER_IMPL_H_
+#define CURIO_BASE_LX16A_ENCODER_FILTER_IMPL_H_
+
+#include "curio_base/lx16a_encoder_filter.h"
 
 #include <ros/ros.h>
 
@@ -47,7 +49,7 @@
 
 namespace curio_base
 {
-    /// \brief An encoder filter interface for the LX-16A servo.
+    /// \brief An encoder filter for the LX-16A servo.
     ///
     /// This class loads a `scikit-learn` decision tree classifier
     /// which is used to predict whether or not a position
@@ -66,14 +68,29 @@ namespace curio_base
     /// enabled by supplying the constructor with a filename for the
     /// regressor model. 
     ///
-    class LX16AEncoderFilter
+    class LX16AEncoderFilterImpl : public LX16AEncoderFilter
     {
     public:
         /// \brief Destructor
-        virtual ~LX16AEncoderFilter();
+        virtual ~LX16AEncoderFilterImpl();
+
+        /// \brief Constructor
+        ///
+        /// \param classifier_filename A std::string containing the file
+        /// name of the scikit-learn decision tree classifier
+        /// \param regressor_filename A std::string containing the file
+        /// name of the scikit-learn decision tree regressor,
+        /// has (default None)
+        /// \param window An integer size of the sample window used in
+        /// the classifier, has default 10)
+        ///
+        LX16AEncoderFilterImpl(
+            const std::string &classifier_filename,
+            const std::string &regressor_filename = "",
+            int16_t window = 10);
 
         /// \brief Initialise the encoder filter 
-        virtual void init() = 0;
+        void init() override;
 
         /// \brief Update the encoder filter.
         ///
@@ -90,13 +107,13 @@ namespace curio_base
         /// \param duty An integer servo duty
         /// \param position An integer servo position        
         ///
-        virtual void update(const ros::Time &ros_time, int16_t duty, int16_t position) = 0;
+        void update(const ros::Time &ros_time, int16_t duty, int16_t position) override;
 
         /// \brief Get the number of revoutions since reset.
         ///
         /// \return An integer number of revolutions since the count was reset.
         ///
-        virtual int16_t getRevolutions() const = 0;
+        int16_t getRevolutions() const override;
 
         /// \brief Get the current encoder count since reset (filtered).
         ///
@@ -105,19 +122,19 @@ namespace curio_base
         ///
         /// \return An integer, the current encoder count.
         ///
-        virtual int16_t getCount() const = 0;
+        int16_t getCount() const override;
 
         /// \brief Get the current encoder duty.
         ///
         /// \return An integer, the current encoder duty.
         ///
-        virtual int16_t getDuty() const = 0;
+        int16_t getDuty() const override;
 
         /// Get the angular position of the encoder (filtered)
         ///
         /// \return A double, the angular position of the encoder [rad].
         ///
-        virtual double getAngularPosition() const = 0;
+        double getAngularPosition() const override;
 
         /// \brief Get the current (un-filtered) servo position and an
         /// estimate whether it is valid.
@@ -127,28 +144,59 @@ namespace curio_base
         /// \param map_position A bool: if true map the position to the
         /// range [0, 1500],  has (default True)
         ///
-        virtual void getServoPosition(int16_t &position, bool &is_valid, bool map_position=true) const = 0;
+        void getServoPosition(int16_t &position, bool &is_valid, bool map_position=true) const override;
 
         /// \brief Get the invert state: whether the encoder count is inverted.
         ///
         /// \return An integer: -1 if the count is inverted, 1 otherwise. 
         ///
-        virtual int16_t getInvert() const = 0;
+        int16_t getInvert() const override;
 
         /// \brief Invert the direction of the encoder count.
         ///
         /// \param is_inverted A bool: true if the encoder count is reversed.
         ///
-        virtual void setInvert(bool is_inverted) = 0;
+        void setInvert(bool is_inverted) override;
 
         /// Reset the encoder counters to zero.
         ///
         /// \param position An integer (assumed valid) position of the
         /// servo when the encoder is reset.  
         /// 
-        virtual void reset(int16_t position) = 0;
+        void reset(int16_t position) override;
+
+    private:
+        const int16_t ENCODER_MIN    = 0;       // minimum servo position reading
+        const int16_t ENCODER_MAX    = 1500;    // maximum servo position reading
+        const int16_t ENCODER_LOWER  = 1190;    // lower bound of the invalid range
+        const int16_t ENCODER_UPPER  = 1310;    // upper bound of the invalid range
+        const int16_t ENCODER_STEP   = 1000;    // threshold for determining the encoder has
+                                                // completed a revolution
+
+        // Initialise ring buffers that store the encoder history.
+        int16_t window_ = 10;
+        int16_t index_  = 0;                    // index for the ring buffers
+        std::vector<ros::Time> ros_time_;       // [rospy.Time() for x in range(window)]
+        std::vector<int16_t> duty_;             // [0.0 for x in range(window)]
+        std::vector<int16_t> position_;         // [0.0 for x in range(window)]
+        std::vector<int16_t> X_;                // [0.0 for x in range(3 * window)]
+        std::string classifier_filename_;       // classifier filename
+        std::string regressor_filename_;        // regressor filename
+        //classifier_     = None                // scikit-learn classifier
+        //regressor_      = None                // scikit-learn regressor
+        int16_t count_offset_   = 0;            // set to ensure count=0 when reset
+        int16_t revolutions_    = 0;            // number of revolutions since reset
+        int16_t prev_valid_position_ = 0;       // the previous valid position
+        int16_t invert_         = 1;            // 1 or -1 depending on the desired
+                                                // direction for increasing count
+
+        /// \brief Load classifier
+        void loadClassifier();
+
+        /// \brief Load regressor
+        void loadRegressor();
     };
 
 } // namespace curio_base
 
-#endif // CURIO_BASE_LX16A_ENCODER_FILTER_H_
+#endif // CURIO_BASE_LX16A_ENCODER_FILTER_IMPL_H_
