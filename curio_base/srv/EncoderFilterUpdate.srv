@@ -1,0 +1,7 @@
+# Update a servo encoder filter's with the ROS time, duty and observed servo position. 
+int32 servo_id
+time time
+int32 duty
+int32 position
+---
+int32 status

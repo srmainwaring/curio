@@ -1,0 +1,4 @@
+# Get a servo encoder filter's invert setting. 
+int32 servo_id
+---
+int32 invert

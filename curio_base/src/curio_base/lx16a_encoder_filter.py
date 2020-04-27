@@ -279,7 +279,7 @@ class LX16AEncoderFilter(object):
             bool which is True for valid, False otherwise.
         '''
         
-        is_valid = self._classifier.predict([self._X])[0]
+        is_valid = self._classifier.predict([self._X])[0] != 0
         if map_pos:
             pos = self._pos[self._index] % ENCODER_MAX
             return pos, is_valid

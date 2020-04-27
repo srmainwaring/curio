@@ -1,0 +1,5 @@
+# Set a servo encoder filter's invert state. 
+int32 servo_id
+bool is_inverted
+---
+int32 status

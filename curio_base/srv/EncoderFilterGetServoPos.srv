@@ -1,0 +1,5 @@
+# Get a servo encoder filter's observed servo position (not filtered). 
+int32 servo_id
+---
+int32 position
+bool is_valid

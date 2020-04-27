@@ -15,10 +15,12 @@
 
     <depend>actionlib</depend>
     <depend>actionlib_msgs</depend>
+    <depend>controller_manager</depend>
     <depend>curio_description</depend>
     <depend>curio_control</depend>
     <depend>curio_msgs</depend>
     <depend>geometry_msgs</depend>
+    <depend>hardware_interface</depend>
     <depend>joint_state_publisher</depend>
     <depend>nav_msgs</depend>
     <depend>robot_localization</depend>
