@@ -1,0 +1,8 @@
+# Initialise an encoder filter for a servo. 
+int32  servo_id
+string classifier_filename
+string regressor_filename
+int32  window
+---
+int32 status
+

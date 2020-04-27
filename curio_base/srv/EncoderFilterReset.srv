@@ -1,0 +1,5 @@
+# Reset a servo encoder filter's initial position. 
+int32 servo_id
+int32 position
+---
+int32 status

@@ -16,10 +16,10 @@ Parameters
         The device name for the serial port
 -->
 <launch>
-    <arg name="classifier_filename" default="$(find curio_base)/data/lx16a_tree_classifier.joblib" />
-    <arg name="classifier_window" default="10" />
     <arg name="model" default="$(find curio_description)/urdf/curio.urdf.xacro" />
     <arg name="port" default="/dev/ttyUSB0" />
+    <arg name="classifier_filename" default="$(find curio_base)/data/lx16a_tree_classifier.joblib" />
+    <arg name="classifier_window" default="10" />
     <arg name="regressor_filename" default="$(find curio_base)/data/lx16a_tree_regressor.joblib" />
 
     <!-- Controller for the mobile base  -->

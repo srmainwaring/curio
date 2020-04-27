@@ -10,10 +10,12 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
     actionlib
     actionlib_msgs
+    controller_manager
     curio_description
     curio_control
     curio_msgs
     geometry_msgs
+    hardware_interface
     joint_state_publisher
     nav_msgs
     message_generation
@@ -42,8 +44,18 @@ add_action_files(DIRECTORY action FILES
 # add_message_files(DIRECTORY msg FILES
 # )
 
-# add_service_files(DIRECTORY srv FILES
-# )
+add_service_files(DIRECTORY srv FILES
+    EncoderFilterAdd.srv
+    EncoderFilterGetAngularPosition.srv
+    EncoderFilterGetCount.srv
+    EncoderFilterGetDuty.srv
+    EncoderFilterGetInvert.srv
+    EncoderFilterGetRevolutions.srv
+    EncoderFilterGetServoPos.srv
+    EncoderFilterReset.srv
+    EncoderFilterSetInvert.srv
+    EncoderFilterUpdate.srv
+)
 
 generate_messages(DEPENDENCIES actionlib_msgs std_msgs)
 
@@ -82,11 +94,24 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
+# Library
 add_library(curio_base
+    src/lx16a_encoder_filter.cpp
     src/lx16a_driver.cpp
+    src/rover_base_hal.cpp
+    src/rover_base_hal_lx16a.cpp
+    src/rover_base_hal_mock.cpp
+    src/rover_base_hardware.cpp
 )
 target_link_libraries(curio_base ${catkin_LIBRARIES})
 
+# Nodes
+add_executable(rover_base_controller
+    src/rover_base_controller.cpp
+)
+target_link_libraries(rover_base_controller curio_base ${catkin_LIBRARIES})
+
+# Examples
 add_executable(lx16a_position_publisher
     src/examples/lx16a_position_publisher.cpp
 )
@@ -130,6 +155,8 @@ catkin_install_python(PROGRAMS
     scripts/lx16a_cmd_vel_sinusoid.py
     scripts/lx16a_cmd_vel_stepped.py
     scripts/lx16a_driver_test.py
+    scripts/lx16a_encoder_filter_server.py
+    # scripts/lx16a_encoder_filter_server_test.py
     scripts/lx16a_encoder_filter_test.py
     scripts/lx16a_encoder_logger.py
     scripts/lx16a_failsafe_test.py
