@@ -1,4 +1,4 @@
 # Get a servo encoder filter's revolution count. 
-int32 servo_id
+int8 servo_id
 ---
-int32 revolutions
+int16 revolutions

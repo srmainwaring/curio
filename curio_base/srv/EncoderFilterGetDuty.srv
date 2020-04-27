@@ -1,4 +1,4 @@
 # Get a servo encoder filter's current duty. 
-int32 servo_id
+int8 servo_id
 ---
-int32 count
+int16 duty
