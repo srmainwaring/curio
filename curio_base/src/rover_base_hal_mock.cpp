@@ -52,7 +52,7 @@ namespace curio_base
         // Initialise velocity controlled wheel variables
         for (size_t i=0; i<k_num_wheels_; ++i)
         {
-            wheel_last_times_[i] = time_source::now();
+            wheel_last_times_[i] = ros::Time::now();
             wheel_last_positions_[i] = 0.0;
             wheel_velocities_[i] = 0.0;
         }
@@ -74,39 +74,37 @@ namespace curio_base
         return k_num_steers_;
     }
 
-    double RoverBaseHALMock::getWheelPosition(int i) const
+    double RoverBaseHALMock::getWheelPosition(const ros::Time &time, int i) const
     {
         // Calculate the current wheel position.
-        time_source::time_point this_time = time_source::now();        
-        std::chrono::duration<double> elapsed_duration = this_time - wheel_last_times_[i];
-        return  wheel_last_positions_[i] + elapsed_duration.count() * wheel_velocities_[i];
+        ros::Duration elapsed_duration = time - wheel_last_times_[i];
+        return  wheel_last_positions_[i] + elapsed_duration.toSec() * wheel_velocities_[i];
     }
 
-    double RoverBaseHALMock::getWheelVelocity(int i) const
+    double RoverBaseHALMock::getWheelVelocity(const ros::Time &time, int i) const
     {
         return wheel_velocities_[i];
     }
 
-    void RoverBaseHALMock::setWheelVelocity(int i, double velocity)
+    void RoverBaseHALMock::setWheelVelocity(const ros::Time &time, int i, double velocity)
     {
         // Determine the elapsed time since the last update for this wheel.
-        time_source::time_point this_time = time_source::now();
-        std::chrono::duration<double> elapsed_duration = this_time - wheel_last_times_[i];
-        wheel_last_times_[i] = this_time;
+        ros::Duration elapsed_duration = time - wheel_last_times_[i];
+        wheel_last_times_[i] = time;
 
         // Update the wheel position since the last change in velocity.
-        wheel_last_positions_[i] += elapsed_duration.count() * wheel_velocities_[i]; 
+        wheel_last_positions_[i] += elapsed_duration.toSec() * wheel_velocities_[i]; 
 
         // Set the new wheel velocity.
         wheel_velocities_[i] = velocity;
     }
 
-    double RoverBaseHALMock::getSteerAngle(int i) const
+    double RoverBaseHALMock::getSteerAngle(const ros::Time &time, int i) const
     {
         return steer_positions_[i];
     }
 
-    void RoverBaseHALMock::setSteerAngle(int i, double angle)
+    void RoverBaseHALMock::setSteerAngle(const ros::Time &time, int i, double angle)
     {
         steer_positions_[i] = angle;
     }

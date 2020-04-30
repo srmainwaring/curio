@@ -97,7 +97,7 @@ include_directories(
 # Library
 add_library(curio_base
     src/lx16a_encoder_filter_client.cpp
-    src/lx16a_encoder_filter_impl.cpp
+    src/lx16a_encoder_filter_onnx.cpp
     src/lx16a_encoder_filter.cpp
     src/lx16a_driver.cpp
     src/rover_base_hal.cpp

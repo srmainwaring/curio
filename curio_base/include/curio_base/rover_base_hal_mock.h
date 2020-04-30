@@ -38,14 +38,12 @@
 #define CURIO_BASE_ROVER_BASE_HAL_MOCK_H_
 
 #include "curio_base/rover_base_hal.h"
-#include "curio_base/lx16a_driver.h"
-
-#include <chrono>
-#include <memory>
+#include <ros/ros.h>
+#include <vector>
 
 namespace curio_base
 {
-    // Mock implementation of the rover base hardware abstraction layer for testing.
+    /// \brief Mock implementation of the rover base hardware abstraction layer for testing.
     class RoverBaseHALMock : public RoverBaseHAL
     {
     public:
@@ -62,30 +60,27 @@ namespace curio_base
         virtual size_t getNumSteers() const;
 
         /// \brief Get the angular position of the i-th wheel [rad].
-        virtual double getWheelPosition(int i) const;
+        virtual double getWheelPosition(const ros::Time &time, int i) const;
 
         /// \brief Get the angular velocity of the i-th wheel [rad/s].
-        virtual double getWheelVelocity(int i) const;
+        virtual double getWheelVelocity(const ros::Time &time, int i) const;
 
         /// \brief Set the angular velocity of the i-th wheel [rad/s].
-        virtual void setWheelVelocity(int i, double velocity);
+        virtual void setWheelVelocity(const ros::Time &time, int i, double velocity);
 
         /// \brief Get the steering angle of the i-th steer [rad].
-        virtual double getSteerAngle(int i) const;
+        virtual double getSteerAngle(const ros::Time &time, int i) const;
 
         /// \brief Set the angle of the i-th steer [rad].
-        virtual void setSteerAngle(int i, double angle);
+        virtual void setSteerAngle(const ros::Time &time, int i, double angle);
 
     private:
-        // Local type definitions
-        typedef std::chrono::steady_clock time_source;
-
         // Constants
         const size_t k_num_wheels_ = 6;
         const size_t k_num_steers_ = 4;
 
         // Velocity controlled wheels 
-        std::vector<time_source::time_point> wheel_last_times_;
+        std::vector<ros::Time> wheel_last_times_;
         std::vector<double> wheel_last_positions_;
         std::vector<double> wheel_velocities_;
 

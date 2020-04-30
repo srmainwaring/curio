@@ -41,7 +41,7 @@
 
 namespace curio_base
 {
-    // Hardware Abstraction Layer for the rover base.
+    /// \brief Hardware Abstraction Layer for the rover base.
     class RoverBaseHAL
     {
     public:
@@ -55,19 +55,19 @@ namespace curio_base
         virtual size_t getNumSteers() const = 0;
 
         /// \brief Get the angular position of the i-th wheel [rad].
-        virtual double getWheelPosition(int i) const = 0;
+        virtual double getWheelPosition(const ros::Time &time, int i) const = 0;
 
         /// \brief Get the angular velocity of the i-th wheel [rad/s].
-        virtual double getWheelVelocity(int i) const = 0;
+        virtual double getWheelVelocity(const ros::Time &time, int i) const = 0;
 
         /// \brief Set the angular velocity of the i-th wheel [rad/s].
-        virtual void setWheelVelocity(int i, double velocity) = 0;
+        virtual void setWheelVelocity(const ros::Time &time, int i, double velocity) = 0;
 
        /// \brief Get the steering angle of the i-th steer [rad].
-        virtual double getSteerAngle(int i) const = 0;
+        virtual double getSteerAngle(const ros::Time &time, int i) const = 0;
 
         /// \brief Set the angle of the i-th steer [rad].
-        virtual void setSteerAngle(int i, double angle) = 0;
+        virtual void setSteerAngle(const ros::Time &time, int i, double angle) = 0;
     };
 
 } // namespace curio_base

@@ -53,8 +53,8 @@ WINDOW = 10
 RAW_DATA_FILENAME = "./data/lx16a_raw_data_05.csv"
 
 # File locations for persisted ML models
-CLASSIFIER_FILENAME = "./data/lx16a_tree_classifier.joblib"
-REGRESSOR_FILENAME  = "./data/lx16a_tree_regressor.joblib"
+CLASSIFIER_FILENAME = "./src/curio/curio_base/data/lx16a_tree_classifier.joblib"
+REGRESSOR_FILENAME  = "./src/curio/curio_base/data/lx16a_tree_regressor.joblib"
 
 if __name__ == '__main__':
     ''' A test node for the LX-16A encoder filter.

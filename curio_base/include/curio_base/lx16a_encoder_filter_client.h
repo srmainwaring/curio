@@ -85,13 +85,15 @@ namespace curio_base
         ///
         LX16AEncoderFilterClient(
             ros::NodeHandle &nh,
-            int8_t servo_id,
             const std::string &classifier_filename,
             const std::string &regressor_filename = "",
             int16_t window = 10);
 
-        /// \brief Initialise the encoder filter 
+        /// \brief Initialise the encoder filter.
         void init() override;
+
+        /// \brief Add a servo.
+        void add(uint8_t servo_id) override;
 
         /// \brief Update the encoder filter.
         ///
@@ -108,13 +110,13 @@ namespace curio_base
         /// \param duty An integer servo duty
         /// \param position An integer servo position        
         ///
-        void update(const ros::Time &ros_time, int16_t duty, int16_t position) override;
+        void update(uint8_t servo_id, const ros::Time &ros_time, int16_t duty, int16_t position) override;
 
         /// \brief Get the number of revoutions since reset.
         ///
         /// \return An integer number of revolutions since the count was reset.
         ///
-        int16_t getRevolutions() const override;
+        int16_t getRevolutions(uint8_t servo_id) const override;
 
         /// \brief Get the current encoder count since reset (filtered).
         ///
@@ -123,19 +125,19 @@ namespace curio_base
         ///
         /// \return An integer, the current encoder count.
         ///
-        int16_t getCount() const override;
+        int16_t getCount(uint8_t servo_id) const override;
 
         /// \brief Get the current encoder duty.
         ///
         /// \return An integer, the current encoder duty.
         ///
-        int16_t getDuty() const override;
+        int16_t getDuty(uint8_t servo_id) const override;
 
         /// Get the angular position of the encoder (filtered)
         ///
         /// \return A double, the angular position of the encoder [rad].
         ///
-        double getAngularPosition() const override;
+        double getAngularPosition(uint8_t servo_id) const override;
 
         /// \brief Get the current (un-filtered) servo position and an
         /// estimate whether it is valid.
@@ -145,30 +147,29 @@ namespace curio_base
         /// \param map_position A bool: if true map the position to the
         /// range [0, 1500],  has (default True)
         ///
-        void getServoPosition(int16_t &position, bool &is_valid, bool map_position=true) const override;
+        void getServoPosition(uint8_t servo_id, int16_t &position, bool &is_valid, bool map_position=true) const override;
 
         /// \brief Get the invert state: whether the encoder count is inverted.
         ///
         /// \return An integer: -1 if the count is inverted, 1 otherwise. 
         ///
-        int16_t getInvert() const override;
+        int16_t getInvert(uint8_t servo_id) const override;
 
         /// \brief Invert the direction of the encoder count.
         ///
         /// \param is_inverted A bool: true if the encoder count is reversed.
         ///
-        void setInvert(bool is_inverted) override;
+        void setInvert(uint8_t servo_id, bool is_inverted) override;
 
         /// Reset the encoder counters to zero.
         ///
         /// \param position An integer (assumed valid) position of the
         /// servo when the encoder is reset.  
         /// 
-        void reset(int16_t position) override;
+        void reset(uint8_t servo_id, int16_t position) override;
 
     private:
         ros::NodeHandle  nh_;
-        int8_t servo_id_;                       // servo_id for this filter
         std::string classifier_filename_;       // classifier filename
         std::string regressor_filename_;        // regressor filename
         int16_t window_ = 10;                   // size of the history window
