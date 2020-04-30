@@ -41,11 +41,14 @@
 #include "curio_base/lx16a_driver.h"
 #include "curio_base/lx16a_encoder_filter.h"
 
+#include <ros/ros.h>
+
+#include <string>
 #include <memory>
 
 namespace curio_base
 {
-    // Hardware Abstraction Layer for the rover base.
+    /// \brief Hardware Abstraction Layer for the rover base.
     class RoverBaseHALLX16A : public RoverBaseHAL
     {
     public:
@@ -53,7 +56,7 @@ namespace curio_base
         virtual ~RoverBaseHALLX16A();
 
         /// \brief Constructor.
-        RoverBaseHALLX16A();
+        RoverBaseHALLX16A(ros::NodeHandle &nh);
 
         /// \brief Get the number of wheels.
         virtual size_t getNumWheels() const;
@@ -62,19 +65,19 @@ namespace curio_base
         virtual size_t getNumSteers() const;
 
         /// \brief Get the angular position of the i-th wheel [rad].
-        virtual double getWheelPosition(int i) const;
+        virtual double getWheelPosition(const ros::Time &time, int i) const;
 
         /// \brief Get the angular velocity of the i-th wheel [rad/s].
-        virtual double getWheelVelocity(int i) const;
+        virtual double getWheelVelocity(const ros::Time &time, int i) const;
 
         /// \brief Set the angular velocity of the i-th wheel [rad/s].
-        virtual void setWheelVelocity(int i, double velocity);
+        virtual void setWheelVelocity(const ros::Time &time, int i, double velocity);
 
         /// \brief Get the steering angle of the i-th steer [rad].
-        virtual double getSteerAngle(int i) const;
+        virtual double getSteerAngle(const ros::Time &time, int i) const;
 
         /// \brief Set the angle of the i-th steer [rad].
-        virtual void setSteerAngle(int i, double angle);
+        virtual void setSteerAngle(const ros::Time &time, int i, double angle);
 
         inline const LX16ADriver& servoDriver() const { return *servo_driver_; }
 
@@ -88,6 +91,10 @@ namespace curio_base
         // Servo ids
         std::vector<uint8_t> wheel_servo_ids_;
         std::vector<uint8_t> steer_servo_ids_;
+
+        // Wheel orientation
+        std::vector<int8_t> wheel_servo_orientations_;
+        std::vector<int8_t> steer_servo_orientations_;
 
         // Current duty set points
         std::vector<uint16_t> wheel_servo_duties_;

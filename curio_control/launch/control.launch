@@ -17,7 +17,7 @@
         args="joint_state_publisher ackermann_drive_controller" />
    
     <!-- Launch the robot state publisher @ 50 Hz -->
-    <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" >
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" >
         <param name="publish_frequency" type="double" value="50.0" />
     </node>
 </launch>

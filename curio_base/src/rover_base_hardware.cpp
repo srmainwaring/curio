@@ -35,8 +35,6 @@
 //
 
 #include "curio_base/rover_base_hardware.h"
-
-// @TODO - remove when the rover HAL is passed as an argument.
 #include "curio_base/rover_base_hal_lx16a.h"
 #include "curio_base/rover_base_hal_mock.h"
 
@@ -50,10 +48,15 @@ namespace curio_base
     RoverBaseHardware::RoverBaseHardware(ros::NodeHandle nh, ros::NodeHandle private_nh)
     {
         ROS_INFO_STREAM("Initialising rover base hardware...");
-        // @TODO - pass rover HAL as argument
-        // std::unique_ptr<RoverBaseHALLX16A> rover_hal_lx16a = std::make_unique<RoverBaseHALLX16A>(); 
-        std::unique_ptr<RoverBaseHALMock> rover_hal_impl(new RoverBaseHALMock()); 
-        rover_hal_ = std::move(rover_hal_impl);
+
+        // @TODO - control switch with parameter / plugin.
+        // LX16A HAL
+        std::unique_ptr<RoverBaseHALLX16A> rover_hal_lx16a(new RoverBaseHALLX16A(nh));
+        rover_hal_ = std::move(rover_hal_lx16a);
+
+        // Mock HAL
+        // std::unique_ptr<RoverBaseHALMock> rover_hal_mock(new RoverBaseHALMock()); 
+        // rover_hal_ = std::move(rover_hal_mock);
 
         // Resize passive joints
         passive_joints_.resize(k_num_passive_joints_);
@@ -81,19 +84,19 @@ namespace curio_base
         // Set position of wheel joints
         for (int i=0; i<k_num_wheel_joints; ++i)
         {
-            wheel_joints_[i].position = rover_hal_->getWheelPosition(i);
+            wheel_joints_[i].position = rover_hal_->getWheelPosition(time, i);
         }
 
         // Set velocities of wheel joints
         for (int i=0; i<k_num_wheel_joints; ++i)
         {
-            wheel_joints_[i].velocity = rover_hal_->getWheelVelocity(i);
+            wheel_joints_[i].velocity = rover_hal_->getWheelVelocity(time, i);
         }
 
         // Set position of steer joints
         for (int i=0; i<k_num_steer_joints; ++i)
         {
-            steer_joints_[i].position = rover_hal_->getSteerAngle(i);
+            steer_joints_[i].position = rover_hal_->getSteerAngle(time, i);
         }
     }
 
@@ -105,13 +108,13 @@ namespace curio_base
         // Set commanded velocities
         for (int i=0; i<k_num_wheel_joints; ++i)
         {
-            rover_hal_->setWheelVelocity(i, wheel_joints_[i].velocity_command);
+            rover_hal_->setWheelVelocity(time, i, wheel_joints_[i].velocity_command);
         }
 
         // Set commanded positions
         for (int i=0; i<k_num_steer_joints; ++i)
         {
-            rover_hal_->setSteerAngle(i, steer_joints_[i].position_command);
+            rover_hal_->setSteerAngle(time, i, steer_joints_[i].position_command);
         }
     }
 

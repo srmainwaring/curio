@@ -78,10 +78,10 @@ def handle_get_angular_position(req):
     ))
 
     filter = encoder_filters[req.servo_id]
-    angle = filter.get_angular_position()
+    position = filter.get_angular_position()
 
     response = EncoderFilterGetAngularPositionResponse()
-    response.angle = angle
+    response.position = position
     return response
 
 def handle_get_count(req):

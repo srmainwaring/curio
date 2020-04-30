@@ -57,12 +57,10 @@ namespace curio_base
 
     LX16AEncoderFilterClient::LX16AEncoderFilterClient(
         ros::NodeHandle &nh,
-        int8_t servo_id,
         const std::string &classifier_filename,
         const std::string &regressor_filename,
         int16_t window) :
         nh_(nh),
-        servo_id_(servo_id),
         classifier_filename_(classifier_filename),
         regressor_filename_(regressor_filename),
         window_(window)
@@ -82,16 +80,18 @@ namespace curio_base
         filter_reset_ = nh_.serviceClient<curio_base::EncoderFilterReset>("lx16a/encoder_filter/reset"); 
         filter_set_invert_ = nh_.serviceClient<curio_base::EncoderFilterSetInvert>("lx16a/encoder_filter/set_invert"); 
         filter_update_ = nh_.serviceClient<curio_base::EncoderFilterUpdate>("lx16a/encoder_filter/update"); 
+    }
 
-        // Initialise
+    void LX16AEncoderFilterClient::add(uint8_t servo_id)
+    {
         curio_base::EncoderFilterAdd srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         srv.request.classifier_filename = classifier_filename_;
         srv.request.regressor_filename = regressor_filename_;
         srv.request.window = window_;
         if (filter_add_.call(srv))
         {
-            ROS_INFO_STREAM("Initialised encoder filter: " << srv.response.status);
+            ROS_INFO_STREAM("Initialised encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
         }
         else
         {
@@ -99,18 +99,18 @@ namespace curio_base
         }
     }
 
-    void LX16AEncoderFilterClient::update(const ros::Time &ros_time, int16_t duty, int16_t position)
+    void LX16AEncoderFilterClient::update(uint8_t servo_id, const ros::Time &ros_time, int16_t duty, int16_t position)
     {
         auto&& service = filter_update_;
 
         curio_base::EncoderFilterUpdate srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         srv.request.time = ros_time;
         srv.request.duty = duty;
         srv.request.position = position;
         if (service.call(srv))
         {
-            ROS_DEBUG_STREAM("Updated encoder filter: " << srv.response.status);
+            ROS_DEBUG_STREAM("Updated encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
         }
         else
         {
@@ -118,12 +118,12 @@ namespace curio_base
         }
     }
 
-    int16_t LX16AEncoderFilterClient::getRevolutions() const
+    int16_t LX16AEncoderFilterClient::getRevolutions(uint8_t servo_id) const
     {
         auto&& service = const_cast<ros::ServiceClient&>(filter_get_revolutions_);
 
         curio_base::EncoderFilterGetRevolutions srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         if (service.call(srv))
         {
             return srv.response.revolutions;
@@ -135,12 +135,12 @@ namespace curio_base
         }
     }
 
-    int16_t LX16AEncoderFilterClient::getCount() const
+    int16_t LX16AEncoderFilterClient::getCount(uint8_t servo_id) const
     {
         auto&& service = const_cast<ros::ServiceClient&>(filter_get_count_);
 
         curio_base::EncoderFilterGetCount srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         if (service.call(srv))
         {
             return srv.response.count;
@@ -152,12 +152,12 @@ namespace curio_base
         }
     }
 
-    int16_t LX16AEncoderFilterClient::getDuty() const
+    int16_t LX16AEncoderFilterClient::getDuty(uint8_t servo_id) const
     {
         auto&& service = const_cast<ros::ServiceClient&>(filter_get_duty_);
 
         curio_base::EncoderFilterGetDuty srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         if (service.call(srv))
         {
             return srv.response.duty;
@@ -169,12 +169,12 @@ namespace curio_base
         }
     }
 
-    double LX16AEncoderFilterClient::getAngularPosition() const
+    double LX16AEncoderFilterClient::getAngularPosition(uint8_t servo_id) const
     {
         auto&& service = const_cast<ros::ServiceClient&>(filter_get_angular_position_);
 
         curio_base::EncoderFilterGetAngularPosition srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         if (service.call(srv))
         {
             return srv.response.position;
@@ -186,12 +186,12 @@ namespace curio_base
         }
     }
 
-    void LX16AEncoderFilterClient::getServoPosition(int16_t &position, bool &is_valid, bool map_position) const
+    void LX16AEncoderFilterClient::getServoPosition(uint8_t servo_id, int16_t &position, bool &is_valid, bool map_position) const
     {
         auto&& service = const_cast<ros::ServiceClient&>(filter_get_servo_pos_);
 
         curio_base::EncoderFilterGetServoPos srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         if (service.call(srv))
         {
             position = srv.response.position;
@@ -203,12 +203,12 @@ namespace curio_base
         }
     }
 
-    int16_t LX16AEncoderFilterClient::getInvert() const
+    int16_t LX16AEncoderFilterClient::getInvert(uint8_t servo_id) const
     {
         auto&& service = const_cast<ros::ServiceClient&>(filter_get_invert_);
 
         curio_base::EncoderFilterGetInvert srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         if (service.call(srv))
         {
             return srv.response.invert;
@@ -220,16 +220,16 @@ namespace curio_base
         }
     }
 
-    void LX16AEncoderFilterClient::setInvert(bool is_inverted)
+    void LX16AEncoderFilterClient::setInvert(uint8_t servo_id, bool is_inverted)
     {
         auto&& service = filter_set_invert_;
 
         curio_base::EncoderFilterSetInvert srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         srv.request.is_inverted = is_inverted;
         if (service.call(srv))
         {
-            ROS_INFO_STREAM("Set invert on encoder filter: " << srv.response.status);
+            ROS_INFO_STREAM("Set invert on encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
         }
         else
         {
@@ -237,16 +237,16 @@ namespace curio_base
         }
     }
 
-    void LX16AEncoderFilterClient::reset(int16_t position)
+    void LX16AEncoderFilterClient::reset(uint8_t servo_id, int16_t position)
     {
         auto&& service = filter_reset_;
 
         curio_base::EncoderFilterUpdate srv;
-        srv.request.servo_id = servo_id_;
+        srv.request.servo_id = servo_id;
         srv.request.position = position;
         if (service.call(srv))
         {
-            ROS_INFO_STREAM("Reset encoder filter: " << srv.response.status);
+            ROS_INFO_STREAM("Reset encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
         }
         else
         {

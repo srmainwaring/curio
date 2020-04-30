@@ -72,8 +72,11 @@ namespace curio_base
         /// \brief Destructor
         virtual ~LX16AEncoderFilter();
 
-        /// \brief Initialise the encoder filter 
+        /// \brief Initialise the encoder filter.
         virtual void init() = 0;
+
+        /// \brief Add a servo.
+        virtual void add(uint8_t servo_id) = 0;
 
         /// \brief Update the encoder filter.
         ///
@@ -86,67 +89,76 @@ namespace curio_base
         ///     duty[window]   the commanded duty to the LX-16A
         ///     pos[window]    the measured position on the LX-16A
         ///        
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \param ros_time A ros::Time containing the time from ros::Time::now()
         /// \param duty An integer servo duty
         /// \param position An integer servo position        
         ///
-        virtual void update(const ros::Time &ros_time, int16_t duty, int16_t position) = 0;
+        virtual void update(uint8_t servo_id, const ros::Time &ros_time, int16_t duty, int16_t position) = 0;
 
         /// \brief Get the number of revoutions since reset.
         ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return An integer number of revolutions since the count was reset.
         ///
-        virtual int16_t getRevolutions() const = 0;
+        virtual int16_t getRevolutions(uint8_t servo_id) const = 0;
 
         /// \brief Get the current encoder count since reset (filtered).
         ///
         /// Note that the encoder count is offset from the servo position
         /// so that the count is zero when the encoder filter is reset.
         ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return An integer, the current encoder count.
         ///
-        virtual int16_t getCount() const = 0;
+        virtual int16_t getCount(uint8_t servo_id) const = 0;
 
         /// \brief Get the current encoder duty.
         ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return An integer, the current encoder duty.
         ///
-        virtual int16_t getDuty() const = 0;
+        virtual int16_t getDuty(uint8_t servo_id) const = 0;
 
         /// Get the angular position of the encoder (filtered)
         ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return A double, the angular position of the encoder [rad].
         ///
-        virtual double getAngularPosition() const = 0;
+        virtual double getAngularPosition(uint8_t servo_id) const = 0;
 
         /// \brief Get the current (un-filtered) servo position and an
         /// estimate whether it is valid.
         ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \param position An integer reference that is set to the current position. 
         /// \param is_valid A bool that is set to true for valid, false otherwise.
         /// \param map_position A bool: if true map the position to the
         /// range [0, 1500],  has (default True)
         ///
-        virtual void getServoPosition(int16_t &position, bool &is_valid, bool map_position=true) const = 0;
+        virtual void getServoPosition(uint8_t servo_id, int16_t &position, bool &is_valid, bool map_position=true) const = 0;
 
         /// \brief Get the invert state: whether the encoder count is inverted.
         ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return An integer: -1 if the count is inverted, 1 otherwise. 
         ///
-        virtual int16_t getInvert() const = 0;
+        virtual int16_t getInvert(uint8_t servo_id) const = 0;
 
         /// \brief Invert the direction of the encoder count.
         ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \param is_inverted A bool: true if the encoder count is reversed.
         ///
-        virtual void setInvert(bool is_inverted) = 0;
+        virtual void setInvert(uint8_t servo_id, bool is_inverted) = 0;
 
         /// Reset the encoder counters to zero.
         ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \param position An integer (assumed valid) position of the
         /// servo when the encoder is reset.  
         /// 
-        virtual void reset(int16_t position) = 0;
+        virtual void reset(uint8_t servo_id, int16_t position) = 0;
     };
 
 } // namespace curio_base

@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     signal(SIGINT, sigintHandler);
 
     // Parameters
-    const std::string port("/dev/cu.usbmodemFD5121");
+    const std::string port("/dev/cu.usbmodemFD4121");
     const uint32_t baudrate = 115200;
     const uint32_t timeout = 1000;       // [ms]
     const uint32_t read_rate = 20;       // [Hz]
@@ -100,11 +100,11 @@ int main(int argc, char *argv[])
     // Encoder filter
     curio_base::LX16AEncoderFilterClient encoder_filter(
         nh,
-        SERVO_ID,
         CLASSIFIER_FILENAME,
         REGRESSOR_FILENAME,
         WINDOW);
     encoder_filter.init();
+    encoder_filter.add(SERVO_ID);
 
     // Wait for Arduino bootloader to complete before sending any
     // data on the serial connection.
@@ -123,9 +123,9 @@ int main(int argc, char *argv[])
     {
         ros::Time now = ros::Time::now();
         int16_t position = servo_driver.getPosition(SERVO_ID);        
-        encoder_filter.update(now, duty, position);
-        int16_t count = encoder_filter.getCount();
-        int16_t revolutions = encoder_filter.getRevolutions();
+        encoder_filter.update(SERVO_ID, now, duty, position);
+        int16_t count = encoder_filter.getCount(SERVO_ID);
+        int16_t revolutions = encoder_filter.getRevolutions(SERVO_ID);
 
         ROS_INFO_STREAM("pos: " << position
             << ", count: " << count
