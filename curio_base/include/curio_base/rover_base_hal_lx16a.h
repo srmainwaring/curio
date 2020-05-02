@@ -99,6 +99,10 @@ namespace curio_base
         // Current duty set points
         std::vector<uint16_t> wheel_servo_duties_;
 
+        // Cached wheel and steer positions
+        std::vector<int16_t> wheel_servo_last_positions_;
+        std::vector<int16_t> steer_servo_last_positions_;
+
         // Drivers and filters
         std::unique_ptr<LX16ADriver> servo_driver_;
         std::unique_ptr<LX16AEncoderFilter> encoder_filter_;
