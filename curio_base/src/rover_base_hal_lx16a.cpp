@@ -75,61 +75,62 @@ namespace curio_base
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
+    /// \brief Convert radians to degrees
     double rad2Deg(double radian)
     {
         return radian * 180.0 / M_PI;
     }
 
+    /// \brief Convert degrees to radians
     double deg2Rad(double degree)
     {
         return degree * M_PI / 180.0;
     }
 
+    /// \brief Map servo duty [-1000, 1000] to angular velocity [rad] 
     double duty2AngularVelocity(int16_t duty)
     {
-        // Map servo duty [-1000, 1000] to angular velocity [rad] 
         double angular_velocity = map(duty,
             -SERVO_DUTY_MAX, SERVO_DUTY_MAX, -SERVO_ANG_VEL_MAX, SERVO_ANG_VEL_MAX);
         return angular_velocity;
     }
 
+    /// \brief Map angular velocity [rad] to servo duty [-1000, 1000]
     int16_t angularVelocity2Duty(double angular_velocity)
     {
-        // Map angular velocity [rad] to servo duty [-1000, 1000]
         int16_t duty = static_cast<int16_t>(map(angular_velocity,
             -SERVO_ANG_VEL_MAX, SERVO_ANG_VEL_MAX, -SERVO_DUTY_MAX, SERVO_DUTY_MAX));
         return duty;
     }
 
+    /// \brief Map servo position [0, 1000] to steering angle degrees [-120, 120]
     double servoPos2Angle(int16_t servo_pos)
     {
-        // Map servo position [0, 1000] to steering angle degrees [-120, 120]
         double angle_deg = map(servo_pos,
             SERVO_POS_MIN, SERVO_POS_MAX, -SERVO_ANGLE_MAX, SERVO_ANGLE_MAX);
         double angle_rad = deg2Rad(angle_deg);
         return angle_rad;
     }
 
+    /// \brief Map steering angle degrees [-120, 120] to servo position [0, 1000]
     int16_t angle2ServoPos(double angle_rad)
     {
-        // Map steering angle degrees [-120, 120] to servo position [0, 1000]
         double angle_deg = rad2Deg(angle_rad);
         int16_t servo_pos = static_cast<int16_t>(map(angle_deg,
             -SERVO_ANGLE_MAX, SERVO_ANGLE_MAX, SERVO_POS_MIN, SERVO_POS_MAX));
         return servo_pos;
     }
 
-    int16_t velocity2ServoDuty(double velocity)
-    {
-        // Convert from velocity to servo duty.
-        //
-        double  wheel_diameter       =  0.6;
-        int16_t servo_counts_per_rev =  1500;
-        int16_t servo_counts_per_sec =  1500;
-        int16_t servo_min_duty       = -1000;
-        int16_t servo_max_duty       =  1000;
-        return 500;
-    }
+    // Convert from velocity to servo duty.
+    // int16_t velocity2ServoDuty(double velocity)
+    // {
+    //     double  wheel_diameter       =  0.6;
+    //     int16_t servo_counts_per_rev =  1500;
+    //     int16_t servo_counts_per_sec =  1500;
+    //     int16_t servo_min_duty       = -1000;
+    //     int16_t servo_max_duty       =  1000;
+    //     return 500;
+    // }
 
     RoverBaseHALLX16A::~RoverBaseHALLX16A()
     {        
@@ -140,7 +141,9 @@ namespace curio_base
         steer_servo_ids_(k_num_steers_),
         wheel_servo_orientations_(k_num_wheels_),
         steer_servo_orientations_(k_num_steers_),
-        wheel_servo_duties_(k_num_wheels_, 0)
+        wheel_servo_duties_(k_num_wheels_, 0),
+        wheel_servo_last_positions_(k_num_wheels_, 0),
+        steer_servo_last_positions_(k_num_steers_, 500)
     {
         // @TODO hardcoded parameters
         // Parameters
@@ -163,10 +166,12 @@ namespace curio_base
 
         // Initialise servo driver.
         serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout);
+        ros::Duration response_timeout(0.015);
         servo_driver_ = std::unique_ptr<LX16ADriver>(new LX16ADriver());
         servo_driver_->setPort(port);
         servo_driver_->setBaudrate(baudrate);
         servo_driver_->setTimeout(serial_timeout);
+        servo_driver_->setResponseTimeout(response_timeout);
         servo_driver_->open();
         ROS_INFO_STREAM("port: " << servo_driver_->getPort());
         ROS_INFO_STREAM("baudrate: " << servo_driver_->getBaudrate());
@@ -206,25 +211,29 @@ namespace curio_base
 
     double RoverBaseHALLX16A::getWheelPosition(const ros::Time &time, int i) const
     {
-        // Get position and duty.
         uint8_t servo_id = wheel_servo_ids_[i];
         int8_t orientation = wheel_servo_orientations_[i];
-        int16_t pos = servo_driver_->getPosition(servo_id);
         int16_t duty = wheel_servo_duties_[i];
 
-        // Update filter
-        encoder_filter_->update(servo_id, time, duty, pos);
+        // Get position and update filter.
+        try {
+            int16_t pos = servo_driver_->getPosition(servo_id);
+            encoder_filter_->update(servo_id, time, duty, pos);
+            double angle = encoder_filter_->getAngularPosition(servo_id) * orientation;        
 
-        // Get angle and set orientation
-        double angle = encoder_filter_->getAngularPosition(servo_id) * orientation;        
+            ROS_DEBUG_STREAM("get wheel: id: " << static_cast<int>(servo_id)
+                << ", angle: " << angle
+                << ", pos: " << static_cast<int>(pos)
+                << ", orient: " << static_cast<int>(orientation)
+                << ", duty: " << static_cast<int>(duty));
 
-        ROS_INFO_STREAM("get wheel: id: " << static_cast<int>(servo_id)
-            << ", angle: " << angle
-            << ", pos: " << static_cast<int>(pos)
-            << ", orient: " << static_cast<int>(orientation)
-            << ", duty: " << static_cast<int>(duty));
-
-        return angle;
+            return angle;
+        }
+        catch(const LX16AException &e) {
+            ROS_ERROR_STREAM(e.what()
+                << " wheel: id: " << static_cast<int>(servo_id));
+            return 0.0;
+        }
     }
 
     double RoverBaseHALLX16A::getWheelVelocity(const ros::Time &time, int i) const
@@ -234,7 +243,7 @@ namespace curio_base
         int16_t duty = wheel_servo_duties_[i];
         double velocity = duty2AngularVelocity(duty) * orientation;
 
-        ROS_INFO_STREAM("get wheel: id: " << static_cast<int>(servo_id)
+        ROS_DEBUG_STREAM("get wheel: id: " << static_cast<int>(servo_id)
             << ", vel: " << velocity
             << ", orient: " << static_cast<int>(orientation)
             << ", duty: " << static_cast<int>(duty));
@@ -252,27 +261,40 @@ namespace curio_base
         wheel_servo_duties_[i] = duty;
 
         // Update the servo.
-        bool status = servo_driver_->setMotorMode(servo_id, duty);   
+        try {
+            servo_driver_->setMotorMode(servo_id, duty);   
 
-        ROS_INFO_STREAM("set wheel: id: " << static_cast<int>(servo_id)
-            << ", vel: " << velocity
-            << ", orient: " << static_cast<int>(orientation)
-            << ", duty: " << static_cast<int>(duty)
-            << ", status: " << status);
+            ROS_DEBUG_STREAM("set wheel: id: " << static_cast<int>(servo_id)
+                << ", vel: " << velocity
+                << ", orient: " << static_cast<int>(orientation)
+                << ", duty: " << static_cast<int>(duty));
+        }
+        catch(const LX16AException &e) {
+            ROS_ERROR_STREAM(e.what()
+                << " set wheel: id: " << static_cast<int>(servo_id));
+        }
     }
 
     double RoverBaseHALLX16A::getSteerAngle(const ros::Time &time, int i) const
     {
         uint8_t servo_id = steer_servo_ids_[i];
         int8_t orientation = steer_servo_orientations_[i];
-        int16_t pos = servo_driver_->getPosition(servo_id);
-        double angle = servoPos2Angle(pos) * orientation;        
 
-        ROS_INFO_STREAM("get steer: id: " << static_cast<int>(servo_id)
-            << ", angle: " << angle
-            << ", pos: " << static_cast<int>(pos));
+        try {
+            int16_t pos = servo_driver_->getPosition(servo_id);
+            double angle = servoPos2Angle(pos) * orientation;        
 
-        return angle;
+            ROS_DEBUG_STREAM("get steer: id: " << static_cast<int>(servo_id)
+                << ", angle: " << angle
+                << ", pos: " << static_cast<int>(pos));
+
+            return angle;
+        }
+        catch(const LX16AException &e) {
+            ROS_ERROR_STREAM(e.what()
+                << " get steer: id: " << static_cast<int>(servo_id));
+            return 0.0;
+        }
     }
 
     void RoverBaseHALLX16A::setSteerAngle(const ros::Time &time, int i, double angle)
@@ -280,12 +302,18 @@ namespace curio_base
         uint8_t servo_id = steer_servo_ids_[i];
         int8_t orientation = steer_servo_orientations_[i];
         int16_t pos = angle2ServoPos(angle * orientation);
-        bool status = servo_driver_->move(servo_id, pos, SERVO_MOVE_TIME);
 
-        ROS_INFO_STREAM("set steer: id: " << static_cast<int>(servo_id)
-            << ", angle: " << angle
-            << ", pos: " << static_cast<int>(pos)
-            << ", status: " << status);
+        try {
+            servo_driver_->move(servo_id, pos, SERVO_MOVE_TIME);
+
+            ROS_DEBUG_STREAM("set steer: id: " << static_cast<int>(servo_id)
+                << ", angle: " << angle
+                << ", pos: " << static_cast<int>(pos));
+        }
+        catch(const LX16AException &e) {
+            ROS_ERROR_STREAM(e.what()
+                << " set steer: id: " << static_cast<int>(servo_id));
+        }
     }
 
 } // namespace curio_base

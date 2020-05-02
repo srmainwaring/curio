@@ -40,10 +40,24 @@
 #include <serial/serial.h>
 #include <ros/ros.h>
 
+#include <exception>
 #include <cstdint>
 
 namespace curio_base
 {
+
+    class LX16AException : public std::exception
+    {
+        // Disable copy constructors
+        LX16AException& operator=(const LX16AException&);
+        std::string e_what_;
+    public:
+        LX16AException (const char *description);
+        LX16AException (const LX16AException& other);
+        virtual ~LX16AException() throw();
+        virtual const char* what () const throw ();
+    };
+
     /// Driver for the Lewansoul LX16A bus servos
     ///
     /// Acknowledgments
@@ -120,7 +134,7 @@ namespace curio_base
         /// to move from its current position to the commanded position, in [0, 30000] ms.
         /// \return Returns true if succesful, false otherwise.
         ///
-        bool move(uint8_t servo_id, uint16_t position, uint16_t move_time=0);
+        void move(uint8_t servo_id, uint16_t position, uint16_t move_time=0);
 
         /// \brief Read the current commanded position and move time.
         /// 
@@ -130,49 +144,49 @@ namespace curio_base
         /// to move from its current position to the commanded position, in [0, 30000] ms.
         /// \return Returns true if succesful, false otherwise.
         ///
-        bool getMove(uint8_t servo_id, int16_t &position, int16_t &move_time);
+        void getMove(uint8_t servo_id, int16_t &position, int16_t &move_time);
 
         /// \brief Prepare a servo for a move to a new position.
-        bool setPreparedMove(uint8_t servo_id, uint16_t position, uint16_t move_time);
+        void setPreparedMove(uint8_t servo_id, uint16_t position, uint16_t move_time);
 
         /// \brief Get the move time of a prepared servo move.
         uint16_t getPreparedMove(uint8_t servo_id);
 
         /// \brief Start a prepared servo move.
-        bool moveStart(uint8_t servo_id);
+        void moveStart(uint8_t servo_id);
 
         /// \brief Immediately stop the servo from moving.
         ///
         /// The servo must be in servo mode for the move_stop to be effective.
         /// When in motor mode you must set the duty to zero instead.
-        bool moveStop(uint8_t servo_id);
+        void moveStop(uint8_t servo_id);
 
         /// \brief Set the servo serial identifier.
-        bool setServoId(uint8_t servo_id);
+        void setServoId(uint8_t servo_id);
 
         /// \brief Get the servo serial identifier.
         uint8_t getServoId(uint8_t servo_id);
 
         /// \brief Set the servo position offset.
-        bool setPositionOffset(uint8_t servo_id, int16_t position_offset);
+        void setPositionOffset(uint8_t servo_id, int16_t position_offset);
 
         /// \brief Save the current servo position offset.
-        bool savePositionOffset(uint8_t servo_id);
+        void savePositionOffset(uint8_t servo_id);
 
         /// \brief Get the current servo position offset.
         int16_t getPositionOffset(int8_t servo_id);
 
         /// \brief Set the servo position minimum and maximum limits.
-        bool setPositionLimits(uint8_t servo_id, uint16_t min_position, uint16_t max_position);
+        void setPositionLimits(uint8_t servo_id, uint16_t min_position, uint16_t max_position);
 
         /// \brief Get the servo position minimum and maximum limits.
-        bool getPositionLimits(uint8_t servo_id, uint16_t &min_position, uint16_t &max_position);
+        void getPositionLimits(uint8_t servo_id, uint16_t &min_position, uint16_t &max_position);
 
         /// \brief Set the servo voltage minimum and maximum limits.
-        bool setVoltageLimits(uint8_t servo_id, double min_voltage, double max_voltage);
+        void setVoltageLimits(uint8_t servo_id, double min_voltage, double max_voltage);
 
         /// \brief Get the servo voltage minimum and maximum limits.
-        bool getVoltageLimits(uint8_t servo_id, double &min_voltage, double &max_voltage);
+        void getVoltageLimits(uint8_t servo_id, double &min_voltage, double &max_voltage);
 
         /// \brief Set the servo maximum temperature limit.
         void setMaxTemperatureLimit(uint8_t servo_id, double max_temperature);
@@ -190,19 +204,19 @@ namespace curio_base
         int16_t getPosition(uint8_t servo_id);
 
         /// \brief Set the servo to 'motor' mode.
-        bool setMotorMode(uint8_t servo_id, int16_t duty);
+        void setMotorMode(uint8_t servo_id, int16_t duty);
 
         /// \brief Set the servo to 'servo' mode.
         void setServoMode(uint8_t servo_id);
 
         /// \brief Get the servo mode.
-        bool getMode(uint8_t servo_id, uint8_t &mode, int16_t &duty);
+        void getMode(uint8_t servo_id, uint8_t &mode, int16_t &duty);
 
         /// \brief Power the servo motor on.
-        bool setMotorOn(uint8_t servo_id);
+        void setMotorOn(uint8_t servo_id);
 
         /// \brief Power the servo motor off.
-        bool setMotorOff(uint8_t servo_id);
+        void setMotorOff(uint8_t servo_id);
 
         /// \brief Get the servo motor power state.
         bool isMotorOn(uint8_t servo_id);
