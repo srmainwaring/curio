@@ -7,7 +7,6 @@ Panels:
         - /Global Options1
         - /TF1/Frames1
         - /Sensors1
-        - /Odometry1
         - /Odometry1/Base1/Shape1
         - /Odometry1/Local EKF Base1/Shape1
       Splitter Ratio: 0.6600566506385803
@@ -33,6 +32,8 @@ Panels:
     SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -352,7 +353,7 @@ Visualization Manager:
             Shaft Length: 0.5
             Shaft Radius: 0.019999999552965164
             Value: Arrow
-          Topic: /base_controller/odom
+          Topic: /ackermann_drive_controller/odom
           Unreliable: false
           Value: true
         - Angle Tolerance: 0.10000000149011612
@@ -533,7 +534,10 @@ Visualization Manager:
     - Class: rviz/FocusCamera
     - Class: rviz/Measure
     - Class: rviz/SetInitialPose
+      Theta std deviation: 0.2617993950843811
       Topic: /initialpose
+      X std deviation: 0.5
+      Y std deviation: 0.5
     - Class: rviz/SetGoal
       Topic: /move_base_simple/goal
     - Class: rviz/PublishPoint
