@@ -47,13 +47,13 @@ namespace curio_base
 
     // Servo limits - LX-16A has max angular velocity of approx 1 revolution per second
     static const double SERVO_ANG_VEL_MAX = 2 * M_PI;
-    static const double SERVO_DUTY_MAX = 1000.0;
+    static const int16_t SERVO_DUTY_MAX = 1000;
 
     // Steering angle limits
     static const double REVERSE_SERVO_ANGLE = 90.0; // The angle at which we reverse the servo by 180 deg.
     static const double SERVO_ANGLE_MAX = 120.0;    // Maximum (abs) angle at which the servo can be set.
-    static const double SERVO_POS_MIN = 0.0;        // Minimum servo position (servo units).
-    static const double SERVO_POS_MAX = 1000.0;     // Maximum servo position (servo units).
+    static const int16_t SERVO_POS_MIN = 0;         // Minimum servo position (servo units).
+    static const int16_t SERVO_POS_MAX = 1000;      // Maximum servo position (servo units).
 
     static const int16_t SERVO_MOVE_TIME = 50;      // Time taken to move steering servos to new position [ms]. 
 
@@ -73,6 +73,11 @@ namespace curio_base
     double map(double x, double in_min, double in_max, double out_min, double out_max)
     {
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    int16_t clamp(int16_t x, int16_t lower, int16_t upper)
+    {
+        return std::min(std::max(x, lower), upper);
     }
 
     /// \brief Convert radians to degrees
@@ -141,9 +146,7 @@ namespace curio_base
         steer_servo_ids_(k_num_steers_),
         wheel_servo_orientations_(k_num_wheels_),
         steer_servo_orientations_(k_num_steers_),
-        wheel_servo_duties_(k_num_wheels_, 0),
-        wheel_servo_last_positions_(k_num_wheels_, 0),
-        steer_servo_last_positions_(k_num_steers_, 500)
+        wheel_servo_duties_(k_num_wheels_, 0)
     {
         // @TODO hardcoded parameters
         // Parameters
@@ -230,9 +233,10 @@ namespace curio_base
             return angle;
         }
         catch(const LX16AException &e) {
-            ROS_ERROR_STREAM(e.what()
-                << " wheel: id: " << static_cast<int>(servo_id));
-            return 0.0;
+            std::stringstream ss;
+            ss << "get wheel position: id: " << static_cast<int>(servo_id)
+            << " failed\n" << e.what();
+            throw RoverBaseHALException(ss.str().c_str());
         }
     }
 
@@ -256,6 +260,9 @@ namespace curio_base
         uint8_t servo_id = wheel_servo_ids_[i];
         int8_t orientation = wheel_servo_orientations_[i];
         int16_t duty = angularVelocity2Duty(velocity * orientation);
+
+        // Apply a simple clamp to the duty
+        duty = clamp(duty, -SERVO_DUTY_MAX, SERVO_DUTY_MAX);
 
         // Save the duty set point.
         wheel_servo_duties_[i] = duty;
@@ -291,9 +298,10 @@ namespace curio_base
             return angle;
         }
         catch(const LX16AException &e) {
-            ROS_ERROR_STREAM(e.what()
-                << " get steer: id: " << static_cast<int>(servo_id));
-            return 0.0;
+            std::stringstream ss;
+            ss << "get steer angle: id: " << static_cast<int>(servo_id)
+            << " failed\n" << e.what();
+            throw RoverBaseHALException(ss.str().c_str());
         }
     }
 

@@ -38,9 +38,23 @@
 #define CURIO_BASE_ROVER_BASE_HAL_H_
 
 #include <ros/ros.h>
+#include <exception>
 
 namespace curio_base
 {
+    /// \brief Exception for the rover hardware abstraction layer.
+    class RoverBaseHALException : public std::exception
+    {
+        // Disable copy constructors
+        RoverBaseHALException& operator=(const RoverBaseHALException&);
+        std::string e_what_;
+    public:
+        RoverBaseHALException (const char *description);
+        RoverBaseHALException (const RoverBaseHALException& other);
+        virtual ~RoverBaseHALException() throw();
+        virtual const char* what () const throw ();
+    };
+
     /// \brief Hardware Abstraction Layer for the rover base.
     class RoverBaseHAL
     {

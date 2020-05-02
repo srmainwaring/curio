@@ -38,6 +38,31 @@
 
 namespace curio_base
 {
+
+////////////////////////////////////////////////////////////////////////////////
+
+    RoverBaseHALException::RoverBaseHALException (const char *description)
+    {
+        std::stringstream ss;
+        ss << "RoverBaseHALException: " << description;
+        e_what_ = ss.str();
+    }
+
+    RoverBaseHALException::RoverBaseHALException (const RoverBaseHALException& other) :
+        e_what_(other.e_what_)
+    {
+    }
+
+    RoverBaseHALException::~RoverBaseHALException() throw()
+    {
+    }
+
+    const char* RoverBaseHALException::what () const throw ()
+    {
+        return e_what_.c_str();
+    }
+
+////////////////////////////////////////////////////////////////////////////////
     RoverBaseHAL::~RoverBaseHAL()
     {
     }

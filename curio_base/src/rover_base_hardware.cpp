@@ -84,7 +84,12 @@ namespace curio_base
         // Set position of wheel joints
         for (int i=0; i<k_num_wheel_joints; ++i)
         {
-            wheel_joints_[i].position = rover_hal_->getWheelPosition(time, i);
+            try {
+                wheel_joints_[i].position = rover_hal_->getWheelPosition(time, i);
+            } catch (const RoverBaseHALException &e) {
+                // Report error and use last known position. 
+                ROS_ERROR_STREAM(e.what());
+            }
         }
 
         // Set velocities of wheel joints
@@ -96,7 +101,12 @@ namespace curio_base
         // Set position of steer joints
         for (int i=0; i<k_num_steer_joints; ++i)
         {
-            steer_joints_[i].position = rover_hal_->getSteerAngle(time, i);
+            try {
+               steer_joints_[i].position = rover_hal_->getSteerAngle(time, i);
+            } catch (const RoverBaseHALException &e) {
+                // Report error and use last known position. 
+                ROS_ERROR_STREAM(e.what());
+            }
         }
     }
 
