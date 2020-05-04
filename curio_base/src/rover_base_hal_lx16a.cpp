@@ -142,6 +142,7 @@ namespace curio_base
     }
 
     RoverBaseHALLX16A::RoverBaseHALLX16A(ros::NodeHandle &nh) :
+        nh_(nh),
         wheel_servo_ids_(k_num_wheels_),
         steer_servo_ids_(k_num_steers_),
         wheel_servo_orientations_(k_num_wheels_),
@@ -159,26 +160,58 @@ namespace curio_base
         // Steer servos aligned: -z axis => negative orientation.
         steer_servo_orientations_ = { -1, -1, -1, -1 };
 
-        const std::string port("/dev/cu.usbmodemFD4121");
-        const uint32_t baudrate = 115200;
-        const uint32_t timeout = 1000;       // [ms]
+        // Parameters
+        
+        // LX-16A servo driver - all parameters are required
+        ROS_INFO("Opening connection to servo bus board...");
+        std::string port;
+        int baudrate = 115200;
+        double timeout = 1.0;           // [s]
+        ros::param::get("~port", port);
+        ros::param::get("~baudrate", baudrate);
+        ros::param::get("~timeout", timeout);
+        uint32_t timeout_millis = static_cast<uint32_t>(timeout * 1000);
 
-        std::string classifier_filename("./src/curio/curio_base/data/lx16a_tree_classifier.joblib");
-        std::string regressor_filename("./src/curio/curio_base/data/lx16a_tree_regressor.joblib");
-        int16_t window = 10;
+        // Encoder filters
+        std::string classifier_filename;
+        std::string regressor_filename;
+        int classifier_window = 10;        
+        ros::param::get("~classifier_window", classifier_window);
+        if (!ros::param::has("~classifier_filename"))
+        {
+            ROS_FATAL("Missing parameter: classifier_filename...calling ros shutdown");
+            ros::shutdown();
+        }
+        ros::param::get("~classifier_filename", classifier_filename);
+
+        if (!ros::param::has("~regressor_filename"))
+        {
+            ROS_FATAL("Missing parameter: regressor_filename...calling ros shutdown");
+            ros::shutdown();
+        }
+        ros::param::get("~regressor_filename", regressor_filename );
 
         // Initialise servo driver.
-        serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout);
+        serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout_millis);
         ros::Duration response_timeout(0.015);
         servo_driver_ = std::unique_ptr<LX16ADriver>(new LX16ADriver());
         servo_driver_->setPort(port);
         servo_driver_->setBaudrate(baudrate);
         servo_driver_->setTimeout(serial_timeout);
         servo_driver_->setResponseTimeout(response_timeout);
-        servo_driver_->open();
-        ROS_INFO_STREAM("port: " << servo_driver_->getPort());
-        ROS_INFO_STREAM("baudrate: " << servo_driver_->getBaudrate());
-        ROS_INFO_STREAM("is_open: " << servo_driver_->isOpen());
+        try
+        {
+            servo_driver_->open();
+        }
+        catch(const serial::IOException & e)
+        {
+            ROS_FATAL_STREAM("LX16A driver: failed to open port: "
+                << port << "...calling ros shutdown");
+            ros::shutdown();
+        }        
+        ROS_INFO_STREAM("LX16A driver: port: " << servo_driver_->getPort());
+        ROS_INFO_STREAM("LX16A driver: baudrate: " << servo_driver_->getBaudrate());
+        ROS_INFO_STREAM("LX16A driver: is_open: " << servo_driver_->isOpen());
 
         // Wait for Arduino bootloader to complete before sending any
         // data on the serial connection.
@@ -188,12 +221,12 @@ namespace curio_base
         // Initialise encoder filter.
         std::unique_ptr<LX16AEncoderFilterClient> filter(
             new LX16AEncoderFilterClient(
-                nh, classifier_filename, regressor_filename, window));
+                nh, classifier_filename, regressor_filename, classifier_window));
         encoder_filter_ = std::move(filter);
         encoder_filter_->init();
-        ROS_INFO_STREAM("classifier_filename: " << classifier_filename);
-        ROS_INFO_STREAM("regressor_filename: " << regressor_filename);
-        ROS_INFO_STREAM("window: " << window);
+        ROS_INFO_STREAM("LX16A encoder: classifier_filename: " << classifier_filename);
+        ROS_INFO_STREAM("LX16A encoder: regressor_filename: " << regressor_filename);
+        ROS_INFO_STREAM("LX16A encoder: classifier_window: " << classifier_window);
         
         // Add servos
         for (size_t i=0; i<k_num_wheels_; ++i)

@@ -40,15 +40,7 @@
 See curio_base/src/base_sensors.py for documentation.  
 '''
 
-import rospy
 import curio_base.base_sensors
 
 if __name__ == '__main__':
-    rospy.init_node('curio_base_sensors')
-    rospy.loginfo('Starting Curio base sensors')
-
-    # Base sensors
-    base_sensors = curio_base.base_sensors.BaseSensors()
-
-    # Wait for shutdown
-    rospy.spin()
+    curio_base.base_sensors.main()

@@ -146,3 +146,22 @@ class BaseFailsafe(object):
             servo_id = self._wheel_servo_ids[i]
             self._servo_driver.motor_mode_write(servo_id, 0)
 
+def main():
+    rospy.init_node('curio_base_failsafe')
+    rospy.loginfo('Starting Curio base failsafe')
+
+    # Base failsafe
+    base_failsafe = BaseFailsafe()
+
+    # Start the control loop
+    control_frequency = 20.0
+    if rospy.has_param('~failsafe_control_frequency'):
+        control_frequency = rospy.get_param('~failsafe_control_frequency')
+
+    rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
+    control_timer = rospy.Timer(
+        rospy.Duration(1.0 / control_frequency),
+        base_failsafe.update)
+
+    # Wait for shutdown
+    rospy.spin()

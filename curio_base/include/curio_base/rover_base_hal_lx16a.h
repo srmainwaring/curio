@@ -88,6 +88,9 @@ namespace curio_base
         const size_t k_num_wheels_ = 6;
         const size_t k_num_steers_ = 4;
 
+        // Node handle
+        ros::NodeHandle nh_;
+        
         // Servo ids
         std::vector<uint8_t> wheel_servo_ids_;
         std::vector<uint8_t> steer_servo_ids_;

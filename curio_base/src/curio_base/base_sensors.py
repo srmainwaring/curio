@@ -161,3 +161,13 @@ class BaseSensors(object):
 
         self._imu_pub.publish(self._imu_msg)
         self._mag_pub.publish(self._mag_msg)
+
+def main():
+    rospy.init_node('curio_base_sensors')
+    rospy.loginfo('Starting Curio base sensors')
+
+    # Base sensors
+    base_sensors = BaseSensors()
+
+    # Wait for shutdown
+    rospy.spin()

@@ -36,5 +36,6 @@ curio_teleop_rc : ROS node
         respawn="true" output="screen">
         <rosparam command="load" file="$(find curio_teleop)/config/teleop_rc.yaml" />
         <remap from="channels" to="radio/channels" />
+        <remap from="cmd_vel" to="ackermann_drive_controller/cmd_vel" />
     </node>
 </launch>
