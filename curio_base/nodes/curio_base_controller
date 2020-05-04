@@ -42,32 +42,8 @@ A mobile base controller node for a Sawppy Rover using LX-16A servos.
 See curio_base/src/base_controller.py for documentation.  
 '''
 
-import rospy
 import curio_base.base_controller
 
 if __name__ == '__main__':
-    rospy.init_node('curio_base_controller')
-    rospy.loginfo('Starting Curio base controller')
+    curio_base.base_controller.main()
 
-    # Base controller
-    base_controller = curio_base.base_controller.BaseController()
-
-    # Register shutdown behaviour
-    def shutdown_callback():
-        rospy.loginfo('Shutdown Curio base controller...')
-        base_controller.shutdown()
-
-    rospy.on_shutdown(shutdown_callback)
-
-    # Start the control loop
-    control_frequency = 10.0
-    if rospy.has_param('~control_frequency'):
-        control_frequency = rospy.get_param('~control_frequency')
-
-    rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
-    control_timer = rospy.Timer(
-        rospy.Duration(1.0 / control_frequency),
-        base_controller.update)
-
-    # Wait for shutdown
-    rospy.spin()

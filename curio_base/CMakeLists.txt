@@ -106,6 +106,7 @@ add_library(curio_base
     src/rover_base_hardware.cpp
 )
 target_link_libraries(curio_base ${catkin_LIBRARIES})
+add_dependencies(curio_base ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 # Nodes
 add_executable(rover_base_controller

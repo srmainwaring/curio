@@ -134,6 +134,8 @@ namespace curio_base
         /// to move from its current position to the commanded position, in [0, 30000] ms.
         /// \return Returns true if succesful, false otherwise.
         ///
+        /// \throw curio_base::LX16AException
+        ///
         void move(uint8_t servo_id, uint16_t position, uint16_t move_time=0);
 
         /// \brief Read the current commanded position and move time.
@@ -144,96 +146,182 @@ namespace curio_base
         /// to move from its current position to the commanded position, in [0, 30000] ms.
         /// \return Returns true if succesful, false otherwise.
         ///
+        /// \throw curio_base::LX16AException
+        ///
         void getMove(uint8_t servo_id, int16_t &position, int16_t &move_time);
 
         /// \brief Prepare a servo for a move to a new position.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setPreparedMove(uint8_t servo_id, uint16_t position, uint16_t move_time);
 
         /// \brief Get the move time of a prepared servo move.
         uint16_t getPreparedMove(uint8_t servo_id);
 
         /// \brief Start a prepared servo move.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void moveStart(uint8_t servo_id);
 
         /// \brief Immediately stop the servo from moving.
         ///
         /// The servo must be in servo mode for the move_stop to be effective.
         /// When in motor mode you must set the duty to zero instead.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void moveStop(uint8_t servo_id);
 
         /// \brief Set the servo serial identifier.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setServoId(uint8_t servo_id);
 
         /// \brief Get the servo serial identifier.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         uint8_t getServoId(uint8_t servo_id);
 
         /// \brief Set the servo position offset.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setPositionOffset(uint8_t servo_id, int16_t position_offset);
 
         /// \brief Save the current servo position offset.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void savePositionOffset(uint8_t servo_id);
 
         /// \brief Get the current servo position offset.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         int16_t getPositionOffset(int8_t servo_id);
 
         /// \brief Set the servo position minimum and maximum limits.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setPositionLimits(uint8_t servo_id, uint16_t min_position, uint16_t max_position);
 
         /// \brief Get the servo position minimum and maximum limits.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void getPositionLimits(uint8_t servo_id, uint16_t &min_position, uint16_t &max_position);
 
         /// \brief Set the servo voltage minimum and maximum limits.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setVoltageLimits(uint8_t servo_id, double min_voltage, double max_voltage);
 
         /// \brief Get the servo voltage minimum and maximum limits.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void getVoltageLimits(uint8_t servo_id, double &min_voltage, double &max_voltage);
 
         /// \brief Set the servo maximum temperature limit.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setMaxTemperatureLimit(uint8_t servo_id, double max_temperature);
 
         /// \brief Get the servo maximum temperature limit.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         double getMaxTemperatureLimit(uint8_t servo_id);
 
         /// \brief Get the servo temperature.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         double getTemperature(uint8_t servo_id);
 
         /// \brief Get the servo voltage.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         double getVoltage(uint8_t servo_id);
 
         /// \brief Get the servo position.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         int16_t getPosition(uint8_t servo_id);
 
         /// \brief Set the servo to 'motor' mode.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setMotorMode(uint8_t servo_id, int16_t duty);
 
         /// \brief Set the servo to 'servo' mode.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setServoMode(uint8_t servo_id);
 
         /// \brief Get the servo mode.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void getMode(uint8_t servo_id, uint8_t &mode, int16_t &duty);
 
         /// \brief Power the servo motor on.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setMotorOn(uint8_t servo_id);
 
         /// \brief Power the servo motor off.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setMotorOff(uint8_t servo_id);
 
         /// \brief Get the servo motor power state.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         bool isMotorOn(uint8_t servo_id);
 
         /// \brief Turn the servo LED on.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setLedOn(uint8_t servo_id);
 
         /// \brief Turn the servo LED off.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setLedOff(uint8_t servo_id);
 
         /// \brief Get the state of the servo LED.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         bool isLedOn(uint8_t servo_id);
 
         /// \brief Set the list of faults that cause the LED to flash.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         void setLedErrors(uint8_t servo_id, uint8_t fault_code);
 
         /// \brief Get the list of faults that cause the LED to flash.
+        ///
+        /// \throw curio_base::LX16AException
+        ///
         uint8_t getLedErrors(uint8_t servo_id);
 
     private:

@@ -1697,3 +1697,30 @@ class BaseController(object):
         self._encoders_msg.header.frame_id = self._base_frame_id
         self._encoders_msg.wheel_encoders = self._wheel_encoders
         self._encoders_pub.publish(self._encoders_msg)
+
+def main():
+    rospy.init_node('curio_base_controller')
+    rospy.loginfo('Starting Curio base controller')
+
+    # Base controller
+    base_controller = BaseController()
+
+    # Register shutdown behaviour
+    def shutdown_callback():
+        rospy.loginfo('Shutdown Curio base controller...')
+        base_controller.shutdown()
+
+    rospy.on_shutdown(shutdown_callback)
+
+    # Start the control loop
+    control_frequency = 10.0
+    if rospy.has_param('~control_frequency'):
+        control_frequency = rospy.get_param('~control_frequency')
+
+    rospy.loginfo('Starting control loop at {} Hz'.format(control_frequency))
+    control_timer = rospy.Timer(
+        rospy.Duration(1.0 / control_frequency),
+        base_controller.update)
+
+    # Wait for shutdown
+    rospy.spin()
