@@ -160,11 +160,11 @@ catkin_install_python(PROGRAMS
     nodes/curio_base_controller
     nodes/curio_base_failsafe
     nodes/curio_base_sensors
+    nodes/lx16a_encoder_filter_server
     scripts/lx16a_cmd_vel_random.py
     scripts/lx16a_cmd_vel_sinusoid.py
     scripts/lx16a_cmd_vel_stepped.py
     scripts/lx16a_driver_test.py
-    scripts/lx16a_encoder_filter_server.py
     # scripts/lx16a_encoder_filter_server_test.py
     scripts/lx16a_encoder_filter_test.py
     scripts/lx16a_encoder_logger.py

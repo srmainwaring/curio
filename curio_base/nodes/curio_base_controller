@@ -39,7 +39,7 @@
 
 A mobile base controller node for a Sawppy Rover using LX-16A servos.
 
-See curio_base/src/base_controller.py for documentation.  
+See src/curio_base/base_controller.py for documentation.  
 '''
 
 import curio_base.base_controller

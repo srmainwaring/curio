@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # 
 # coding: latin-1
 # 
@@ -186,7 +185,7 @@ def handle_update(req):
     response.status = 0
     return response
 
-def lx16a_encoder_filter_server():
+def main():
     rospy.init_node('lx16a_encoder_filter_server')
 
     # Python system info
@@ -217,7 +216,4 @@ def lx16a_encoder_filter_server():
     # Start spinning
     rospy.loginfo('lx16a_encoder_filter_server ready...')
     rospy.spin()
-
-if __name__ == '__main__':
-    lx16a_encoder_filter_server()
 
