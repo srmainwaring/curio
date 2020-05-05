@@ -37,7 +37,7 @@
 
 ''' Curio base sensors node
 
-See curio_base/src/base_sensors.py for documentation.  
+See src/curio_base/base_sensors.py for documentation.  
 '''
 
 import curio_base.base_sensors

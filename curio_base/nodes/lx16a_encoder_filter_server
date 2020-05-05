@@ -35,14 +35,12 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 # 
 
-''' Curio base failsafe node
+''' Curio lx16a encoder filter node
 
-A mobile base failsafe node for a Sawppy Rover using LX-16A servos.
-
-See src/curio_base/base_failsafe.py for documentation.  
+See src/curio_base/lx16a_encoder_filter_server.py for documentation.  
 '''
 
-import curio_base.base_failsafe
+import curio_base.lx16a_encoder_filter_server
 
 if __name__ == '__main__':
-    curio_base.base_failsafe.main()
+    curio_base.lx16a_encoder_filter_server.main()

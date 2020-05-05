@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# 
+#
 #   Software License Agreement (BSD-3-Clause)
 #    
 #   Copyright (c) 2019 Rhys Mainwaring

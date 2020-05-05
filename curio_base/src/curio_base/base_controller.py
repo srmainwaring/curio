@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# 
 # coding: latin-1
 # 
 #   Software License Agreement (BSD-3-Clause)
