@@ -54,25 +54,25 @@ namespace curio_base
         RoverBaseHALMock();
 
         /// \brief Get the number of wheels.
-        virtual size_t getNumWheels() const;
+        size_t getNumWheels() const override;
 
         /// \brief Get the number of steers.
-        virtual size_t getNumSteers() const;
+        size_t getNumSteers() const override;
 
         /// \brief Get the angular position of the i-th wheel [rad].
-        virtual double getWheelPosition(const ros::Time &time, int i) const;
+        double getWheelPosition(const ros::Time &time, int i) const override;
 
         /// \brief Get the angular velocity of the i-th wheel [rad/s].
-        virtual double getWheelVelocity(const ros::Time &time, int i) const;
+        double getWheelVelocity(const ros::Time &time, int i) const override;
 
         /// \brief Set the angular velocity of the i-th wheel [rad/s].
-        virtual void setWheelVelocity(const ros::Time &time, int i, double velocity);
+        void setWheelVelocity(const ros::Time &time, int i, double velocity) override;
 
         /// \brief Get the steering angle of the i-th steer [rad].
-        virtual double getSteerAngle(const ros::Time &time, int i) const;
+        double getSteerAngle(const ros::Time &time, int i) const override;
 
         /// \brief Set the angle of the i-th steer [rad].
-        virtual void setSteerAngle(const ros::Time &time, int i, double angle);
+        void setSteerAngle(const ros::Time &time, int i, double angle) override;
 
     private:
         // Constants

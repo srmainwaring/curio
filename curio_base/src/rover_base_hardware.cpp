@@ -49,6 +49,30 @@ namespace curio_base
     {
         ROS_INFO_STREAM("Initialising rover base hardware...");
 
+        // Initialise parameters
+        
+        // Passive joints - publish state only
+        // "diff_brace_joint",
+        // "left_bogie_joint",
+        // "left_rocker_joint",
+        // "right_bogie_joint",
+        // "right_rocker_joint"
+        
+        // Wheel joints
+        // "front_left_wheel_joint",
+        // "front_right_wheel_joint",
+        // "mid_left_wheel_joint",
+        // "mid_right_wheel_joint",
+        // "back_left_wheel_joint",
+        // "back_right_wheel_joint"
+
+        // Steer joints
+        // "front_left_corner_joint",
+        // "front_right_corner_joint",
+        // "back_left_corner_joint",
+        // "back_right_corner_joint"
+
+
         // @TODO - control switch with parameter / plugin.
         // LX16A HAL
         std::unique_ptr<RoverBaseHALLX16A> rover_hal_lx16a(new RoverBaseHALLX16A(nh));
@@ -69,8 +93,6 @@ namespace curio_base
         steer_joints_.resize(k_num_steer_joints);
         ROS_INFO_STREAM("Number of wheel joints: " << k_num_wheel_joints);
         ROS_INFO_STREAM("Number of steer joints: " << k_num_steer_joints);
-
-        // Initialise parameters 
 
         // Startup
         registerControlInterfaces();

@@ -59,31 +59,34 @@ namespace curio_base
         RoverBaseHALLX16A(ros::NodeHandle &nh);
 
         /// \brief Get the number of wheels.
-        virtual size_t getNumWheels() const;
+        size_t getNumWheels() const override;
 
         /// \brief Get the number of steers.
-        virtual size_t getNumSteers() const;
+        size_t getNumSteers() const override;
 
         /// \brief Get the angular position of the i-th wheel [rad].
-        virtual double getWheelPosition(const ros::Time &time, int i) const;
+        double getWheelPosition(const ros::Time &time, int i) const override;
 
         /// \brief Get the angular velocity of the i-th wheel [rad/s].
-        virtual double getWheelVelocity(const ros::Time &time, int i) const;
+        double getWheelVelocity(const ros::Time &time, int i) const override;
 
         /// \brief Set the angular velocity of the i-th wheel [rad/s].
-        virtual void setWheelVelocity(const ros::Time &time, int i, double velocity);
+        void setWheelVelocity(const ros::Time &time, int i, double velocity) override;
 
         /// \brief Get the steering angle of the i-th steer [rad].
-        virtual double getSteerAngle(const ros::Time &time, int i) const;
+        double getSteerAngle(const ros::Time &time, int i) const override;
 
         /// \brief Set the angle of the i-th steer [rad].
-        virtual void setSteerAngle(const ros::Time &time, int i, double angle);
+        void setSteerAngle(const ros::Time &time, int i, double angle) override;
 
         inline const LX16ADriver& servoDriver() const { return *servo_driver_; }
 
         LX16ADriver& servoDriver() { return *servo_driver_; }
 
     private:
+        /// \brief Set the steering trim for the i-ith steer.
+        void setSteerTrim(int i, int16_t offset);
+
         // Constants
         const size_t k_num_wheels_ = 6;
         const size_t k_num_steers_ = 4;
