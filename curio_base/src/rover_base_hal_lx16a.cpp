@@ -151,10 +151,22 @@ namespace curio_base
     /// https://en.cppreference.com/w/cpp/string/byte/tolower
     bool iequal(const std::string& a, const std::string& b)
     {
-        return std::equal(a.begin(), a.end(), b.begin(), b.end(),
-            [](char a, char b) {
-                return tolower(static_cast<unsigned char>(a)) == tolower(static_cast<unsigned char>(b));
-            });
+        if (a.size() != b.size()) return false;
+        bool is_equal = true;
+        for (auto sa = a.begin(), sb = b.begin();
+            sa != a.end() && sb != b.end();
+            ++sa, ++sb)
+        {
+            is_equal &= (std::tolower(static_cast<unsigned char>(*sa)) 
+                == std::tolower(static_cast<unsigned char>(*sb)));
+        }
+        return is_equal;
+
+        // C++14
+        // return std::for_each(a.begin(), a.end(), 
+        //     [](char a, char b) {
+        //         return tolower(static_cast<unsigned char>(a)) == tolower(static_cast<unsigned char>(b));
+        //     });
     }    
 
     // Convert from velocity to servo duty.

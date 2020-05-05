@@ -140,6 +140,10 @@ add_executable(ros_serial_test
 )
 target_link_libraries(ros_serial_test curio_base ${catkin_LIBRARIES})
 
+add_executable(test_rover_base_hal_lx16a
+    test/test_rover_base_hal_lx16a.cpp
+)
+
 ################################################################################
 # Install
 
