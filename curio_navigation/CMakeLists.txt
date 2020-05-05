@@ -5,7 +5,7 @@ find_package(catkin REQUIRED roslaunch)
 
 catkin_package()
 
-roslaunch_add_file_check(launch)
+# roslaunch_add_file_check(launch)
 
 install(
     DIRECTORY config launch
