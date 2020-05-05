@@ -49,30 +49,6 @@ namespace curio_base
     {
         ROS_INFO_STREAM("Initialising rover base hardware...");
 
-        // Initialise parameters
-        
-        // Passive joints - publish state only
-        // "diff_brace_joint",
-        // "left_bogie_joint",
-        // "left_rocker_joint",
-        // "right_bogie_joint",
-        // "right_rocker_joint"
-        
-        // Wheel joints
-        // "front_left_wheel_joint",
-        // "front_right_wheel_joint",
-        // "mid_left_wheel_joint",
-        // "mid_right_wheel_joint",
-        // "back_left_wheel_joint",
-        // "back_right_wheel_joint"
-
-        // Steer joints
-        // "front_left_corner_joint",
-        // "front_right_corner_joint",
-        // "back_left_corner_joint",
-        // "back_right_corner_joint"
-
-
         // @TODO - control switch with parameter / plugin.
         // LX16A HAL
         std::unique_ptr<RoverBaseHALLX16A> rover_hal_lx16a(new RoverBaseHALLX16A(nh));
@@ -93,6 +69,37 @@ namespace curio_base
         steer_joints_.resize(k_num_steer_joints);
         ROS_INFO_STREAM("Number of wheel joints: " << k_num_wheel_joints);
         ROS_INFO_STREAM("Number of steer joints: " << k_num_steer_joints);
+
+        // @TODO: ensure joint definitions and servo ids are consistent,
+        //        order is important and currently not validated.
+        //        HAL to provide number of joints and their names.       
+
+        // Passive joints - publish state only
+        passive_joint_names_ = {
+            "diff_brace_joint",
+            "left_bogie_joint",
+            "left_rocker_joint",
+            "right_bogie_joint",
+            "right_rocker_joint"
+        };
+
+        // Wheel joints
+        wheel_joint_names_ = {
+            "front_left_wheel_joint",
+            "mid_left_wheel_joint",
+            "back_left_wheel_joint",
+            "front_right_wheel_joint",
+            "mid_right_wheel_joint",
+            "back_right_wheel_joint"
+        };
+
+        // Steer joints
+        steer_joint_names_ = {
+            "front_left_steer_joint",
+            "back_left_steer_joint",
+            "front_right_steer_joint",
+            "back_right_steer_joint"
+        };
 
         // Startup
         registerControlInterfaces();
@@ -155,18 +162,8 @@ namespace curio_base
         const int k_num_wheel_joints = rover_hal_->getNumWheels();
         const int k_num_steer_joints = rover_hal_->getNumSteers();
 
-        ROS_INFO_STREAM("Registering passive joint interfaces");
-
-        // Register the names for passive joints.
-        std::vector<std::string> passive_joint_names_ = {
-            "diff_brace_joint",
-            "left_bogie_joint",
-            "left_rocker_joint",
-            "right_bogie_joint",
-            "right_rocker_joint"
-        };
-
         // Register the wheel joint state and joint handles.
+        ROS_INFO_STREAM("Registering passive joint interfaces");
         for (int i=0; i<k_num_passive_joints_; ++i)
         {
             hardware_interface::JointStateHandle joint_state_handle(
@@ -177,19 +174,8 @@ namespace curio_base
             joint_state_interface_.registerHandle(joint_state_handle);
         }
 
-        ROS_INFO_STREAM("Registering wheel joint interfaces");
-
-        // Register the names for wheel joint controllers.
-        std::vector<std::string> wheel_joint_names_ = {
-            "front_left_wheel_joint",
-            "front_right_wheel_joint",
-            "mid_left_wheel_joint",
-            "mid_right_wheel_joint",
-            "back_left_wheel_joint",
-            "back_right_wheel_joint"
-        };
-
         // Register the wheel joint state and joint handles.
+        ROS_INFO_STREAM("Registering wheel joint interfaces");
         for (int i=0; i<k_num_wheel_joints; ++i)
         {
             hardware_interface::JointStateHandle joint_state_handle(
@@ -204,17 +190,8 @@ namespace curio_base
             velocity_joint_interface_.registerHandle(joint_handle);
         }
 
-        ROS_INFO_STREAM("Registering steer joint interfaces");
-
-        // Register the names for steer joint controllers.
-        std::vector<std::string> steer_joint_names_ = {
-            "front_left_corner_joint",
-            "front_right_corner_joint",
-            "back_left_corner_joint",
-            "back_right_corner_joint"
-        };
-
         // Register the steer joint state and joint handles.
+        ROS_INFO_STREAM("Registering steer joint interfaces");
         for (int i=0; i<k_num_steer_joints; ++i)
         {
             hardware_interface::JointStateHandle joint_state_handle(
