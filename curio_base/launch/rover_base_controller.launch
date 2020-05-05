@@ -22,6 +22,11 @@ Parameters
     <arg name="classifier_window" default="10" />
     <arg name="regressor_filename" default="$(find curio_base)/data/lx16a_tree_regressor.joblib" />
 
+    <!-- LX16A encoder filter server -->
+    <node pkg="curio_base" type="lx16a_encoder_filter_server.py" name="lx16a_encoder_filter_server"
+        respawn="true" output="screen">
+    </node>
+
     <!-- Controller for the mobile base  -->
     <node pkg="curio_base" type="rover_base_controller" name="curio_base_controller"
         respawn="true" output="screen">

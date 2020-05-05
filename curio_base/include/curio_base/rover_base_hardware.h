@@ -84,6 +84,7 @@ namespace curio_base
             double effort = 0.0;
         };
         std::vector<PassiveJoint> passive_joints_;
+        std::vector<std::string> passive_joint_names_;
 
         // Wheel joints - velocity controlled
         struct WheelJoint
@@ -94,6 +95,7 @@ namespace curio_base
             double velocity_command = 0.0;
         };
         std::vector<WheelJoint> wheel_joints_;
+        std::vector<std::string> wheel_joint_names_;
 
         // Steer joints - position controlled
         struct SteerJoint
@@ -104,6 +106,7 @@ namespace curio_base
             double position_command = 0.0;
         };
         std::vector<SteerJoint> steer_joints_;
+        std::vector<std::string> steer_joint_names_;
 
         // Hardware abstraction
         std::unique_ptr<RoverBaseHAL> rover_hal_;
