@@ -80,6 +80,14 @@ namespace curio_base
         filter_reset_ = nh_.serviceClient<curio_base::EncoderFilterReset>("lx16a/encoder_filter/reset"); 
         filter_set_invert_ = nh_.serviceClient<curio_base::EncoderFilterSetInvert>("lx16a/encoder_filter/set_invert"); 
         filter_update_ = nh_.serviceClient<curio_base::EncoderFilterUpdate>("lx16a/encoder_filter/update"); 
+    
+        // Block until the service is ready...
+        ros::Duration timeout_(2); // [s]
+        bool is_ready = filter_add_.waitForExistence(timeout_);
+        if (!is_ready)
+        {
+            ROS_ERROR("Failed to initialise encoder filter - service not available");
+        }
     }
 
     void LX16AEncoderFilterClient::add(uint8_t servo_id)
@@ -91,11 +99,12 @@ namespace curio_base
         srv.request.window = window_;
         if (filter_add_.call(srv))
         {
-            ROS_INFO_STREAM("Initialised encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
+            ROS_INFO_STREAM("Added encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
         }
         else
         {
-            ROS_ERROR("Failed to initialise encoder filter");
+            ROS_ERROR_STREAM("Failed to add encoder filter for servo: "
+                << static_cast<int>(servo_id));
         }
     }
 
@@ -114,7 +123,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to update encoder filter");
+            ROS_ERROR_STREAM("Failed to update encoder filter for servo: "
+                << static_cast<int>(servo_id));
         }
     }
 
@@ -130,7 +140,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to get revolutions from encoder filter");
+            ROS_ERROR_STREAM("Failed to get revolutions from encoder filter for servo: "
+                << static_cast<int>(servo_id));
             return 0;
         }
     }
@@ -147,7 +158,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to get count from encoder filter");
+            ROS_ERROR_STREAM("Failed to get count from encoder filter for servo: "
+                << static_cast<int>(servo_id));
             return 0;
         }
     }
@@ -164,7 +176,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to get duty from encoder filter");
+            ROS_ERROR_STREAM("Failed to get duty from encoder filter for servo: "
+                << static_cast<int>(servo_id));
             return 0;
         }
     }
@@ -181,7 +194,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to get angular position from encoder filter");
+            ROS_ERROR_STREAM("Failed to get angular position from encoder filter for servo: "
+                << static_cast<int>(servo_id));
             return 0.0;
         }
     }
@@ -199,7 +213,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to get servo position from encoder filter");
+            ROS_ERROR_STREAM("Failed to get servo position from encoder filter for servo: "
+                << static_cast<int>(servo_id));
         }
     }
 
@@ -215,7 +230,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to get invert from encoder filter");
+            ROS_ERROR_STREAM("Failed to get invert from encoder filter for servo: "
+                << static_cast<int>(servo_id));
             return 1;
         }
     }
@@ -233,7 +249,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to set invert on encoder filter");
+            ROS_ERROR_STREAM("Failed to set invert on encoder filter for servo: "
+                << static_cast<int>(servo_id));
         }
     }
 
@@ -250,7 +267,8 @@ namespace curio_base
         }
         else
         {
-            ROS_ERROR("Failed to reset encoder filter");
+            ROS_ERROR_STREAM("Failed to reset encoder filter for servo: "
+                << static_cast<int>(servo_id));
         }
     }
 

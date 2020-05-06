@@ -247,7 +247,7 @@ namespace curio_base
             else
             {
                 std::stringstream ss;
-                ss << "Invalid lateral laebl for wheel servo: "
+                ss << "Invalid lateral label for wheel servo: "
                     << wheel_servo_ids_[i]
                     << ", got: " << wheel_servo_lat_labels[i]
                     << " expect 'left' or 'right'";
