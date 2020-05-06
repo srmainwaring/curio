@@ -15,7 +15,19 @@
     <!-- Spawn the controllers -->
     <node pkg="controller_manager" type="spawner" name="base_controller_spawner"
         args="joint_state_publisher ackermann_drive_controller" />
-   
+
+    <!-- EKF localization
+        The robot_localization node also broadcasts the transform from:
+            odom -> base_link
+
+        Note: when using EKF localiztion:
+            1. ensure the ackermann_drive_controller publishes odometry to ackermann_drive_controller/odom
+            2. disable the ackermann_drive_controller from broadcasting the tf for odom -> base_link
+    -->    
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_local">
+        <rosparam command="load" file="$(find curio_control)/config/ekf_localization_local.yaml" />
+    </node>
+
     <!-- Launch the robot state publisher @ 50 Hz -->
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" >
         <param name="publish_frequency" type="double" value="50.0" />
