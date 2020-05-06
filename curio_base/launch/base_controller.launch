@@ -62,12 +62,12 @@ Parameters
         The robot_localization node also broadcasts the transform from:
             odom -> base_link
 
-        Note: when using EKF localiztion:
+        Note: when using EKF localiztion with base_controller (i.e. not ros_control):
             1. ensure the base_controller publishes odometry to base_controller/odom
             2. disable the base_controller from broadcasting the tf for odom -> base_link
     -->    
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_local">
-        <rosparam command="load" file="$(find curio_base)/config/ekf_localization_local.yaml" />
+        <rosparam command="load" file="$(find curio_control)/config/ekf_localization_local.yaml" />
     </node>
 
     <!-- Publish robot state

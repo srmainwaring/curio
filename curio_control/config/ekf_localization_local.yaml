@@ -15,7 +15,10 @@ frequency: 50
 # 
 
 # Wheel encoders provide x, v_x, v_yaw as primary inputs
-odom0: base_controller/odom
+# Use when running the Python / Arduino controller: 'base_controller.launch'
+# odom0: base_controller/odom
+# Use when running the ros_control framework: 'rover_base_controller.launch'
+odom0: ackermann_drive_controller/odom
 odom0_config: [false, false, false,
                false, false, false,
                true, true, true,
