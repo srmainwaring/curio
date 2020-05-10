@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+    <name>lx16a</name>
+    <version>0.0.0</version>
+    <description>Hardware driver for the Lewansoul LX16A servo</description>
+    <maintainer email="rhys.mainwaring@me.com">Rhys Mainwaring</maintainer>
+    <license>BSD-3-Clause</license>
+    <url type="website">https://github.com/srmainwaring/curio</url>
+    <url type="repository">https://github.com/srmainwaring/curio</url>
+    <url type="bugtracker">https://github.com/srmainwaring/curio/issues</url>
+    <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
+    <buildtool_depend>catkin</buildtool_depend>
+    <buildtool_depend>message_generation</buildtool_depend>
+    <depend>lx16a_msgs</depend>
+    <depend>roscpp</depend>
+    <depend>rospy</depend>
+    <depend>serial</depend>
+    <depend>std_msgs</depend>
+    <exec_depend>message_runtime</exec_depend>
+</package>
