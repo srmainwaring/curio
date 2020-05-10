@@ -183,8 +183,8 @@ class LX16AEncoderFilter(object):
             pos_est = int(self._regressor.predict([self._X])[0]) % ENCODER_MAX
 
             # @DEBUG_INFO
-            count_est = pos_est + ENCODER_MAX * self._revolutions 
-            rospy.logdebug("count_est: {}".format(count_est))
+            # count_est = pos_est + ENCODER_MAX * self._revolutions 
+            # rospy.logdebug("count_est: {}".format(count_est))
 
             # @TODO: the acceptance criteria may need further tuning.
             # The classifier will sometimes report false positives.
