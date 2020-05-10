@@ -35,7 +35,7 @@
 //
 
 #include "curio_base/rover_base_hal_lx16a.h"
-#include "curio_base/lx16a_encoder_filter_client.h"
+#include "lx16a/lx16a_encoder_filter_client.h"
 #include <serial/serial.h>
 #include <algorithm>
 #include <cmath>
@@ -316,7 +316,7 @@ namespace curio_base
         uint32_t timeout_millis = static_cast<uint32_t>(timeout * 1000);
         serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout_millis);
         ros::Duration response_timeout(0.015);
-        servo_driver_ = std::unique_ptr<LX16ADriver>(new LX16ADriver());
+        servo_driver_ = std::unique_ptr<lx16a::LX16ADriver>(new lx16a::LX16ADriver());
         servo_driver_->setPort(port);
         servo_driver_->setBaudrate(baudrate);
         servo_driver_->setTimeout(serial_timeout);
@@ -340,8 +340,8 @@ namespace curio_base
 
         // Initialise encoder filter.
         ROS_INFO("Initialising LX16A encoder filters...");
-        std::unique_ptr<LX16AEncoderFilterClient> filter(
-            new LX16AEncoderFilterClient(
+        std::unique_ptr<lx16a::LX16AEncoderFilterClient> filter(
+            new lx16a::LX16AEncoderFilterClient(
                 nh, classifier_filename, regressor_filename, classifier_window));
         encoder_filter_ = std::move(filter);
         encoder_filter_->init();
@@ -393,7 +393,7 @@ namespace curio_base
 
             return angle;
         }
-        catch(const LX16AException &e) {
+        catch(const lx16a::LX16AException &e) {
             std::stringstream ss;
             ss << "get wheel position: id: " << static_cast<int>(servo_id)
             << " failed\n" << e.what();
@@ -437,7 +437,7 @@ namespace curio_base
                 << ", orient: " << static_cast<int>(orientation)
                 << ", duty: " << static_cast<int>(duty));
         }
-        catch(const LX16AException &e) {
+        catch(const lx16a::LX16AException &e) {
             ROS_ERROR_STREAM(e.what()
                 << " set wheel: id: " << static_cast<int>(servo_id));
         }
@@ -458,7 +458,7 @@ namespace curio_base
 
             return angle;
         }
-        catch(const LX16AException &e) {
+        catch(const lx16a::LX16AException &e) {
             std::stringstream ss;
             ss << "get steer angle: id: " << static_cast<int>(servo_id)
             << " failed\n" << e.what();
@@ -479,7 +479,7 @@ namespace curio_base
                 << ", angle: " << angle
                 << ", pos: " << static_cast<int>(pos));
         }
-        catch(const LX16AException &e) {
+        catch(const lx16a::LX16AException &e) {
             ROS_ERROR_STREAM(e.what()
                 << " set steer: id: " << static_cast<int>(servo_id));
         }
@@ -498,7 +498,7 @@ namespace curio_base
             ROS_DEBUG_STREAM("set steer: id: " << static_cast<int>(servo_id)
                 << ", offset: " << static_cast<int>(offset));
         }
-        catch(const LX16AException &e) {
+        catch(const lx16a::LX16AException &e) {
             ROS_ERROR_STREAM(e.what()
                 << " set steer: id: " << static_cast<int>(servo_id));
         }

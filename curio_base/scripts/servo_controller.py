@@ -5,7 +5,7 @@
 # 
 
 import rospy
-from curio_base.lx16a_driver import LX16ADriver
+from lx16a.lx16a_driver import LX16ADriver
 from curio_msgs.msg import CurioServoCommands
 from curio_msgs.msg import CurioServoPositions
 from curio_msgs.msg import CurioServoStates

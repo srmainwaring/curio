@@ -38,8 +38,8 @@
 #define CURIO_BASE_ROVER_BASE_HAL_LX16A_H_
 
 #include "curio_base/rover_base_hal.h"
-#include "curio_base/lx16a_driver.h"
-#include "curio_base/lx16a_encoder_filter.h"
+#include "lx16a/lx16a_driver.h"
+#include "lx16a/lx16a_encoder_filter.h"
 
 #include <ros/ros.h>
 
@@ -79,10 +79,6 @@ namespace curio_base
         /// \brief Set the angle of the i-th steer [rad].
         void setSteerAngle(const ros::Time &time, int i, double angle) override;
 
-        inline const LX16ADriver& servoDriver() const { return *servo_driver_; }
-
-        LX16ADriver& servoDriver() { return *servo_driver_; }
-
     private:
         /// \brief Set the steering trim for the i-ith steer.
         void setSteerTrim(int i, int16_t offset);
@@ -106,8 +102,8 @@ namespace curio_base
         std::vector<uint16_t> wheel_servo_duties_;
 
         // Drivers and filters
-        std::unique_ptr<LX16ADriver> servo_driver_;
-        std::unique_ptr<LX16AEncoderFilter> encoder_filter_;
+        std::unique_ptr<lx16a::LX16ADriver> servo_driver_;
+        std::unique_ptr<lx16a::LX16AEncoderFilter> encoder_filter_;
     };
 
 } // namespace curio_base

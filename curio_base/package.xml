@@ -22,6 +22,8 @@
     <depend>geometry_msgs</depend>
     <depend>hardware_interface</depend>
     <depend>joint_state_publisher</depend>
+    <depend>lx16a</depend>
+    <depend>lx16a_msgs</depend>
     <depend>nav_msgs</depend>
     <depend>robot_localization</depend>
     <depend>robot_state_publisher</depend>

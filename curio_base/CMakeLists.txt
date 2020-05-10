@@ -17,8 +17,10 @@ find_package(catkin REQUIRED COMPONENTS
     geometry_msgs
     hardware_interface
     joint_state_publisher
-    nav_msgs
+    lx16a
+    lx16a_msgs
     message_generation
+    nav_msgs
     robot_localization
     robot_state_publisher
     roscpp
@@ -44,18 +46,8 @@ add_action_files(DIRECTORY action FILES
 # add_message_files(DIRECTORY msg FILES
 # )
 
-add_service_files(DIRECTORY srv FILES
-    EncoderFilterAdd.srv
-    EncoderFilterGetAngularPosition.srv
-    EncoderFilterGetCount.srv
-    EncoderFilterGetDuty.srv
-    EncoderFilterGetInvert.srv
-    EncoderFilterGetRevolutions.srv
-    EncoderFilterGetServoPos.srv
-    EncoderFilterReset.srv
-    EncoderFilterSetInvert.srv
-    EncoderFilterUpdate.srv
-)
+# add_service_files(DIRECTORY srv FILES
+# )
 
 generate_messages(DEPENDENCIES actionlib_msgs std_msgs)
 
@@ -74,6 +66,8 @@ catkin_package(
         curio_msgs
         geometry_msgs
         joint_state_publisher
+        lx16a
+        lx16a_msgs
         message_runtime
         nav_msgs
         robot_localization
@@ -96,10 +90,6 @@ include_directories(
 
 # Library
 add_library(curio_base
-    src/lx16a_encoder_filter_client.cpp
-    src/lx16a_encoder_filter_onnx.cpp
-    src/lx16a_encoder_filter.cpp
-    src/lx16a_driver.cpp
     src/rover_base_hal.cpp
     src/rover_base_hal_lx16a.cpp
     src/rover_base_hal_mock.cpp
@@ -115,47 +105,30 @@ add_executable(rover_base_controller
 target_link_libraries(rover_base_controller curio_base ${catkin_LIBRARIES})
 
 # Examples
-add_executable(lx16a_position_publisher
-    src/examples/lx16a_position_publisher.cpp
+add_executable(ros_serial_test
+    src/examples/ros_serial_test.cpp
 )
-target_link_libraries(lx16a_position_publisher curio_base ${catkin_LIBRARIES})
-
-add_executable(lx16a_driver_test
-    src/examples/lx16a_driver_test.cpp
-)
-target_link_libraries(lx16a_driver_test curio_base ${catkin_LIBRARIES})
-
-add_executable(lx16a_encoder_filter_test
-    src/examples/lx16a_encoder_filter_test.cpp
-)
-target_link_libraries(lx16a_encoder_filter_test curio_base ${catkin_LIBRARIES})
+target_link_libraries(ros_serial_test curio_base ${catkin_LIBRARIES})
 
 add_executable(serial_test
     src/examples/serial_test.cpp
 )
 target_link_libraries(serial_test curio_base ${catkin_LIBRARIES})
 
-add_executable(ros_serial_test
-    src/examples/ros_serial_test.cpp
-)
-target_link_libraries(ros_serial_test curio_base ${catkin_LIBRARIES})
-
 add_executable(test_rover_base_hal_lx16a
     test/test_rover_base_hal_lx16a.cpp
 )
+target_link_libraries(test_rover_base_hal_lx16a curio_base ${catkin_LIBRARIES})
 
 ################################################################################
 # Install
 
 install(TARGETS
     curio_base
-    lx16a_position_publisher
-    lx16a_driver_test
-    lx16a_encoder_filter_test
     serial_test
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 install(DIRECTORY include/curio_base/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
@@ -164,21 +137,8 @@ catkin_install_python(PROGRAMS
     nodes/curio_base_controller
     nodes/curio_base_failsafe
     nodes/curio_base_sensors
-    nodes/lx16a_encoder_filter_server
-    scripts/lx16a_cmd_vel_random.py
-    scripts/lx16a_cmd_vel_sinusoid.py
-    scripts/lx16a_cmd_vel_stepped.py
-    scripts/lx16a_driver_test.py
-    # scripts/lx16a_encoder_filter_server_test.py
-    scripts/lx16a_encoder_filter_test.py
-    scripts/lx16a_encoder_logger.py
-    scripts/lx16a_failsafe_test.py
-    scripts/lx16a_mean_filter_test.py
-    scripts/lx16a_odometry_test.py
-    scripts/lx16a_train_classifier.py
-    scripts/lx16a_train_regressor.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(DIRECTORY config data launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
