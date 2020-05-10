@@ -102,3 +102,19 @@ catkin_install_python(PROGRAMS
 
 install(DIRECTORY config data launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+################################################################################
+# Tests
+
+if (CATKIN_ENABLE_TESTING)
+
+    find_package(rostest REQUIRED)
+    find_package(rosunit REQUIRED)
+
+    # catkin_add_gtest(test_encoder_filter src/test/test_encoder_filter.cpp)
+    # target_link_libraries(test_encoder_filter lx16a)
+
+    catkin_add_nosetests(test/test_encoder_filter.py)
+
+
+endif()
