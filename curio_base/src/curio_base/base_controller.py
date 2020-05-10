@@ -43,11 +43,11 @@ if ENABLE_ARDUINO_LX16A_DRIVER:
     from curio_msgs.msg import CurioServoPositions
 else:
     # Load imports for the Python serial driver
-    from curio_base.lx16a_driver import LX16ADriver
+    from lx16a.lx16a_driver import LX16ADriver
     from curio_msgs.msg import CurioServoStates
     from curio_msgs.msg import LX16AState
 
-from curio_base.lx16a_encoder_filter import LX16AEncoderFilter
+from lx16a.lx16a_encoder_filter import LX16AEncoderFilter
 from curio_msgs.msg import CurioServoEncoders
 from curio_msgs.msg import LX16AEncoder
 
