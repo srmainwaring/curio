@@ -16,5 +16,9 @@
     <depend>rospy</depend>
     <depend>serial</depend>
     <depend>std_msgs</depend>
+    
+    <test_depend>rostest</test_depend>
+    <test_depend>rosunit</test_depend>
+    
     <exec_depend>message_runtime</exec_depend>
 </package>
