@@ -89,7 +89,7 @@ namespace lx16a
         filter_update_v_ = nh_.serviceClient<lx16a_msgs::EncoderFilterUpdateV>("lx16a/encoder_filter/update_v"); 
 
         // Block until the service is ready...
-        ros::Duration timeout_(2); // [s]
+        ros::Duration timeout_(20); // [s]
         bool is_ready = filter_add_.waitForExistence(timeout_);
         if (!is_ready)
         {
