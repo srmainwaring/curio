@@ -26,6 +26,8 @@ add_service_files(DIRECTORY srv FILES
     EncoderFilterReset.srv
     EncoderFilterSetInvert.srv
     EncoderFilterUpdate.srv
+    EncoderFilterAddV.srv
+    EncoderFilterUpdateV.srv
 )
 
 generate_messages(DEPENDENCIES std_msgs)

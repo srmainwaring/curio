@@ -1,0 +1,7 @@
+# Update a servo encoder filter's with the ROS times, duties and observed servo positions. 
+int8[] servo_ids
+time time
+int16[] duties
+int16[] positions
+---
+float64[] angular_positions

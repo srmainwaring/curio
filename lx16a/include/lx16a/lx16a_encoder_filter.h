@@ -159,6 +159,20 @@ namespace lx16a
         /// servo when the encoder is reset.  
         /// 
         virtual void reset(uint8_t servo_id, int16_t position) = 0;
+
+        /// Vectorised interface
+
+        /// \brief Add servos.
+        virtual void add_v(const std::vector<uint8_t> &servo_ids) = 0;
+
+        /// \brief Update the encoder filter.
+        virtual void update_v(
+            const std::vector<uint8_t> &servo_ids,
+            const ros::Time &ros_times,
+            const std::vector<int16_t> &duties,
+            const std::vector<int16_t> &positions,
+            std::vector<double> &angular_positions) = 0;
+
     };
 
 } // namespace lx16a

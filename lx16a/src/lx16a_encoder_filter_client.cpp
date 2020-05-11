@@ -47,6 +47,9 @@
 #include "lx16a_msgs/EncoderFilterSetInvert.h"
 #include "lx16a_msgs/EncoderFilterUpdate.h"
 
+#include "lx16a_msgs/EncoderFilterAddV.h"
+#include "lx16a_msgs/EncoderFilterUpdateV.h"
+
 #include <ros/ros.h>
 
 namespace lx16a
@@ -80,7 +83,11 @@ namespace lx16a
         filter_reset_ = nh_.serviceClient<lx16a_msgs::EncoderFilterReset>("lx16a/encoder_filter/reset"); 
         filter_set_invert_ = nh_.serviceClient<lx16a_msgs::EncoderFilterSetInvert>("lx16a/encoder_filter/set_invert"); 
         filter_update_ = nh_.serviceClient<lx16a_msgs::EncoderFilterUpdate>("lx16a/encoder_filter/update"); 
-    
+
+        // Vectorised service clients
+        filter_add_v_ = nh_.serviceClient<lx16a_msgs::EncoderFilterAddV>("lx16a/encoder_filter/add_v");
+        filter_update_v_ = nh_.serviceClient<lx16a_msgs::EncoderFilterUpdateV>("lx16a/encoder_filter/update_v"); 
+
         // Block until the service is ready...
         ros::Duration timeout_(2); // [s]
         bool is_ready = filter_add_.waitForExistence(timeout_);
@@ -92,12 +99,14 @@ namespace lx16a
 
     void LX16AEncoderFilterClient::add(uint8_t servo_id)
     {
+        auto&& service = filter_add_;
+
         lx16a_msgs::EncoderFilterAdd srv;
         srv.request.servo_id = servo_id;
         srv.request.classifier_filename = classifier_filename_;
         srv.request.regressor_filename = regressor_filename_;
         srv.request.window = window_;
-        if (filter_add_.call(srv))
+        if (service.call(srv))
         {
             ROS_INFO_STREAM("Added encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
         }
@@ -271,6 +280,61 @@ namespace lx16a
                 << static_cast<int>(servo_id));
         }
     }
+
+    void LX16AEncoderFilterClient::add_v(const std::vector<uint8_t> &servo_ids)
+    {   
+        auto&& service = filter_add_v_;
+
+        std::vector<int8_t> int8_servo_ids(servo_ids.size());
+        std::copy(servo_ids.begin(), servo_ids.end(), int8_servo_ids.begin());
+
+        lx16a_msgs::EncoderFilterAddV srv;
+        srv.request.servo_ids = int8_servo_ids;
+        srv.request.classifier_filename = classifier_filename_;
+        srv.request.regressor_filename = regressor_filename_;
+        srv.request.window = window_;
+        if (service.call(srv))
+        {
+            ROS_INFO_STREAM("Added encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
+        }
+        else
+        {
+            ROS_ERROR_STREAM("Failed to add encoder filter for servos");
+        }
+    }
+
+    void LX16AEncoderFilterClient::update_v(
+        const std::vector<uint8_t> &servo_ids,
+        const ros::Time &ros_time,
+        const std::vector<int16_t> &duties,
+        const std::vector<int16_t> &positions,
+        std::vector<double> &angular_positions)
+    {
+        auto&& service = filter_update_v_;
+
+        std::vector<int8_t> int8_servo_ids(servo_ids.size());
+        std::copy(servo_ids.begin(), servo_ids.end(), int8_servo_ids.begin());
+
+        lx16a_msgs::EncoderFilterUpdateV srv;
+        srv.request.servo_ids = int8_servo_ids;
+        srv.request.time = ros_time;
+        srv.request.duties = duties;
+        srv.request.positions = positions;
+        if (service.call(srv))
+        {
+            ROS_DEBUG_STREAM("Updated encoder filter");
+            std::copy(
+                srv.response.angular_positions.begin(),
+                srv.response.angular_positions.end(),
+                angular_positions.begin());
+
+        }
+        else
+        {
+            ROS_ERROR_STREAM("Failed to update encoder filter");
+        }
+    }
+
 
 } // namespace lx16a
 

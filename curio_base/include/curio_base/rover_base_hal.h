@@ -77,11 +77,29 @@ namespace curio_base
         /// \brief Set the angular velocity of the i-th wheel [rad/s].
         virtual void setWheelVelocity(const ros::Time &time, int i, double velocity) = 0;
 
-       /// \brief Get the steering angle of the i-th steer [rad].
+        /// \brief Get the steering angle of the i-th steer [rad].
         virtual double getSteerAngle(const ros::Time &time, int i) const = 0;
 
         /// \brief Set the angle of the i-th steer [rad].
         virtual void setSteerAngle(const ros::Time &time, int i, double angle) = 0;
+
+        // Vectorised interface.
+
+        /// \brief Get the wheel angular positions [rad].
+        virtual void getWheelPositions(const ros::Time &time, std::vector<double>& positions) const = 0;
+
+        /// \brief Get the wheel angular velocities [rad/s].
+        virtual void getWheelVelocities(const ros::Time &time, std::vector<double>& velocities) const = 0;
+
+        /// \brief Set the wheel angular velocities [rad/s].
+        virtual void setWheelVelocities(const ros::Time &time, const std::vector<double>& velocities) = 0;
+
+        /// \brief Get the steering angles [rad].
+        virtual void getSteerAngles(const ros::Time &time, std::vector<double>& positions) const = 0;
+
+        /// \brief Set the steering angles [rad].
+        virtual void setSteerAngle(const ros::Time &time, const std::vector<double>& positions) = 0;
+
     };
 
 } // namespace curio_base

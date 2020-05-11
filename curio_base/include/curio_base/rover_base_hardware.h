@@ -77,35 +77,23 @@ namespace curio_base
         
         // Passive joints - not controlled, joint interface only
         const size_t k_num_passive_joints_ = 5;
-        struct PassiveJoint
-        {
-            double position = 0.0;
-            double velocity = 0.0;
-            double effort = 0.0;
-        };
-        std::vector<PassiveJoint> passive_joints_;
+        std::vector<double> passive_joint_positions_;
+        std::vector<double> passive_joint_velocities_;
+        std::vector<double> passive_joint_efforts_;
         std::vector<std::string> passive_joint_names_;
 
         // Wheel joints - velocity controlled
-        struct WheelJoint
-        {
-            double position = 0.0;
-            double velocity = 0.0;
-            double effort = 0.0;
-            double velocity_command = 0.0;
-        };
-        std::vector<WheelJoint> wheel_joints_;
+        std::vector<double> wheel_joint_positions_;
+        std::vector<double> wheel_joint_velocities_;
+        std::vector<double> wheel_joint_efforts_;
+        std::vector<double> wheel_joint_velocity_commands_;
         std::vector<std::string> wheel_joint_names_;
 
         // Steer joints - position controlled
-        struct SteerJoint
-        {
-            double position = 0.0;
-            double velocity = 0.0;
-            double effort = 0.0;
-            double position_command = 0.0;
-        };
-        std::vector<SteerJoint> steer_joints_;
+        std::vector<double> steer_joint_positions_;
+        std::vector<double> steer_joint_velocities_;
+        std::vector<double> steer_joint_efforts_;
+        std::vector<double> steer_joint_position_commands_;
         std::vector<std::string> steer_joint_names_;
 
         // Hardware abstraction

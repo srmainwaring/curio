@@ -50,6 +50,11 @@ from lx16a_msgs.srv import EncoderFilterGetServoPos, EncoderFilterGetServoPosRes
 from lx16a_msgs.srv import EncoderFilterReset, EncoderFilterResetResponse
 from lx16a_msgs.srv import EncoderFilterSetInvert, EncoderFilterSetInvertResponse
 from lx16a_msgs.srv import EncoderFilterUpdate, EncoderFilterUpdateResponse
+
+# Vectorised interface
+from lx16a_msgs.srv import EncoderFilterAddV, EncoderFilterAddVResponse
+from lx16a_msgs.srv import EncoderFilterUpdateV, EncoderFilterUpdateVResponse
+
 import rospy
 import sys
 
@@ -185,6 +190,47 @@ def handle_update(req):
     response.status = 0
     return response
 
+def handle_add_v(req):
+    rospy.logdebug('Got: servo_ids: {}, classifier_filename: {}, regressor_filename: {}, window: {}'.format(
+        req.servo_ids,
+        req.classifier_filename,
+        req.regressor_filename,
+        req.window
+    ))
+
+    num_servo_ids = len(req.servo_ids)
+    for servo_id in req.servo_ids:
+        filter = LX16AEncoderFilter(req.classifier_filename, req.regressor_filename, req.window)
+        encoder_filters[servo_id] = filter
+
+    response = EncoderFilterAddVResponse()
+    response.status = 0
+    return response
+
+def handle_update_v(req):
+    rospy.logdebug('Got: servo_ids: {}, time: {}, duties: {}, positions: {}'.format(
+        req.servo_ids,
+        req.time,
+        req.duties,
+        req.positions
+    ))
+
+    num_servo_ids = len(req.servo_ids)
+    angular_positions = []
+    for i in range(num_servo_ids):
+        # Update the filter
+        filter = encoder_filters[req.servo_ids[i]]
+        filter.update(req.time, req.duties[i], req.positions[i])
+
+        # Get the angular position
+        position = filter.get_angular_position()
+        angular_positions.append(position)
+ 
+    response = EncoderFilterUpdateResponse()
+    response.angular_positions = angular_positions
+    return response
+
+
 def main():
     rospy.init_node('lx16a_encoder_filter_server')
 
@@ -212,6 +258,12 @@ def main():
         EncoderFilterSetInvert, handle_set_invert)
     service = rospy.Service('lx16a/encoder_filter/update',
         EncoderFilterUpdate, handle_update)
+
+    # Register vectorised services
+    service = rospy.Service('lx16a/encoder_filter/add_v',
+        EncoderFilterAddV, handle_add_v)
+    service = rospy.Service('lx16a/encoder_filter/update_v',
+        EncoderFilterUpdateV, handle_update_v)
 
     # Start spinning
     rospy.loginfo('lx16a_encoder_filter_server ready...')
