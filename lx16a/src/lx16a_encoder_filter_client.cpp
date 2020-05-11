@@ -90,7 +90,7 @@ namespace lx16a
 
         // Block until the service is ready...
         ros::Duration timeout_(20); // [s]
-        bool is_ready = filter_add_.waitForExistence(timeout_);
+        bool is_ready = filter_add_v_.waitForExistence(timeout_);
         if (!is_ready)
         {
             ROS_ERROR("Failed to initialise encoder filter - service not available");
@@ -293,6 +293,8 @@ namespace lx16a
         srv.request.classifier_filename = classifier_filename_;
         srv.request.regressor_filename = regressor_filename_;
         srv.request.window = window_;
+        
+        
         if (service.call(srv))
         {
             ROS_INFO_STREAM("Added encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
