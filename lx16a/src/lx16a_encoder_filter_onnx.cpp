@@ -424,5 +424,18 @@ namespace lx16a
     {
     }
 
+    void LX16AEncoderFilterOnnx::add_v(const std::vector<uint8_t> &servo_ids)
+    {   
+    }
+
+    void LX16AEncoderFilterOnnx::update_v(
+        const std::vector<uint8_t> &servo_ids,
+        const ros::Time &ros_time,
+        const std::vector<int16_t> &duties,
+        const std::vector<int16_t> &positions,
+        std::vector<double> &angular_positions)
+    {   
+    }
+
 } // namespace lx16a
 

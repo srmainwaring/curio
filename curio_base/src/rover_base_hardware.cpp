@@ -59,14 +59,25 @@ namespace curio_base
         // rover_hal_ = std::move(rover_hal_mock);
 
         // Resize passive joints
-        passive_joints_.resize(k_num_passive_joints_);
+        passive_joint_positions_.resize(k_num_passive_joints_, 0.0);
+        passive_joint_velocities_.resize(k_num_passive_joints_, 0.0);
+        passive_joint_efforts_.resize(k_num_passive_joints_, 0.0);
+
         ROS_INFO_STREAM("Number of passive joints: " << k_num_passive_joints_);
 
         // Resize controlled joints
         const int k_num_wheel_joints = rover_hal_->getNumWheels();
         const int k_num_steer_joints = rover_hal_->getNumSteers();
-        wheel_joints_.resize(k_num_wheel_joints);
-        steer_joints_.resize(k_num_steer_joints);
+        wheel_joint_positions_.resize(k_num_wheel_joints, 0.0);
+        wheel_joint_velocities_.resize(k_num_wheel_joints, 0.0);
+        wheel_joint_efforts_.resize(k_num_wheel_joints, 0.0);
+        wheel_joint_velocity_commands_.resize(k_num_wheel_joints, 0.0);
+
+        steer_joint_positions_.resize(k_num_steer_joints, 0.0);
+        steer_joint_velocities_.resize(k_num_steer_joints, 0.0);
+        steer_joint_efforts_.resize(k_num_steer_joints, 0.0);
+        steer_joint_position_commands_.resize(k_num_steer_joints, 0.0);
+
         ROS_INFO_STREAM("Number of wheel joints: " << k_num_wheel_joints);
         ROS_INFO_STREAM("Number of steer joints: " << k_num_steer_joints);
 
@@ -113,9 +124,12 @@ namespace curio_base
         // Set position of wheel joints
         for (int i=0; i<k_num_wheel_joints; ++i)
         {
-            try {
-                wheel_joints_[i].position = rover_hal_->getWheelPosition(time, i);
-            } catch (const RoverBaseHALException &e) {
+            try
+            {
+                wheel_joint_positions_[i] = rover_hal_->getWheelPosition(time, i);
+            }
+            catch (const RoverBaseHALException &e)
+            {
                 // Report error and use last known position. 
                 ROS_ERROR_STREAM(e.what());
             }
@@ -124,15 +138,18 @@ namespace curio_base
         // Set velocities of wheel joints
         for (int i=0; i<k_num_wheel_joints; ++i)
         {
-            wheel_joints_[i].velocity = rover_hal_->getWheelVelocity(time, i);
+            wheel_joint_velocities_[i] = rover_hal_->getWheelVelocity(time, i);
         }
 
         // Set position of steer joints
         for (int i=0; i<k_num_steer_joints; ++i)
         {
-            try {
-               steer_joints_[i].position = rover_hal_->getSteerAngle(time, i);
-            } catch (const RoverBaseHALException &e) {
+            try
+            {
+               steer_joint_positions_[i] = rover_hal_->getSteerAngle(time, i);
+            }
+            catch (const RoverBaseHALException &e)
+            {
                 // Report error and use last known position. 
                 ROS_ERROR_STREAM(e.what());
             }
@@ -147,13 +164,13 @@ namespace curio_base
         // Set commanded velocities
         for (int i=0; i<k_num_wheel_joints; ++i)
         {
-            rover_hal_->setWheelVelocity(time, i, wheel_joints_[i].velocity_command);
+            rover_hal_->setWheelVelocity(time, i, wheel_joint_velocity_commands_[i]);
         }
 
         // Set commanded positions
         for (int i=0; i<k_num_steer_joints; ++i)
         {
-            rover_hal_->setSteerAngle(time, i, steer_joints_[i].position_command);
+            rover_hal_->setSteerAngle(time, i, steer_joint_position_commands_[i]);
         }
     }
 
@@ -168,9 +185,9 @@ namespace curio_base
         {
             hardware_interface::JointStateHandle joint_state_handle(
                 passive_joint_names_[i],
-                &passive_joints_[i].position,
-                &passive_joints_[i].velocity,
-                &passive_joints_[i].effort);
+                &passive_joint_positions_[i],
+                &passive_joint_velocities_[i],
+                &passive_joint_efforts_[i]);
             joint_state_interface_.registerHandle(joint_state_handle);
         }
 
@@ -180,13 +197,13 @@ namespace curio_base
         {
             hardware_interface::JointStateHandle joint_state_handle(
                 wheel_joint_names_[i],
-                &wheel_joints_[i].position,
-                &wheel_joints_[i].velocity,
-                &wheel_joints_[i].effort);
+                &wheel_joint_positions_[i],
+                &wheel_joint_velocities_[i],
+                &wheel_joint_efforts_[i]);
             joint_state_interface_.registerHandle(joint_state_handle);
 
             hardware_interface::JointHandle joint_handle(
-                joint_state_handle, &wheel_joints_[i].velocity_command);
+                joint_state_handle, &wheel_joint_velocity_commands_[i]);
             velocity_joint_interface_.registerHandle(joint_handle);
         }
 
@@ -196,13 +213,13 @@ namespace curio_base
         {
             hardware_interface::JointStateHandle joint_state_handle(
                 steer_joint_names_[i],
-                &steer_joints_[i].position,
-                &steer_joints_[i].velocity,
-                &steer_joints_[i].effort);
+                &steer_joint_positions_[i],
+                &steer_joint_velocities_[i],
+                &steer_joint_efforts_[i]);
             joint_state_interface_.registerHandle(joint_state_handle);
 
             hardware_interface::JointHandle joint_handle(
-                joint_state_handle, &steer_joints_[i].position_command);
+                joint_state_handle, &steer_joint_position_commands_[i]);
             position_joint_interface_.registerHandle(joint_handle);
         }
 

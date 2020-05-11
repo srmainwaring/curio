@@ -109,4 +109,44 @@ namespace curio_base
         steer_positions_[i] = angle;
     }
 
+    void RoverBaseHALMock::getWheelPositions(const ros::Time &time, std::vector<double>& positions) const
+    {
+        for (size_t i=0; i<k_num_wheels_; ++i)
+        {
+            positions[i] = getWheelPosition(time, i);
+        }
+    }
+
+    void RoverBaseHALMock::getWheelVelocities(const ros::Time &time, std::vector<double>& velocities) const
+    {
+        for (size_t i=0; i<k_num_wheels_; ++i)
+        {
+            velocities[i] = getWheelVelocity(time, i);
+        }
+    }
+
+    void RoverBaseHALMock::setWheelVelocities(const ros::Time &time, const std::vector<double>& velocities)
+    {
+        for (size_t i=0; i<k_num_wheels_; ++i)
+        {
+            setWheelVelocity(time, i, velocities[i]);
+        }
+    }
+
+    void RoverBaseHALMock::getSteerAngles(const ros::Time &time, std::vector<double>& positions) const
+    {
+        for (size_t i=0; i<k_num_steers_; ++i)
+        {
+            positions[i] = getSteerAngle(time, i);
+        }
+    }
+
+    void RoverBaseHALMock::setSteerAngle(const ros::Time &time, const std::vector<double>& positions)
+    {
+        for (size_t i=0; i<k_num_steers_; ++i)
+        {
+            setSteerAngle(time, i, positions[i]);
+        }
+    }
+
 } // namespace curio_base

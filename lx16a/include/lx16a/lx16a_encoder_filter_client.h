@@ -168,6 +168,19 @@ namespace lx16a
         /// 
         void reset(uint8_t servo_id, int16_t position) override;
 
+        /// Vectorised interface
+
+        /// \brief Add servos.
+        void add_v(const std::vector<uint8_t> &servo_ids) override;
+
+        /// \brief Update the encoder filter.
+        void update_v(
+            const std::vector<uint8_t> &servo_ids,
+            const ros::Time &ros_time,
+            const std::vector<int16_t> &duties,
+            const std::vector<int16_t> &positions,
+            std::vector<double> &angular_positions) override;
+
     private:
         ros::NodeHandle  nh_;
         std::string classifier_filename_;       // classifier filename
@@ -185,6 +198,10 @@ namespace lx16a
         ros::ServiceClient filter_reset_;
         ros::ServiceClient filter_set_invert_;
         ros::ServiceClient filter_update_;
+
+        // Vectorised service clients (proxies)
+        ros::ServiceClient filter_add_v_;
+        ros::ServiceClient filter_update_v_;
     };
 
 } // namespace lx16a

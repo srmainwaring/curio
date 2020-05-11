@@ -1,0 +1,7 @@
+# Initialise an encoder filter for an array of servos. 
+int8[] servo_ids
+string classifier_filename
+string regressor_filename
+int16  window
+---
+int32 status

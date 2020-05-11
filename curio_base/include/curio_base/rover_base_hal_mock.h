@@ -74,6 +74,21 @@ namespace curio_base
         /// \brief Set the angle of the i-th steer [rad].
         void setSteerAngle(const ros::Time &time, int i, double angle) override;
 
+        /// \brief Get the wheel angular positions [rad].
+        void getWheelPositions(const ros::Time &time, std::vector<double>& positions) const override;
+
+        /// \brief Get the wheel angular velocities [rad/s].
+        void getWheelVelocities(const ros::Time &time, std::vector<double>& velocities) const override;
+
+        /// \brief Set the wheel angular velocities [rad/s].
+        void setWheelVelocities(const ros::Time &time, const std::vector<double>& velocities) override;
+
+        /// \brief Get the steering angles [rad].
+        void getSteerAngles(const ros::Time &time, std::vector<double>& positions) const override;
+
+        /// \brief Set the steering angles [rad].
+        void setSteerAngle(const ros::Time &time, const std::vector<double>& positions) override;
+
     private:
         // Constants
         const size_t k_num_wheels_ = 6;

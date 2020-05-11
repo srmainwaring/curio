@@ -349,11 +349,8 @@ namespace curio_base
         ROS_INFO_STREAM("LX16A encoder: regressor_filename: " << regressor_filename);
         ROS_INFO_STREAM("LX16A encoder: classifier_window: " << classifier_window);
         
-        // Add servos to encoder filter
-        for (size_t i=0; i<k_num_wheels_; ++i)
-        {
-            encoder_filter_->add(wheel_servo_ids_[i]);
-        }
+        // Add servos to encoder filter (vector version)
+        encoder_filter_->add_v(wheel_servo_ids_);
 
         // Initialise steering trim (offsets)
         ROS_INFO_STREAM("Setting steer trim...");
@@ -380,10 +377,11 @@ namespace curio_base
         int16_t duty = wheel_servo_duties_[i];
 
         // Get position and update filter.
-        try {
+        try
+        {
             int16_t pos = servo_driver_->getPosition(servo_id);
             encoder_filter_->update(servo_id, time, duty, pos);
-            double angle = encoder_filter_->getAngularPosition(servo_id) * orientation;        
+            double angle = encoder_filter_->getAngularPosition(servo_id) * orientation;
 
             ROS_DEBUG_STREAM("get wheel: id: " << static_cast<int>(servo_id)
                 << ", angle: " << angle
@@ -393,7 +391,8 @@ namespace curio_base
 
             return angle;
         }
-        catch(const lx16a::LX16AException &e) {
+        catch(const lx16a::LX16AException &e)
+        {
             std::stringstream ss;
             ss << "get wheel position: id: " << static_cast<int>(servo_id)
             << " failed\n" << e.what();
@@ -429,7 +428,8 @@ namespace curio_base
         wheel_servo_duties_[i] = duty;
 
         // Update the servo.
-        try {
+        try
+        {
             servo_driver_->setMotorMode(servo_id, duty);   
 
             ROS_DEBUG_STREAM("set wheel: id: " << static_cast<int>(servo_id)
@@ -437,7 +437,8 @@ namespace curio_base
                 << ", orient: " << static_cast<int>(orientation)
                 << ", duty: " << static_cast<int>(duty));
         }
-        catch(const lx16a::LX16AException &e) {
+        catch(const lx16a::LX16AException &e)
+        {
             ROS_ERROR_STREAM(e.what()
                 << " set wheel: id: " << static_cast<int>(servo_id));
         }
@@ -448,7 +449,8 @@ namespace curio_base
         uint8_t servo_id = steer_servo_ids_[i];
         int8_t orientation = steer_servo_orientations_[i];
 
-        try {
+        try
+        {
             int16_t pos = servo_driver_->getPosition(servo_id);
             double angle = servoPos2Angle(pos) * orientation;        
 
@@ -458,7 +460,8 @@ namespace curio_base
 
             return angle;
         }
-        catch(const lx16a::LX16AException &e) {
+        catch(const lx16a::LX16AException &e)
+        {
             std::stringstream ss;
             ss << "get steer angle: id: " << static_cast<int>(servo_id)
             << " failed\n" << e.what();
@@ -472,37 +475,106 @@ namespace curio_base
         int8_t orientation = steer_servo_orientations_[i];
         int16_t pos = angle2ServoPos(angle * orientation);
 
-        try {
+        try
+        {
             servo_driver_->move(servo_id, pos, SERVO_MOVE_TIME);
 
             ROS_DEBUG_STREAM("set steer: id: " << static_cast<int>(servo_id)
                 << ", angle: " << angle
                 << ", pos: " << static_cast<int>(pos));
         }
-        catch(const lx16a::LX16AException &e) {
+        catch(const lx16a::LX16AException &e)
+        {
             ROS_ERROR_STREAM(e.what()
                 << " set steer: id: " << static_cast<int>(servo_id));
         }
     }
 
-    /// \brief Set the steering trim for the i-ith steer.
+    void RoverBaseHALLX16A::getWheelPositions(const ros::Time &time, std::vector<double>& positions) const
+    {
+        // Get servo positions.
+        std::vector<int16_t> servo_positions(k_num_wheels_, 0.0);
+        for (size_t i=0; i<k_num_wheels_; ++i)
+        {
+            uint8_t servo_id = wheel_servo_ids_[i];
+            int16_t pos = servo_driver_->getPosition(servo_id);
+            servo_positions[i] = pos;
+        }
+
+        try
+        {
+            // Update filter.
+            encoder_filter_->update_v(
+                wheel_servo_ids_,
+                time,
+                wheel_servo_duties_,
+                servo_positions,
+                positions);
+
+            // Adjust for orientation
+            for (size_t i=0; i<k_num_wheels_; ++i)
+            {
+                positions[i] *= wheel_servo_orientations_[i];
+            }
+        }
+        catch(const lx16a::LX16AException &e)
+        {
+            std::stringstream ss;
+            ss << "get wheel positions failed\n" << e.what();
+            throw RoverBaseHALException(ss.str().c_str());
+        }
+    }
+
+    void RoverBaseHALLX16A::getWheelVelocities(const ros::Time &time, std::vector<double>& velocities) const
+    {
+        for (size_t i=0; i<k_num_wheels_; ++i)
+        {
+            velocities[i] = getWheelVelocity(time, i);
+        }
+    }
+
+    void RoverBaseHALLX16A::setWheelVelocities(const ros::Time &time, const std::vector<double>& velocities)
+    {
+        for (size_t i=0; i<k_num_wheels_; ++i)
+        {
+            setWheelVelocity(time, i, velocities[i]);
+        }
+    }
+
+    void RoverBaseHALLX16A::getSteerAngles(const ros::Time &time, std::vector<double>& positions) const
+    {
+        for (size_t i=0; i<k_num_steers_; ++i)
+        {
+            positions[i] = getSteerAngle(time, i);
+        }
+    }
+
+    void RoverBaseHALLX16A::setSteerAngle(const ros::Time &time, const std::vector<double>& positions)
+    {
+        for (size_t i=0; i<k_num_steers_; ++i)
+        {
+            setSteerAngle(time, i, positions[i]);
+        }
+    }
+
     void RoverBaseHALLX16A::setSteerTrim(int i, int16_t offset)
     {
         uint8_t servo_id = steer_servo_ids_[i];
         int8_t orientation = steer_servo_orientations_[i];
 
-        try {
+        try
+        {
             servo_driver_->setPositionOffset(servo_id, offset);
             servo_driver_->savePositionOffset(servo_id);
 
             ROS_DEBUG_STREAM("set steer: id: " << static_cast<int>(servo_id)
                 << ", offset: " << static_cast<int>(offset));
         }
-        catch(const lx16a::LX16AException &e) {
+        catch(const lx16a::LX16AException &e)
+        {
             ROS_ERROR_STREAM(e.what()
                 << " set steer: id: " << static_cast<int>(servo_id));
         }
     }
-
 
 } // namespace curio_base

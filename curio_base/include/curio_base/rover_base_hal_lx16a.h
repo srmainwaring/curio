@@ -79,6 +79,21 @@ namespace curio_base
         /// \brief Set the angle of the i-th steer [rad].
         void setSteerAngle(const ros::Time &time, int i, double angle) override;
 
+        /// \brief Get the wheel angular positions [rad].
+        void getWheelPositions(const ros::Time &time, std::vector<double>& positions) const override;
+
+        /// \brief Get the wheel angular velocities [rad/s].
+        void getWheelVelocities(const ros::Time &time, std::vector<double>& velocities) const override;
+
+        /// \brief Set the wheel angular velocities [rad/s].
+        void setWheelVelocities(const ros::Time &time, const std::vector<double>& velocities) override;
+
+        /// \brief Get the steering angles [rad].
+        void getSteerAngles(const ros::Time &time, std::vector<double>& positions) const override;
+
+        /// \brief Set the steering angles [rad].
+        void setSteerAngle(const ros::Time &time, const std::vector<double>& positions) override;
+
     private:
         /// \brief Set the steering trim for the i-ith steer.
         void setSteerTrim(int i, int16_t offset);
@@ -99,7 +114,7 @@ namespace curio_base
         std::vector<int8_t> steer_servo_orientations_;
 
         // Current duty set points
-        std::vector<uint16_t> wheel_servo_duties_;
+        std::vector<int16_t> wheel_servo_duties_;
 
         // Drivers and filters
         std::unique_ptr<lx16a::LX16ADriver> servo_driver_;
