@@ -52,24 +52,6 @@ namespace lx16a
     class LX16AEncoderFilterOnnxImpl;
 
     /// \brief An encoder filter for the LX-16A servo.
-    ///
-    /// This class loads a `scikit-learn` decision tree classifier
-    /// which is used to predict whether or not a position
-    /// obtained from a LX-16A servo lies within its valid measurement
-    /// region which covers a range of about 330 deg.
-    ///
-    /// The LX-16A has 1500 counts per revolution giving an
-    /// angular resolution of 0.24 deg.
-    ///
-    /// The class maintains a count of the number of full revolutions
-    /// made by the servo (positive and negative) and uses this and
-    /// the servo postion to determine the overall encoder count.
-    ///
-    /// There is also an optional facilty to estimate the servo position
-    /// in the invalid region using a decision tree regressor. This is
-    /// enabled by supplying the constructor with a filename for the
-    /// regressor model. 
-    ///
     class LX16AEncoderFilterOnnx : public LX16AEncoderFilter
     {
     public:
@@ -187,7 +169,7 @@ namespace lx16a
         /// \brief Update the encoder filter.
         void update_v(
             const std::vector<uint8_t> &servo_ids,
-            const ros::Time &ros_times,
+            const ros::Time &ros_time,
             const std::vector<int16_t> &duties,
             const std::vector<int16_t> &positions,
             std::vector<double> &angular_positions) override;

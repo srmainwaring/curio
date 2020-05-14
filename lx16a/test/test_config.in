@@ -1,0 +1,21 @@
+#ifndef LX16A_TEST_CONFIG_H_
+#define LX16A_TEST_CONFIG_H_
+
+#include <string>
+
+namespace lx16a
+{
+    /// \brief Path to the package test directory
+    std::string getTestPath()
+    {
+        return std::string("@TEST_DIR@");
+    }
+
+    /// \brief Path to the package data directory
+    std::string getDataPath()
+    {
+        return std::string("@DATA_DIR@");
+    }
+}
+
+#endif // LX16A_TEST_CONFIG_H_

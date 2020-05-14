@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
 )
 
+find_package(pybind11 REQUIRED)
+
 ################################################################################
 # Setup python modules
 
@@ -49,26 +51,41 @@ include_directories(
 add_library(lx16a
     src/lx16a_encoder_filter_client.cpp
     src/lx16a_encoder_filter_onnx.cpp
+    src/lx16a_encoder_filter_python.cpp
     src/lx16a_encoder_filter.cpp
     src/lx16a_driver.cpp
 )
-target_link_libraries(lx16a ${catkin_LIBRARIES})
+target_link_libraries(lx16a
+    PRIVATE
+    # pybind11::module
+    pybind11::embed
+    ${catkin_LIBRARIES}
+)
+
+# Python bindings
+pybind11_add_module(_lx16a
+    src/pybind11/py_lx16a.cpp
+    src/pybind11/py_lx16a_encoder_filter.cpp
+    src/pybind11/py_lx16a_time.cpp
+)
+target_link_libraries(_lx16a PRIVATE lx16a ${catkin_LIBRARIES})
+set_target_properties(_lx16a PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_PYTHON_DESTINATION})
 
 # Examples
 add_executable(lx16a_position_publisher
     src/examples/lx16a_position_publisher.cpp
 )
-target_link_libraries(lx16a_position_publisher lx16a ${catkin_LIBRARIES})
+target_link_libraries(lx16a_position_publisher PRIVATE lx16a ${catkin_LIBRARIES})
 
 add_executable(lx16a_driver_test
     src/examples/lx16a_driver_test.cpp
 )
-target_link_libraries(lx16a_driver_test lx16a ${catkin_LIBRARIES})
+target_link_libraries(lx16a_driver_test PRIVATE lx16a ${catkin_LIBRARIES})
 
 add_executable(lx16a_encoder_filter_test
     src/examples/lx16a_encoder_filter_test.cpp
 )
-target_link_libraries(lx16a_encoder_filter_test lx16a ${catkin_LIBRARIES})
+target_link_libraries(lx16a_encoder_filter_test PRIVATE lx16a ${catkin_LIBRARIES})
 
 ################################################################################
 # Install
@@ -111,9 +128,17 @@ if (CATKIN_ENABLE_TESTING)
     find_package(rostest REQUIRED)
     find_package(rosunit REQUIRED)
 
-    # catkin_add_gtest(test_encoder_filter src/test/test_encoder_filter.cpp)
-    # target_link_libraries(test_encoder_filter lx16a)
+    # Generate test_config.h
+    get_filename_component(TEST_DIR "test" ABSOLUTE)
+    get_filename_component(DATA_DIR "data" ABSOLUTE)
+    configure_file(test/test_config.in test/test_config.h)
+    include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
 
+    # C++ tests
+    catkin_add_gtest(test_encoder_filter test/test_encoder_filter.cpp)
+    target_link_libraries(test_encoder_filter PRIVATE pybind11::embed lx16a ${catkin_LIBRARIES})
+
+    # Python tests
     catkin_add_nosetests(test/test_encoder_filter.py)
 
 

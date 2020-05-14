@@ -10,15 +10,14 @@
     <url type="bugtracker">https://github.com/srmainwaring/curio/issues</url>
     <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
     <buildtool_depend>catkin</buildtool_depend>
-    <buildtool_depend>message_generation</buildtool_depend>
+    <buildtool_depend>message_generation</buildtool_depend>    
+    <build_depend>pybind11-dev</build_depend>
     <depend>lx16a_msgs</depend>
     <depend>roscpp</depend>
     <depend>rospy</depend>
     <depend>serial</depend>
     <depend>std_msgs</depend>
-    
     <test_depend>rostest</test_depend>
     <test_depend>rosunit</test_depend>
-    
     <exec_depend>message_runtime</exec_depend>
 </package>

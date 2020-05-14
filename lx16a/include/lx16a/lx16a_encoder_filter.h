@@ -34,8 +34,6 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
-/// \brief Interface of lx16a_encoder_filter.py to C++.
-
 #ifndef LX16A_ENCODER_FILTER_H_
 #define LX16A_ENCODER_FILTER_H_
 
@@ -168,7 +166,7 @@ namespace lx16a
         /// \brief Update the encoder filter.
         virtual void update_v(
             const std::vector<uint8_t> &servo_ids,
-            const ros::Time &ros_times,
+            const ros::Time &ros_time,
             const std::vector<int16_t> &duties,
             const std::vector<int16_t> &positions,
             std::vector<double> &angular_positions) = 0;
