@@ -93,8 +93,8 @@ class LX16AEncoderFilter(object):
         self._window = window
         self._index     = 0         # index for the ring buffers
         self._ros_time  = [rospy.Time() for x in range(window)]
-        self._duty      = [0.0 for x in range(window)]
-        self._pos       = [0.0 for x in range(window)]
+        self._duty      = [0 for x in range(window)]
+        self._pos       = [0 for x in range(window)]
         self._X         = [0.0 for x in range(3 * window)]
         self._classifier_filename = classifier_filename
         self._regressor_filename  = regressor_filename

@@ -34,11 +34,12 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
-#ifndef LX16A_ENCODER_FILTER_CLIENT_H_
-#define LX16A_ENCODER_FILTER_CLIENT_H_
+#ifndef LX16A_ENCODER_FILTER_PYTHON_H_
+#define LX16A_ENCODER_FILTER_PYTHON_H_
 
 #include "lx16a/lx16a_encoder_filter.h"
 
+#include <pybind11/pybind11.h>
 #include <ros/ros.h>
 
 #include <cstdint>
@@ -47,11 +48,11 @@
 namespace lx16a
 {
     /// \brief An encoder filter for the LX-16A servo.
-    class LX16AEncoderFilterClient : public LX16AEncoderFilter
+    class LX16AEncoderFilterPython : public LX16AEncoderFilter
     {
     public:
         /// \brief Destructor
-        virtual ~LX16AEncoderFilterClient();
+        virtual ~LX16AEncoderFilterPython();
 
         /// \brief Constructor
         ///
@@ -63,8 +64,7 @@ namespace lx16a
         /// \param window An integer size of the sample window used in
         /// the classifier, has default 10)
         ///
-        LX16AEncoderFilterClient(
-            ros::NodeHandle &nh,
+        LX16AEncoderFilterPython(
             const std::string &classifier_filename,
             const std::string &regressor_filename = "",
             int16_t window = 10);
@@ -162,28 +162,18 @@ namespace lx16a
             std::vector<double> &angular_positions) override;
 
     private:
-        ros::NodeHandle  nh_;
         std::string classifier_filename_;       // classifier filename
         std::string regressor_filename_;        // regressor filename
         int16_t window_ = 10;                   // size of the history window
 
-        // Service clients (proxies)
-        ros::ServiceClient filter_add_;
-        ros::ServiceClient filter_get_angular_position_;
-        ros::ServiceClient filter_get_count_;
-        ros::ServiceClient filter_get_duty_;
-        ros::ServiceClient filter_get_invert_;
-        ros::ServiceClient filter_get_revolutions_;
-        ros::ServiceClient filter_get_servo_pos_;
-        ros::ServiceClient filter_reset_;
-        ros::ServiceClient filter_set_invert_;
-        ros::ServiceClient filter_update_;
-
-        // Vectorised service clients (proxies)
-        ros::ServiceClient filter_add_v_;
-        ros::ServiceClient filter_update_v_;
+        // Store the Python module and class instance objects as well
+        // as a pointer to the C++ type. If the Python objects go out of
+        // scope the pointer is undefined.   
+        pybind11::object py_module_;
+        pybind11::object py_encoder_filter_;
+        LX16AEncoderFilter *encoder_filter_ = nullptr;
     };
 
 } // namespace lx16a
 
-#endif // LX16A_ENCODER_FILTER_CLIENT_H_
+#endif // LX16A_ENCODER_FILTER_PYTHON_H_

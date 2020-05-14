@@ -1,23 +1,28 @@
 <!-- Bringup the robot -->
 <launch>
     <!-- linux -->
-    <arg name="arduino_port" default="/dev/ttyACM0"/>
+    <arg name="rover_base_port" default="/dev/ttyACM0"/>
+    <arg name="imu_and_rc_port" default="/dev/ttyACM1"/>
     <arg name="laser_scan_port" default="/dev/ttyUSB0"/>
-    <arg name="servo_bus_port" default="/dev/ttyUSB1"/>
-    <!-- macOS
-    <arg name="arduino_port" default="/dev/cu.usbmodemFD5121"/>
-    <arg name="laser_scan_port" default="/dev/cu.SLAB_USBtoUART"/>
-    -->
+    <arg name="navsat_port" default="/dev/ttyUSB1"/>
 
-    <!-- Base -->
-    <include file="$(find curio_bringup)/launch/curio_base.launch">
-        <arg name="arduino_port" value="$(arg arduino_port)"/>
-        <arg name="servo_bus_port" value="$(arg servo_bus_port)"/>
+    <!-- Rover base controller -->
+    <include file="$(find curio_base)/launch/rover_base_controller.launch">
+        <arg name="port" value="$(arg rover_base_port)"/>
+    </include>
+
+    <!-- IMU and RC -->
+    <include file="$(find curio_base)/launch/imu_and_rc_controller.launch">
+        <arg name="port" value="$(arg imu_and_rc_port)"/>
+    </include>
+
+    <!-- Sensor mapping -->
+    <include file="$(find curio_base)/launch/base_sensors.launch">
     </include>
 
     <!-- Radio Control Teleoperation -->
-    <include file="$(find curio_bringup)/launch/curio_teleop.launch">
-    </include> 
+    <include file="$(find curio_teleop)/launch/teleop_rc.launch">
+    </include>
    
     <!-- Laser Scan -->    
     <include file="$(find curio_bringup)/launch/curio_laser_scan.launch">
@@ -25,5 +30,9 @@
         <arg name="frame_id" value="laser"/>
     </include>
   
-   
+    <!-- NavSat -->
+    <include file="$(find nmea_navsat_driver)/launch/nmea_serial_driver.launch">
+        <arg name="port" value="$(arg navsat_port)"/>
+    </include>
+
 </launch>
