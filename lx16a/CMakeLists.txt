@@ -85,7 +85,7 @@ target_link_libraries(lx16a_driver_test PRIVATE lx16a ${catkin_LIBRARIES})
 add_executable(lx16a_encoder_filter_test
     src/examples/lx16a_encoder_filter_test.cpp
 )
-target_link_libraries(lx16a_encoder_filter_test PRIVATE lx16a ${catkin_LIBRARIES})
+target_link_libraries(lx16a_encoder_filter_test PRIVATE pybind11::embed lx16a ${catkin_LIBRARIES})
 
 ################################################################################
 # Install
