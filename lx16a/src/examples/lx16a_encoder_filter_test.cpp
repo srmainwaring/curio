@@ -36,6 +36,10 @@
 
 #include "lx16a/lx16a_driver.h"
 #include "lx16a/lx16a_encoder_filter_client.h"
+#include "lx16a/lx16a_encoder_filter_python.h"
+
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -45,8 +49,10 @@
 #include <cstdint>
 #include <thread>
 
+#define USE_PYTHON_SERVICE 0
+
 // Servo ids
-const uint8_t SERVO_ID = 11;
+const uint8_t SERVO_ID = 21;
 const std::string CLASSIFIER_FILENAME = "./src/curio/lx16a/data/lx16a_tree_classifier.joblib";
 const std::string REGRESSOR_FILENAME = "./src/curio/lx16a/data/lx16a_tree_regressor.joblib";
 const int16_t WINDOW = 10;
@@ -98,13 +104,43 @@ int main(int argc, char *argv[])
     ROS_INFO_STREAM("is_open: " << servo_driver.isOpen());
 
     // Encoder filter
-    lx16a::LX16AEncoderFilterClient encoder_filter(
-        nh,
-        CLASSIFIER_FILENAME,
-        REGRESSOR_FILENAME,
-        WINDOW);
-    encoder_filter.init();
-    encoder_filter.add(SERVO_ID);
+#if USE_PYTHON_SERVICE
+    std::unique_ptr<lx16a::LX16AEncoderFilter>  encoder_filter(
+        new lx16a::LX16AEncoderFilterClient(
+            nh,
+            CLASSIFIER_FILENAME,
+            REGRESSOR_FILENAME,
+            WINDOW));
+#else
+    namespace py = pybind11;
+
+    // Initialise the Python interpreter
+    py::scoped_interpreter guard{};
+
+    // Workaround if sys.argv is not available (RPi4 with Python 2.7).
+    py::object sys = py::module::import("sys");
+    if (!py::hasattr(sys, "argv"))
+    {
+        std::cout << "Missing sys.argv... adding" << std::endl;
+        py::int_ py_argc(argc);
+        py::list py_list;
+        for (int i=0; i<argc; ++i)
+        {
+            py_list.attr("append")(argv[i]);
+        }
+        py::setattr(sys, "argc", py_argc);
+        py::setattr(sys, "argv", py_list);
+    }
+
+    std::unique_ptr<lx16a::LX16AEncoderFilter>  encoder_filter(
+        new lx16a::LX16AEncoderFilterPython(
+            CLASSIFIER_FILENAME,
+            REGRESSOR_FILENAME,
+            WINDOW));
+#endif
+
+    encoder_filter->init();
+    encoder_filter->add(SERVO_ID);
 
     // Wait for Arduino bootloader to complete before sending any
     // data on the serial connection.
@@ -123,9 +159,9 @@ int main(int argc, char *argv[])
     {
         ros::Time now = ros::Time::now();
         int16_t position = servo_driver.getPosition(SERVO_ID);        
-        encoder_filter.update(SERVO_ID, now, duty, position);
-        int16_t count = encoder_filter.getCount(SERVO_ID);
-        int16_t revolutions = encoder_filter.getRevolutions(SERVO_ID);
+        encoder_filter->update(SERVO_ID, now, duty, position);
+        int16_t count = encoder_filter->getCount(SERVO_ID);
+        int16_t revolutions = encoder_filter->getRevolutions(SERVO_ID);
 
         ROS_INFO_STREAM("pos: " << position
             << ", count: " << count

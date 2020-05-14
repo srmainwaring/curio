@@ -73,7 +73,7 @@ namespace lx16a
 
     void LX16AEncoderFilterPython::add(uint8_t servo_id)
     {   
-        encoder_filter_->add(11);
+        encoder_filter_->add(servo_id);
     }
 
     void LX16AEncoderFilterPython::update(uint8_t servo_id, const ros::Time &ros_time, int16_t duty, int16_t position)
