@@ -37,6 +37,7 @@
 #include "lx16a/lx16a_driver.h"
 #include "lx16a/lx16a_encoder_filter_client.h"
 #include "lx16a/lx16a_encoder_filter_python.h"
+#include "lx16a/lx16a_pybind11_embed.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
@@ -116,21 +117,7 @@ int main(int argc, char *argv[])
 
     // Initialise the Python interpreter
     py::scoped_interpreter guard{};
-
-    // Workaround if sys.argv is not available (RPi4 with Python 2.7).
-    py::object sys = py::module::import("sys");
-    if (!py::hasattr(sys, "argv"))
-    {
-        std::cout << "Missing sys.argv... adding" << std::endl;
-        py::int_ py_argc(argc);
-        py::list py_list;
-        for (int i=0; i<argc; ++i)
-        {
-            py_list.attr("append")(argv[i]);
-        }
-        py::setattr(sys, "argc", py_argc);
-        py::setattr(sys, "argv", py_list);
-    }
+    lx16a::addCmdArgsToSys(argc, argv);
 
     std::unique_ptr<lx16a::LX16AEncoderFilter>  encoder_filter(
         new lx16a::LX16AEncoderFilterPython(

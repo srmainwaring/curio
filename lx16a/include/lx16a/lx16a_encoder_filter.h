@@ -129,8 +129,8 @@ namespace lx16a
         /// estimate whether it is valid.
         ///
         /// \param servo_id An integer for servo serial identifier, in [0, 253]
-        /// \param position An integer reference that is set to the current position. 
-        /// \param is_valid A bool that is set to true for valid, false otherwise.
+        /// \param[out] position An integer reference that is set to the current position. 
+        /// \param[out] is_valid A bool that is set to true for valid, false otherwise.
         /// \param map_position A bool: if true map the position to the
         /// range [0, 1500],  has (default True)
         ///
@@ -161,9 +161,23 @@ namespace lx16a
         /// Vectorised interface
 
         /// \brief Add servos.
+        ///
+        /// \param servo_id A vector of integers for servo serial identifier,
+        /// in [0, 253]
+        ///
         virtual void add_v(const std::vector<uint8_t> &servo_ids) = 0;
 
         /// \brief Update the encoder filter.
+        ///
+        /// \param servo_id A vector of integers for servo serial identifier,
+        /// in [0, 253]
+        /// \param ros_time A vector of ros::Time containing the time from
+        /// ros::Time::now()
+        /// \param duty A vector of integer servo duties
+        /// \param position A vector of integer servo positions 
+        /// \param[out] position A vector of angular positions 
+        ///
+        ///
         virtual void update_v(
             const std::vector<uint8_t> &servo_ids,
             const ros::Time &ros_time,
