@@ -49,15 +49,15 @@ include_directories(
 
 # Library
 add_library(lx16a
+    src/lx16a_driver.cpp
     src/lx16a_encoder_filter_client.cpp
     src/lx16a_encoder_filter_onnx.cpp
     src/lx16a_encoder_filter_python.cpp
     src/lx16a_encoder_filter.cpp
-    src/lx16a_driver.cpp
+    src/lx16a_pybind11_embed.cpp
 )
 target_link_libraries(lx16a
     PRIVATE
-    # pybind11::module
     pybind11::embed
     ${catkin_LIBRARIES}
 )
