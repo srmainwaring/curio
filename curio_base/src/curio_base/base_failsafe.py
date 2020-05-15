@@ -37,7 +37,7 @@
 ''' Curio base failsafe
 '''
 
-from lx16a.lx16a_driver import LX16ADriver
+from lx16a.driver import LX16ADriver
 import rospy
 import serial
 

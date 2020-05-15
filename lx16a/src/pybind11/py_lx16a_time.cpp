@@ -8,6 +8,8 @@ void init_lx16a_time(py::module &m)
 {
     py::class_<lx16a::Time>(m, "Time")
         .def(py::init<>())
+        .def(py::init<int32_t, int32_t>())
+        .def(py::init<double>())
         .def_readwrite("sec", &lx16a::Time::sec)
         .def_readwrite("nsec", &lx16a::Time::nsec)
         .def("__repr__",

@@ -359,3 +359,4 @@ class LX16AEncoderFilter(object):
         if self._regressor_filename is not None:
             rospy.loginfo('Loading regressor from {}'.format(self._regressor_filename))
             self._regressor = joblib.load(self._regressor_filename)
+

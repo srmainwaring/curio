@@ -80,7 +80,7 @@
 
 '''
 
-import lx16a.lx16a_driver
+import lx16a.driver
 import rospy
 
 SERVO_SERIAL_PORT   = '/dev/cu.usbmodem1421201'
@@ -125,7 +125,7 @@ def test_servo_properties(servo_driver):
     # Run servo in motor (continuous) mode
     rospy.loginfo('Set motor speed')
     speed = 800
-    run_duration = rospy.Duration(2)
+    run_duration = rospy.Duration(1)
     pos = servo_driver.pos_read(SERVO_ID)
     angle = pos_to_deg(pos)
     rospy.loginfo("position: {}, angle: {}".format(pos, angle))
@@ -564,7 +564,7 @@ if __name__ == '__main__':
     rospy.on_shutdown(shutdown_callback)
 
     # Initialise servo driver
-    servo_driver = lx16a.lx16a_driver.LX16ADriver()
+    servo_driver = lx16a.driver.LX16ADriver()
     servo_driver.set_port(SERVO_SERIAL_PORT)
     servo_driver.set_baudrate(SERVO_BAUDRATE)
     servo_driver.set_timeout(SERVO_TIMEOUT)
@@ -581,7 +581,32 @@ if __name__ == '__main__':
     # before sending data.
     rospy.sleep(1)
 
+    # Tests.
+    test_servo_properties(servo_driver)
+    test_move_time_write(servo_driver)
+    test_move_time_read(servo_driver)
+    test_move_time_wait_write(servo_driver)
+
+    # Not working...
+    # test_move_time_wait_read(servo_driver)
+
+    test_move_stop(servo_driver)
+    test_angle_offset(servo_driver)
+    test_angle_limit(servo_driver)
+    test_vin_limit(servo_driver)
+    test_temp_max_limit(servo_driver)
+
+    # Not working...
+    # test_mode_read(servo_driver)
+
+    # Not working...
+    # test_load_or_unload(servo_driver)
+
+    test_led_ctrl(servo_driver)
+    test_led_error(servo_driver)
+
     # Start motor
+    rospy.sleep(0.5)
     servo_driver.motor_mode_write(SERVO_ID, 500)
 
     count = 0
@@ -600,30 +625,3 @@ if __name__ == '__main__':
             start = rospy.Time().now()
 
         rate.sleep()
-
-    # Tests.
-    # test_servo_properties(servo_driver)
-    # test_move_time_write(servo_driver)
-    # test_move_time_read(servo_driver)
-    # test_move_time_wait_write(servo_driver)
-
-    # Not working...
-    # test_move_time_wait_read(servo_driver)
-
-    # test_move_stop(servo_driver)
-    # test_angle_offset(servo_driver)
-    # test_angle_limit(servo_driver)
-    # test_vin_limit(servo_driver)
-    # test_temp_max_limit(servo_driver)
-    # test_mode_read(servo_driver)
-
-    # Not working...
-    # test_load_or_unload(servo_driver)
-
-    # test_led_ctrl(servo_driver)
-    # test_led_error(servo_driver)
-    
-    # Shutdown
-    servo_driver.close()
-    rospy.loginfo('Close connection to servo bus board')
-    rospy.loginfo('is_open: {}'.format(servo_driver.is_open()))

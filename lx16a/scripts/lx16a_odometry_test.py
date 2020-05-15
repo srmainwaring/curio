@@ -39,8 +39,8 @@
 '''
 
 import csv
-from lx16a.lx16a_driver import LX16ADriver
-from lx16a.lx16a_encoder_filter import LX16AEncoderFilter
+from lx16a.driver import LX16ADriver
+from lx16a.encoder import LX16AEncoderFilter
 import rospy
 import serial
 from std_msgs.msg import Int64
@@ -49,7 +49,7 @@ from geometry_msgs.msg import Twist
 SERVO_SERIAL_PORT   = '/dev/cu.usbmodem1421201'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0 # [s]
-SERVO_ID            = 11
+SERVO_ID            = 21
 
 CONTROL_FREQUENCY   = 50  # [Hz]
 
@@ -58,7 +58,8 @@ DATA_DIR  = './data/'
 WINDOW    = 10
 
 # Filename for persisted ML model
-MODEL_FILENAME = "{0}lx16a_tree_model_all.joblib".format(DATA_DIR)
+CLASSIFIER_FILENAME = "./src/curio/lx16a/data/lx16a_tree_classifier.joblib"
+REGRESSOR_FILENAME = "./src/curio/lx16a/data/lx16a_tree_regressor.joblib"
 
 # Convert LX-16A position to angle in deg
 # def pos_to_deg(pos):
@@ -76,7 +77,8 @@ class LX16AOdometer(object):
         self._cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, self.cmd_vel_callback)
 
         # Initialise encoder filter
-        self._encoder_filter = LX16AEncoderFilter(MODEL_FILENAME, WINDOW)
+        self._encoder_filter = LX16AEncoderFilter(
+            CLASSIFIER_FILENAME, REGRESSOR_FILENAME, WINDOW)
 
         # Initialise servo driver
         self._servo_driver = LX16ADriver()
@@ -90,6 +92,11 @@ class LX16AOdometer(object):
         rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
         rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
         rospy.loginfo('timeout: {}'.format(self._servo_driver.get_timeout()))
+
+        # Arduino reboots when a serial connection is established
+        # wait for bootloader to complete scanning the serial port
+        # before sending data.
+        rospy.sleep(1)
 
     def shutdown(self):
         # Stop servo

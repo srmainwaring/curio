@@ -1,4 +1,4 @@
-#include "test_config.h"
+#include "config.h"
 #include "lx16a/lx16a_encoder_filter_python.h"
 #include "lx16a/lx16a_pybind11_embed.h"
 #include <gtest/gtest.h>
@@ -9,14 +9,14 @@
 namespace py = pybind11;
 
 // Test fixture
-class EncoderFilterPythonTest : public ::testing::Test
+class EncoderFilterPythonTestSuite : public ::testing::Test
 {
 protected:
-    ~EncoderFilterPythonTest() override
+    ~EncoderFilterPythonTestSuite() override
     {
     }
 
-    EncoderFilterPythonTest()
+    EncoderFilterPythonTestSuite()
     {
         // Load the test data.
 
@@ -43,7 +43,7 @@ protected:
 
 
 // Declare tests
-TEST_F(EncoderFilterPythonTest, testConstructor)
+TEST_F(EncoderFilterPythonTestSuite, testConstructor)
 {
     std::unique_ptr<lx16a::LX16AEncoderFilter> filter(
         new lx16a::LX16AEncoderFilterPython(
@@ -65,7 +65,7 @@ TEST_F(EncoderFilterPythonTest, testConstructor)
     EXPECT_TRUE(is_valid) << "is_valid != true";
 }
 
-TEST_F(EncoderFilterPythonTest, testUpdate)
+TEST_F(EncoderFilterPythonTestSuite, testUpdate)
 {
     std::unique_ptr<lx16a::LX16AEncoderFilter> filter(
         new lx16a::LX16AEncoderFilterPython(
@@ -136,7 +136,7 @@ TEST_F(EncoderFilterPythonTest, testUpdate)
 }
 
 
-TEST_F(EncoderFilterPythonTest, testGetPosition)
+TEST_F(EncoderFilterPythonTestSuite, testGetPosition)
 {
     std::unique_ptr<lx16a::LX16AEncoderFilter> filter(
         new lx16a::LX16AEncoderFilterPython(
