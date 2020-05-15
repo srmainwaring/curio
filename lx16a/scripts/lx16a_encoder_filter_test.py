@@ -40,7 +40,7 @@
 ''' Lewansoul LX-16A encoder filter.
 '''
 
-from lx16a.lx16a_encoder_filter import LX16AEncoderFilter
+from lx16a.encoder import LX16AEncoderFilter
 import math
 import pandas as pd
 import rospy

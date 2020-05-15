@@ -61,7 +61,7 @@ namespace lx16a
     void LX16AEncoderFilterPython::init()
     {
         // Import derived class and cast from Python to C++.
-        py_module_ = py::module::import("lx16a.lx16a_encoder_filter_wrap").attr("LX16AEncoderFilterWrap");
+        py_module_ = py::module::import("lx16a.ext").attr("LX16AEncoderFilterSklearn");
         py_encoder_filter_ = py_module_(
             "classifier_filename"_a = classifier_filename_,
             "regressor_filename"_a = regressor_filename_,

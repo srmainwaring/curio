@@ -55,6 +55,7 @@ add_library(lx16a
     src/lx16a_encoder_filter_python.cpp
     src/lx16a_encoder_filter.cpp
     src/lx16a_pybind11_embed.cpp
+    src/lx16a_time.cpp
 )
 target_link_libraries(lx16a
     PRIVATE
@@ -131,7 +132,8 @@ if (CATKIN_ENABLE_TESTING)
     # Generate test_config.h
     get_filename_component(TEST_DIR "test" ABSOLUTE)
     get_filename_component(DATA_DIR "data" ABSOLUTE)
-    configure_file(test/test_config.in test/test_config.h)
+    configure_file(test/config.in test/config.h)
+    configure_file(test/config_py.in test/config.py)
     include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
 
     # C++ tests
@@ -140,6 +142,10 @@ if (CATKIN_ENABLE_TESTING)
 
     # Python tests
     catkin_add_nosetests(test/test_encoder_filter.py)
+
+    # rostest tests
+    catkin_add_gtest(test_hardware_encoder test/test_hardware_encoder.cpp)
+    target_link_libraries(test_hardware_encoder PRIVATE lx16a ${catkin_LIBRARIES})
 
 
 endif()

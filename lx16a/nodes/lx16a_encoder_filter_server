@@ -37,10 +37,10 @@
 
 ''' LX16A encoder filter node
 
-See src/lx16a/lx16a_encoder_filter_server.py for documentation.  
+See src/lx16a/server.py for documentation.  
 '''
 
-import lx16a.lx16a_encoder_filter_server
+import lx16a.server
 
 if __name__ == '__main__':
-    lx16a.lx16a_encoder_filter_server.main()
+    lx16a.server.main()

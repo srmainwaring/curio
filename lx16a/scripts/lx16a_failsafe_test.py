@@ -47,7 +47,7 @@ Here is a guide to Arduino bootloaders:
 https://www.instructables.com/id/Overview-the-Arduino-sketch-uploading-process-and-/
 '''
 
-import lx16a.lx16a_driver
+import lx16a.driver
 import rospy
 import serial
 
@@ -65,7 +65,7 @@ class LX16AFailsafe(object):
         '''
 
         # Initialise servo driver
-        self._servo_driver = lx16a.lx16a_driver.LX16ADriver()
+        self._servo_driver = lx16a.driver.LX16ADriver()
         self._servo_driver.set_port(SERVO_SERIAL_PORT)
         self._servo_driver.set_baudrate(SERVO_BAUDRATE)
         self._servo_driver.set_timeout(SERVO_TIMEOUT)
@@ -76,6 +76,11 @@ class LX16AFailsafe(object):
         rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
         rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
         rospy.loginfo('timeout: {}'.format(self._servo_driver.get_timeout()))
+
+        # Arduino reboots when a serial connection is established
+        # wait for bootloader to complete scanning the serial port
+        # before sending data.
+        rospy.sleep(1)
 
     def update(self, event):
         ''' Update will stop all wheel servos.

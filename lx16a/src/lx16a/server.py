@@ -39,7 +39,7 @@
 ''' Lewansoul LX-16A encoder filter server.
 '''
 
-from lx16a.lx16a_encoder_filter import LX16AEncoderFilter
+from lx16a.encoder import LX16AEncoderFilter
 from lx16a_msgs.srv import EncoderFilterAdd, EncoderFilterAddResponse
 from lx16a_msgs.srv import EncoderFilterGetAngularPosition, EncoderFilterGetAngularPositionResponse
 from lx16a_msgs.srv import EncoderFilterGetCount, EncoderFilterGetCountResponse

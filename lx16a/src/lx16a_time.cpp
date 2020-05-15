@@ -34,22 +34,16 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
-#ifndef LX16A_TIME_H_
-#define LX16A_TIME_H_
-
-#include <cstdint>
+#include "lx16a/lx16a_time.h"
+#include <ros/ros.h>
 
 namespace lx16a
 {
-    /// \brief Time structure - used for C++ / Python interop
-    struct Time
+    Time::Time(double t)
     {
-        uint32_t sec, nsec;
-        Time() : sec(0), nsec(0) {}
-        Time(uint32_t sec, uint32_t nsec) : sec(sec), nsec(nsec) {}
-        Time(double t);
-    };
+        ros::Time time(t);
+        sec = time.sec;
+        nsec = time.nsec;
+    }
 
 } // namespace lx16a
-
-#endif // LX16A_TIME_H_

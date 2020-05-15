@@ -83,7 +83,7 @@
 '''
 
 import csv
-import lx16a.lx16a_driver
+import lx16a.driver
 import rospy
 import serial
 from std_msgs.msg import Int64
@@ -92,9 +92,9 @@ from geometry_msgs.msg import Twist
 SERVO_SERIAL_PORT   = '/dev/cu.usbmodem1421201'
 SERVO_BAUDRATE      = 115200
 SERVO_TIMEOUT       = 1.0 # [s]
-SERVO_ID            = 111
+SERVO_ID            = 21
 
-CONTROL_FREQUENCY   = 50  # [Hz]
+CONTROL_FREQUENCY   = 10  # [Hz]
 OUT_DATA_FILENAME   = "./data/lx16a_raw_data_08.csv"
 
 REFERENCE_ENCODER_CPR = 4096  # Counts per revolution for the reference logger (publishing to /encoder)
@@ -120,7 +120,7 @@ class LX16AEncoderLogger(object):
         self._cmd_vel_sub = rospy.Subscriber('/cmd_vel', Twist, self.cmd_vel_callback)
 
         # Initialise servo driver
-        self._servo_driver = lx16a.lx16a_driver.LX16ADriver()
+        self._servo_driver = lx16a.driver.LX16ADriver()
         self._servo_driver.set_port(SERVO_SERIAL_PORT)
         self._servo_driver.set_baudrate(SERVO_BAUDRATE)
         self._servo_driver.set_timeout(SERVO_TIMEOUT)
@@ -131,6 +131,11 @@ class LX16AEncoderLogger(object):
         rospy.loginfo('port: {}'.format(self._servo_driver.get_port()))
         rospy.loginfo('baudrate: {}'.format(self._servo_driver.get_baudrate()))
         rospy.loginfo('timeout: {}'.format(self._servo_driver.get_timeout()))
+
+        # Arduino reboots when a serial connection is established
+        # wait for bootloader to complete scanning the serial port
+        # before sending data.
+        rospy.sleep(1)
 
     def shutdown(self):
         # Stop servo
@@ -167,7 +172,7 @@ class LX16AEncoderLogger(object):
             self.write_data()
 
     def write_data(self):
-        with open(self.filename, 'ab') as csvfile:
+        with open(self.filename, 'a') as csvfile:
             # Write data
             writer = csv.writer(csvfile, delimiter=',')
             for row in self._data:

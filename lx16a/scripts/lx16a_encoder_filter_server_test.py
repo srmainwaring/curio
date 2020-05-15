@@ -57,7 +57,7 @@ import pandas as pd
 import rospy
 
 # Constants
-SERVO_ID = 11
+SERVO_ID = 21
 WINDOW = 10
 
 # Raw data produced by servo and encoder 
