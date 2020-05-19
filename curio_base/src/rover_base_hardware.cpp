@@ -122,37 +122,56 @@ namespace curio_base
         const int k_num_steer_joints = rover_hal_->getNumSteers();
 
         // Set position of wheel joints
-        for (int i=0; i<k_num_wheel_joints; ++i)
+        // for (int i=0; i<k_num_wheel_joints; ++i)
+        // {
+        //     try
+        //     {
+        //         wheel_joint_positions_[i] = rover_hal_->getWheelPosition(time, i);
+        //     }
+        //     catch (const RoverBaseHALException &e)
+        //     {
+        //         // Report error and use last known position. 
+        //         ROS_ERROR_STREAM(e.what());
+        //     }
+        // }
+        try
         {
-            try
-            {
-                wheel_joint_positions_[i] = rover_hal_->getWheelPosition(time, i);
-            }
-            catch (const RoverBaseHALException &e)
-            {
-                // Report error and use last known position. 
-                ROS_ERROR_STREAM(e.what());
-            }
+            rover_hal_->getWheelPositions(time, wheel_joint_positions_);
+        }
+        catch (const RoverBaseHALException &e)
+        {
+            // Report error and use last known position. 
+            ROS_ERROR_STREAM(e.what());
         }
 
         // Set velocities of wheel joints
-        for (int i=0; i<k_num_wheel_joints; ++i)
-        {
-            wheel_joint_velocities_[i] = rover_hal_->getWheelVelocity(time, i);
-        }
+        // for (int i=0; i<k_num_wheel_joints; ++i)
+        // {
+        //     wheel_joint_velocities_[i] = rover_hal_->getWheelVelocity(time, i);
+        // }
+        rover_hal_->getWheelVelocities(time, wheel_joint_velocities_);
 
         // Set position of steer joints
-        for (int i=0; i<k_num_steer_joints; ++i)
+        // for (int i=0; i<k_num_steer_joints; ++i)
+        // {
+        //     try
+        //     {
+        //        steer_joint_positions_[i] = rover_hal_->getSteerAngle(time, i);
+        //     }
+        //     catch (const RoverBaseHALException &e)
+        //     {
+        //         // Report error and use last known position. 
+        //         ROS_ERROR_STREAM(e.what());
+        //     }
+        // }
+        try
         {
-            try
-            {
-               steer_joint_positions_[i] = rover_hal_->getSteerAngle(time, i);
-            }
-            catch (const RoverBaseHALException &e)
-            {
-                // Report error and use last known position. 
-                ROS_ERROR_STREAM(e.what());
-            }
+            rover_hal_->getSteerAngles(time, steer_joint_positions_);
+        }
+        catch (const RoverBaseHALException &e)
+        {
+            // Report error and use last known position. 
+            ROS_ERROR_STREAM(e.what());
         }
     }
 

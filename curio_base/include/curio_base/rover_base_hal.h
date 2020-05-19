@@ -98,7 +98,7 @@ namespace curio_base
         virtual void getSteerAngles(const ros::Time &time, std::vector<double>& positions) const = 0;
 
         /// \brief Set the steering angles [rad].
-        virtual void setSteerAngle(const ros::Time &time, const std::vector<double>& positions) = 0;
+        virtual void setSteerAngles(const ros::Time &time, const std::vector<double>& positions) = 0;
 
     };
 

@@ -57,6 +57,10 @@ from lx16a_msgs.srv import EncoderFilterUpdateV, EncoderFilterUpdateVResponse
 
 import rospy
 import sys
+import threading
+
+# Threading lock
+lock = threading.Lock()
 
 # Maintain a dictionary of encoder filters, keyed on servo_id.
 encoder_filters = {}
@@ -69,12 +73,13 @@ def handle_add(req):
         req.window
     ))
 
-    filter = LX16AEncoderFilter(req.classifier_filename, req.regressor_filename, req.window)
-    encoder_filters[req.servo_id] = filter
+    with lock:
+        filter = LX16AEncoderFilter(req.classifier_filename, req.regressor_filename, req.window)
+        encoder_filters[req.servo_id] = filter
 
-    response = EncoderFilterAddResponse()
-    response.status = 0
-    return response
+        response = EncoderFilterAddResponse()
+        response.status = 0
+        return response
 
 def handle_get_angular_position(req):
     rospy.logdebug('Got: servo_id: {}'.format(
@@ -198,14 +203,15 @@ def handle_add_v(req):
         req.window
     ))
 
-    num_servo_ids = len(req.servo_ids)
-    for servo_id in req.servo_ids:
-        filter = LX16AEncoderFilter(req.classifier_filename, req.regressor_filename, req.window)
-        encoder_filters[servo_id] = filter
+    with lock:
+        num_servo_ids = len(req.servo_ids)
+        for servo_id in req.servo_ids:
+            filter = LX16AEncoderFilter(req.classifier_filename, req.regressor_filename, req.window)
+            encoder_filters[servo_id] = filter
 
-    response = EncoderFilterAddVResponse()
-    response.status = 0
-    return response
+        response = EncoderFilterAddVResponse()
+        response.status = 0
+        return response
 
 def handle_update_v(req):
     rospy.logdebug('Got: servo_ids: {}, time: {}, duties: {}, positions: {}'.format(
@@ -226,7 +232,7 @@ def handle_update_v(req):
         position = filter.get_angular_position()
         angular_positions.append(position)
  
-    response = EncoderFilterUpdateResponse()
+    response = EncoderFilterUpdateVResponse()
     response.angular_positions = angular_positions
     return response
 
