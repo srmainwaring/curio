@@ -52,7 +52,7 @@ namespace lx16a
     {
     public:
         /// \copydoc LX16AEncoderFilter::~LX16AEncoderFilter()
-        virtual ~LX16AEncoderFilterPython();
+        ~LX16AEncoderFilterPython() override;
 
         /// \brief Constructor
         ///

@@ -167,7 +167,7 @@ namespace lx16a
         return response_timeout_;
     }
 
-    void LX16ADriver::setResponseTimeout(ros::Duration &response_timeout)
+    void LX16ADriver::setResponseTimeout(const ros::Duration &response_timeout)
     {
         response_timeout_ = response_timeout;
     }

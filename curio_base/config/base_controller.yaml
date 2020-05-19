@@ -30,6 +30,7 @@
 port: /dev/ttyACM0
 baudrate: 115200
 timeout: 1.0
+response_timeout: 0.015
 
 # Update frequencies: control loop
 control_frequency: 20.0

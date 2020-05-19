@@ -56,7 +56,7 @@ namespace lx16a
     {
     public:
         /// \copydoc LX16AEncoderFilter::~LX16AEncoderFilter()
-        virtual ~LX16AEncoderFilterOnnx();
+        ~LX16AEncoderFilterOnnx() override;
 
         /// \brief Constructor
         ///
