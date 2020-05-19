@@ -53,7 +53,7 @@ namespace curio_base
     {
     public:
         /// \brief Destructor.
-        virtual ~RoverBaseHALLX16A();
+        ~RoverBaseHALLX16A() override;
 
         /// \brief Constructor.
         RoverBaseHALLX16A(ros::NodeHandle &nh);

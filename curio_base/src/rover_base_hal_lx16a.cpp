@@ -289,10 +289,12 @@ namespace curio_base
         // timeout: 1.0
         std::string port;
         int baudrate = 115200;
-        double timeout = 1.0;           // [s]
+        double timeout = 1.0;               // [s]
+        double response_timeout = 0.015;    // [s]
         ros::param::get("~port", port);
         ros::param::get("~baudrate", baudrate);
         ros::param::get("~timeout", timeout);
+        ros::param::get("~response_timeout", response_timeout);
 
         // Encoder filters
         std::string classifier_filename;
@@ -315,12 +317,12 @@ namespace curio_base
         ROS_INFO("Initialising LX16A servo driver...");
         uint32_t timeout_millis = static_cast<uint32_t>(timeout * 1000);
         serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout_millis);
-        ros::Duration response_timeout(0.015);
+        ros::Duration servo_response_timeout(response_timeout);
         servo_driver_ = std::unique_ptr<lx16a::LX16ADriver>(new lx16a::LX16ADriver());
         servo_driver_->setPort(port);
         servo_driver_->setBaudrate(baudrate);
         servo_driver_->setTimeout(serial_timeout);
-        servo_driver_->setResponseTimeout(response_timeout);
+        servo_driver_->setResponseTimeout(servo_response_timeout);
         try
         {
             servo_driver_->open();

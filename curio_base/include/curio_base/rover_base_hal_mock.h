@@ -48,7 +48,7 @@ namespace curio_base
     {
     public:
         /// \brief Destructor.
-        virtual ~RoverBaseHALMock();
+        ~RoverBaseHALMock() override;
 
         /// \brief Constructor.
         RoverBaseHALMock();

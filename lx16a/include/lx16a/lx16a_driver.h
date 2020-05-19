@@ -120,9 +120,15 @@ namespace lx16a
         ///
         void setTimeout(serial::Timeout &timeout);
 
+        /// \brief A timeout for the duration between sending a command and receiving a response.
         ros::Duration getResponseTimeout() const;
 
-        void setResponseTimeout(ros::Duration &response_timeout);
+        /// \brief Set the timeout for the duration between sending a command and receiving a response.
+        ///
+        /// \param response_timeout A duration in seconds specifying the maximum time to wait
+        /// for a response to a command request, has default (0.01s).
+        ///        
+        void setResponseTimeout(const ros::Duration &response_timeout);
 
         //  Commands
 
