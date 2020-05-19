@@ -492,17 +492,17 @@ namespace curio_base
 
     void RoverBaseHALLX16A::getWheelPositions(const ros::Time &time, std::vector<double>& positions) const
     {
-        // Get servo positions.
-        std::vector<int16_t> servo_positions(k_num_wheels_, 0.0);
-        for (size_t i=0; i<k_num_wheels_; ++i)
-        {
-            uint8_t servo_id = wheel_servo_ids_[i];
-            int16_t pos = servo_driver_->getPosition(servo_id);
-            servo_positions[i] = pos;
-        }
-
         try
         {
+            // Get servo positions.
+            std::vector<int16_t> servo_positions(k_num_wheels_, 0.0);
+            for (size_t i=0; i<k_num_wheels_; ++i)
+            {
+                uint8_t servo_id = wheel_servo_ids_[i];
+                int16_t pos = servo_driver_->getPosition(servo_id);
+                servo_positions[i] = pos;
+            }
+
             // Update filter.
             encoder_filter_->update_v(
                 wheel_servo_ids_,
@@ -549,7 +549,7 @@ namespace curio_base
         }
     }
 
-    void RoverBaseHALLX16A::setSteerAngle(const ros::Time &time, const std::vector<double>& positions)
+    void RoverBaseHALLX16A::setSteerAngles(const ros::Time &time, const std::vector<double>& positions)
     {
         for (size_t i=0; i<k_num_steers_; ++i)
         {

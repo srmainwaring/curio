@@ -92,7 +92,7 @@ namespace curio_base
         void getSteerAngles(const ros::Time &time, std::vector<double>& positions) const override;
 
         /// \brief Set the steering angles [rad].
-        void setSteerAngle(const ros::Time &time, const std::vector<double>& positions) override;
+        void setSteerAngles(const ros::Time &time, const std::vector<double>& positions) override;
 
     private:
         /// \brief Set the steering trim for the i-ith steer.

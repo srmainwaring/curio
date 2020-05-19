@@ -141,7 +141,7 @@ namespace curio_base
         }
     }
 
-    void RoverBaseHALMock::setSteerAngle(const ros::Time &time, const std::vector<double>& positions)
+    void RoverBaseHALMock::setSteerAngles(const ros::Time &time, const std::vector<double>& positions)
     {
         for (size_t i=0; i<k_num_steers_; ++i)
         {

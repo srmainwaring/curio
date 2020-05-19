@@ -41,6 +41,7 @@
 import joblib
 import math
 import rospy
+import threading
 
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import StandardScaler
@@ -105,6 +106,7 @@ class LX16AEncoderFilter(object):
         self._prev_valid_pos = 0     # the previous valid position
         self._invert         = 1     # 1 or -1 depending on the desired
                                      # direction for increasing count
+        self._lock = threading.Lock()
 
         # Load the ML classifier pipeline
         self._load_classifier()
@@ -134,82 +136,83 @@ class LX16AEncoderFilter(object):
             The servo position        
         '''
 
-        # Update the ring buffers
-        self._index = (self._index + 1) % self._window
-        self._ros_time[self._index] = ros_time
-        self._duty[self._index] = duty
-        self._pos[self._index] = pos
-                
-        # times
-        for i in range(self._window):
-            idx = (self._index - i) % self._window
-            dt = (self._ros_time[idx] - self._ros_time[self._index]).to_sec()
-            self._X[i] = dt
-        
-        # duty 
-        for i in range(self._window):
-            idx = (self._index - i)
-            duty_i = self._duty[idx]
-            self._X[self._window + i] = duty_i
+        with self._lock:
+            # Update the ring buffers
+            self._index = (self._index + 1) % self._window
+            self._ros_time[self._index] = ros_time
+            self._duty[self._index] = duty
+            self._pos[self._index] = pos
+                    
+            # times
+            for i in range(self._window):
+                idx = (self._index - i) % self._window
+                dt = (self._ros_time[idx] - self._ros_time[self._index]).to_sec()
+                self._X[i] = dt
+            
+            # duty 
+            for i in range(self._window):
+                idx = (self._index - i)
+                duty_i = self._duty[idx]
+                self._X[self._window + i] = duty_i
 
-        # positions
-        for i in range(self._window):
-            idx = (self._index - i)
-            pos_i = self._pos[idx]
-            self._X[2 * self._window + i] = pos_i
+            # positions
+            for i in range(self._window):
+                idx = (self._index - i)
+                pos_i = self._pos[idx]
+                self._X[2 * self._window + i] = pos_i
 
-        # @TODO: this section would benefit from restructuring,
-        #        once the regression logic has been finalised.
-        #  
-        # Apply the filter and update the encoder counters
-        pos = self._pos[self._index] % ENCODER_MAX
-        is_valid = self._classifier.predict([self._X])[0]
-        if is_valid:
-            # If the absolute change in the servo position is 
-            # greater than ENCODER_STEP then we increment / decrement
-            # the revolution counter.
-            delta = pos - self._prev_valid_pos
-            if delta > ENCODER_STEP:
-                self._revolutions = self._revolutions - 1
-            if delta < -ENCODER_STEP:
-                self._revolutions = self._revolutions + 1
-
-            # Update the previous valid position
-            self._prev_valid_pos = pos
-
-        elif self._regressor is not None:
-            # Not valid - so we'll try to use the regressor to predict
-            # a value for the encoder count.
-            pos_est = int(self._regressor.predict([self._X])[0]) % ENCODER_MAX
-
-            # @DEBUG_INFO
-            # count_est = pos_est + ENCODER_MAX * self._revolutions 
-            # rospy.logdebug("count_est: {}".format(count_est))
-
-            # @TODO: the acceptance criteria may need further tuning.
-            # The classifier will sometimes report false positives.
-            # To limit the impact of using a regressed value in this
-            # case we check that the previous position is 'close' to
-            # one of the boundaries. 
-            dist1 = abs(ENCODER_LOWER - self._prev_valid_pos)
-            dist2 = abs(ENCODER_UPPER - self._prev_valid_pos)
-            dist  = min(dist1, dist2)
-            DIST_MAX = (ENCODER_UPPER - ENCODER_LOWER)/2 + 5
-
-            # Accept the estimated position if in the range where the
-            # encoder does not report valid values: [1190, 1310]
-            if dist < DIST_MAX and pos_est >= ENCODER_LOWER and pos_est <= ENCODER_UPPER:
+            # @TODO: this section would benefit from restructuring,
+            #        once the regression logic has been finalised.
+            #  
+            # Apply the filter and update the encoder counters
+            pos = self._pos[self._index] % ENCODER_MAX
+            is_valid = self._classifier.predict([self._X])[0]
+            if is_valid:
                 # If the absolute change in the servo position is 
-                # greater than ENCODER_STEP then we increment
-                # (or decrement) the revolution counter.
-                delta = pos_est - self._prev_valid_pos
+                # greater than ENCODER_STEP then we increment / decrement
+                # the revolution counter.
+                delta = pos - self._prev_valid_pos
                 if delta > ENCODER_STEP:
                     self._revolutions = self._revolutions - 1
                 if delta < -ENCODER_STEP:
                     self._revolutions = self._revolutions + 1
 
                 # Update the previous valid position
-                self._prev_valid_pos = pos_est
+                self._prev_valid_pos = pos
+
+            elif self._regressor is not None:
+                # Not valid - so we'll try to use the regressor to predict
+                # a value for the encoder count.
+                pos_est = int(self._regressor.predict([self._X])[0]) % ENCODER_MAX
+
+                # @DEBUG_INFO
+                # count_est = pos_est + ENCODER_MAX * self._revolutions 
+                # rospy.logdebug("count_est: {}".format(count_est))
+
+                # @TODO: the acceptance criteria may need further tuning.
+                # The classifier will sometimes report false positives.
+                # To limit the impact of using a regressed value in this
+                # case we check that the previous position is 'close' to
+                # one of the boundaries. 
+                dist1 = abs(ENCODER_LOWER - self._prev_valid_pos)
+                dist2 = abs(ENCODER_UPPER - self._prev_valid_pos)
+                dist  = min(dist1, dist2)
+                DIST_MAX = (ENCODER_UPPER - ENCODER_LOWER)/2 + 5
+
+                # Accept the estimated position if in the range where the
+                # encoder does not report valid values: [1190, 1310]
+                if dist < DIST_MAX and pos_est >= ENCODER_LOWER and pos_est <= ENCODER_UPPER:
+                    # If the absolute change in the servo position is 
+                    # greater than ENCODER_STEP then we increment
+                    # (or decrement) the revolution counter.
+                    delta = pos_est - self._prev_valid_pos
+                    if delta > ENCODER_STEP:
+                        self._revolutions = self._revolutions - 1
+                    if delta < -ENCODER_STEP:
+                        self._revolutions = self._revolutions + 1
+
+                    # Update the previous valid position
+                    self._prev_valid_pos = pos_est
 
     def get_revolutions(self):
         ''' Get the number of revoutions since reset.
@@ -277,13 +280,14 @@ class LX16AEncoderFilter(object):
             bool which is True for valid, False otherwise.
         '''
         
-        is_valid = self._classifier.predict([self._X])[0] != 0
-        if map_pos:
-            pos = self._pos[self._index] % ENCODER_MAX
-            return pos, is_valid
-        else:
-            pos = self._pos[self._index]
-            return pos, is_valid    
+        with self._lock:
+            is_valid = self._classifier.predict([self._X])[0] != 0
+            if map_pos:
+                pos = self._pos[self._index] % ENCODER_MAX
+                return pos, is_valid
+            else:
+                pos = self._pos[self._index]
+                return pos, is_valid    
 
     def get_invert(self):
         ''' Get the invert state: whether the encoder count is inverted.
@@ -305,7 +309,8 @@ class LX16AEncoderFilter(object):
             Set to True if the encoder count is reversed.
         '''
 
-        self._invert = -1 if is_inverted else 1
+        with self._lock:
+            self._invert = -1 if is_inverted else 1
 
     def reset(self, pos):
         ''' Reset the encoder counters to zero.
@@ -317,20 +322,21 @@ class LX16AEncoderFilter(object):
             encoder is reset.  
         '''
 
-        # Back-populate the ring buffers with zero duty entries.
-        now = rospy.get_rostime()
-        for i in range(self._window):
-            t = now - rospy.Duration((self._window - i)/50.0)
-            self.update(t, 0, pos)  
+        with self._lock:
+            # Back-populate the ring buffers with zero duty entries.
+            now = rospy.get_rostime()
+            for i in range(self._window):
+                t = now - rospy.Duration((self._window - i)/50.0)
+                self.update(t, 0, pos)  
 
-        # Calculate the offset to zero the counter
-        pos, is_valid = self.get_servo_pos()
-        if is_valid:
-            self._count_offset = pos
+            # Calculate the offset to zero the counter
+            pos, is_valid = self.get_servo_pos()
+            if is_valid:
+                self._count_offset = pos
 
-        # Initialise remaining variables
-        self._revolutions    = 0
-        self._prev_valid_pos = pos
+            # Initialise remaining variables
+            self._revolutions    = 0
+            self._prev_valid_pos = pos
 
     def _load_classifier(self):
         ''' Load classifier
