@@ -301,6 +301,7 @@ namespace curio_base
         std::string classifier_filename;
         std::string regressor_filename;
         int classifier_window = 10;        
+        double encoder_service_timeout = 0.005;        
         ros::param::get("~classifier_window", classifier_window);
         if (!ros::param::has("~classifier_filename"))
         {
@@ -312,7 +313,8 @@ namespace curio_base
         {
             ROS_FATAL("Missing parameter: regressor_filename");
         }
-        ros::param::get("~regressor_filename", regressor_filename );
+        ros::param::get("~regressor_filename", regressor_filename);
+        ros::param::get("~encoder_service_timeout", encoder_service_timeout);
 
         // Initialise servo driver.
         ROS_INFO("Initialising LX16A servo driver...");
@@ -349,6 +351,9 @@ namespace curio_base
         std::unique_ptr<lx16a::LX16AEncoderFilterClient> filter(
             new lx16a::LX16AEncoderFilterClient(
                 nh, classifier_filename, regressor_filename, classifier_window));
+        ros::Duration encoder_timeout(encoder_service_timeout);
+        filter->setTimeout(encoder_timeout);
+
         encoder_filter_ = std::move(filter);
         try
         {
