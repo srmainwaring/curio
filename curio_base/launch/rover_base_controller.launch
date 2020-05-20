@@ -21,6 +21,7 @@ Parameters
     <arg name="classifier_filename" default="$(find lx16a)/data/lx16a_tree_classifier.joblib" />
     <arg name="classifier_window" default="10" />
     <arg name="regressor_filename" default="$(find lx16a)/data/lx16a_tree_regressor.joblib" />
+    <arg name="encoder_service_timeout" default="0.005" />
 
     <!-- LX16A encoder filter server -->
     <node pkg="lx16a" type="lx16a_encoder_filter_server" name="lx16a_encoder_filter_server"
@@ -33,6 +34,7 @@ Parameters
         <param name="classifier_filename" value="$(arg classifier_filename)" />
         <param name="classifier_window" value="$(arg classifier_window)" />
         <param name="regressor_filename" value="$(arg regressor_filename)" />
+        <param name="encoder_service_timeout" value="$(arg encoder_service_timeout)" />
         <rosparam command="load" file="$(find curio_base)/config/base_controller.yaml" />
         <rosparam subst_value="true">
             port: $(arg port)

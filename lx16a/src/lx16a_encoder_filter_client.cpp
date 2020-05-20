@@ -527,5 +527,16 @@ namespace lx16a
         }
     }
 
+    ros::Duration LX16AEncoderFilterClient::getTimeout() const
+    {
+        return timeout_;
+    }
+
+    void LX16AEncoderFilterClient::setTimeout(const ros::Duration &timeout)
+    {
+        timeout_ = timeout;
+    }
+
+
 } // namespace lx16a
 
