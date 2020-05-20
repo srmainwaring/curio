@@ -54,6 +54,7 @@ add_library(lx16a
     src/lx16a_encoder_filter_onnx.cpp
     src/lx16a_encoder_filter_python.cpp
     src/lx16a_encoder_filter.cpp
+    src/lx16a_exception.cpp
     src/lx16a_pybind11_embed.cpp
     src/lx16a_time.cpp
 )

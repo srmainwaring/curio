@@ -35,6 +35,7 @@
 //
 
 #include "lx16a/lx16a_driver.h"
+#include "lx16a/lx16a_exception.h"
 
 #include <ros/ros.h>
 #include "geometry_msgs/Twist.h"

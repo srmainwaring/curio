@@ -35,6 +35,7 @@
 //
 
 #include "lx16a/lx16a_driver.h"
+#include "lx16a/lx16a_exception.h"
 
 #include <ros/ros.h>
 
@@ -80,31 +81,6 @@ namespace lx16a
     const uint8_t SERVO_LED_CTRL_READ         = 34; // 0x22 isLedOn
     const uint8_t SERVO_LED_ERROR_WRITE       = 35; // 0x23 getLedErrors
     const uint8_t SERVO_LED_ERROR_READ        = 36; // 0x24 setLedErrors
-
-////////////////////////////////////////////////////////////////////////////////
-
-    LX16AException::LX16AException (const char *description)
-    {
-        std::stringstream ss;
-        ss << "LX16AException: " << description;
-        e_what_ = ss.str();
-    }
-
-    LX16AException::LX16AException (const LX16AException& other) :
-        e_what_(other.e_what_)
-    {
-    }
-
-    LX16AException::~LX16AException() throw()
-    {
-    }
-
-    const char* LX16AException::what () const throw ()
-    {
-        return e_what_.c_str();
-    }
-
-////////////////////////////////////////////////////////////////////////////////
 
     LX16ADriver::~LX16ADriver()
     {

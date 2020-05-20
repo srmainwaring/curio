@@ -71,9 +71,16 @@ namespace lx16a
         virtual ~LX16AEncoderFilter();
 
         /// \brief Initialise the encoder filter.
+        ///
+        /// \throw lx16a::LX16AException
+        ///
         virtual void init() = 0;
 
         /// \brief Add a servo.
+        ///
+        /// \param servo_id An integer for servo serial identifier, in [0, 253]
+        /// \throw lx16a::LX16AException
+        ///
         virtual void add(uint8_t servo_id) = 0;
 
         /// \brief Update the encoder filter.
@@ -91,6 +98,7 @@ namespace lx16a
         /// \param ros_time A ros::Time containing the time from ros::Time::now()
         /// \param duty An integer servo duty
         /// \param position An integer servo position        
+        /// \throw lx16a::LX16AException
         ///
         virtual void update(uint8_t servo_id, const ros::Time &ros_time, int16_t duty, int16_t position) = 0;
 
@@ -98,6 +106,7 @@ namespace lx16a
         ///
         /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return An integer number of revolutions since the count was reset.
+        /// \throw lx16a::LX16AException
         ///
         virtual int16_t getRevolutions(uint8_t servo_id) const = 0;
 
@@ -108,6 +117,7 @@ namespace lx16a
         ///
         /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return An integer, the current encoder count.
+        /// \throw lx16a::LX16AException
         ///
         virtual int16_t getCount(uint8_t servo_id) const = 0;
 
@@ -115,6 +125,7 @@ namespace lx16a
         ///
         /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return An integer, the current encoder duty.
+        /// \throw lx16a::LX16AException
         ///
         virtual int16_t getDuty(uint8_t servo_id) const = 0;
 
@@ -122,6 +133,7 @@ namespace lx16a
         ///
         /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return A double, the angular position of the encoder [rad].
+        /// \throw lx16a::LX16AException
         ///
         virtual double getAngularPosition(uint8_t servo_id) const = 0;
 
@@ -133,6 +145,7 @@ namespace lx16a
         /// \param[out] is_valid A bool that is set to true for valid, false otherwise.
         /// \param map_position A bool: if true map the position to the
         /// range [0, 1500],  has (default True)
+        /// \throw lx16a::LX16AException
         ///
         virtual void getServoPosition(uint8_t servo_id, int16_t &position, bool &is_valid, bool map_position=true) const = 0;
 
@@ -140,6 +153,7 @@ namespace lx16a
         ///
         /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \return An integer: -1 if the count is inverted, 1 otherwise. 
+        /// \throw lx16a::LX16AException
         ///
         virtual int16_t getInvert(uint8_t servo_id) const = 0;
 
@@ -147,6 +161,7 @@ namespace lx16a
         ///
         /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \param is_inverted A bool: true if the encoder count is reversed.
+        /// \throw lx16a::LX16AException
         ///
         virtual void setInvert(uint8_t servo_id, bool is_inverted) = 0;
 
@@ -155,7 +170,8 @@ namespace lx16a
         /// \param servo_id An integer for servo serial identifier, in [0, 253]
         /// \param position An integer (assumed valid) position of the
         /// servo when the encoder is reset.  
-        /// 
+        /// \throw lx16a::LX16AException
+        ///
         virtual void reset(uint8_t servo_id, int16_t position) = 0;
 
         /// Vectorised interface
@@ -164,6 +180,7 @@ namespace lx16a
         ///
         /// \param servo_id A vector of integers for servo serial identifier,
         /// in [0, 253]
+        /// \throw lx16a::LX16AException
         ///
         virtual void add_v(const std::vector<uint8_t> &servo_ids) = 0;
 
@@ -176,7 +193,7 @@ namespace lx16a
         /// \param duty A vector of integer servo duties
         /// \param position A vector of integer servo positions 
         /// \param[out] position A vector of angular positions 
-        ///
+        /// \throw lx16a::LX16AException
         ///
         virtual void update_v(
             const std::vector<uint8_t> &servo_ids,
@@ -184,7 +201,6 @@ namespace lx16a
             const std::vector<int16_t> &duties,
             const std::vector<int16_t> &positions,
             std::vector<double> &angular_positions) = 0;
-
     };
 
 } // namespace lx16a

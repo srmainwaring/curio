@@ -36,6 +36,7 @@
 
 #include "curio_base/rover_base_hal_lx16a.h"
 #include "lx16a/lx16a_encoder_filter_client.h"
+#include "lx16a/lx16a_exception.h"
 #include <serial/serial.h>
 #include <algorithm>
 #include <cmath>
@@ -342,18 +343,23 @@ namespace curio_base
 
         // Initialise encoder filter.
         ROS_INFO("Initialising LX16A encoder filters...");
+        ROS_INFO_STREAM("LX16A encoder: classifier_filename: " << classifier_filename);
+        ROS_INFO_STREAM("LX16A encoder: regressor_filename: " << regressor_filename);
+        ROS_INFO_STREAM("LX16A encoder: classifier_window: " << classifier_window);
         std::unique_ptr<lx16a::LX16AEncoderFilterClient> filter(
             new lx16a::LX16AEncoderFilterClient(
                 nh, classifier_filename, regressor_filename, classifier_window));
         encoder_filter_ = std::move(filter);
-        encoder_filter_->init();
-        ROS_INFO_STREAM("LX16A encoder: classifier_filename: " << classifier_filename);
-        ROS_INFO_STREAM("LX16A encoder: regressor_filename: " << regressor_filename);
-        ROS_INFO_STREAM("LX16A encoder: classifier_window: " << classifier_window);
+        try
+        {
+            encoder_filter_->init();
+            encoder_filter_->add_v(wheel_servo_ids_);
+        }
+        catch(const lx16a::LX16AException& e)
+        {
+            ROS_FATAL_STREAM(e.what());
+        }
         
-        // Add servos to encoder filter (vector version)
-        encoder_filter_->add_v(wheel_servo_ids_);
-
         // Initialise steering trim (offsets)
         ROS_INFO_STREAM("Setting steer trim...");
         for (size_t i=0; i<k_num_steers_; ++i)
