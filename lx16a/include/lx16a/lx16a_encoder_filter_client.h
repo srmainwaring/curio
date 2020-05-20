@@ -51,7 +51,7 @@ namespace lx16a
     {
     public:
         /// \copydoc LX16AEncoderFilter::~LX16AEncoderFilter()
-        virtual ~LX16AEncoderFilterClient();
+        ~LX16AEncoderFilterClient() override;
 
         /// \brief Constructor
         ///
@@ -115,11 +115,22 @@ namespace lx16a
             const std::vector<int16_t> &positions,
             std::vector<double> &angular_positions) override;
 
+
+        /// \brief Get the timeout for service calls.
+        ros::Duration getTimeout() const;
+
+        /// \brief Set the timeout for service calls.
+        ///
+        /// \param timeout A duration in seconds, has (default 0.005s).
+        ///        
+        void setTimeout(const ros::Duration &timeout);
+
     private:
         ros::NodeHandle  nh_;
-        std::string classifier_filename_;       // classifier filename
-        std::string regressor_filename_;        // regressor filename
-        int16_t window_ = 10;                   // size of the history window
+        std::string classifier_filename_;               // classifier filename
+        std::string regressor_filename_;                // regressor filename
+        int16_t window_ = 10;                           // size of the history window
+        ros::Duration timeout_ = ros::Duration(0.005);  // service call timeout   
 
         // Service clients (proxies)
         ros::ServiceClient filter_add_;

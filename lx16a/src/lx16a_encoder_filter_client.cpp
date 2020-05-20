@@ -35,6 +35,7 @@
 //
 
 #include "lx16a/lx16a_encoder_filter_client.h"
+#include "lx16a/lx16a_exception.h"
 
 #include "lx16a_msgs/EncoderFilterAdd.h"
 #include "lx16a_msgs/EncoderFilterGetAngularPosition.h"
@@ -51,6 +52,10 @@
 #include "lx16a_msgs/EncoderFilterUpdateV.h"
 
 #include <ros/ros.h>
+
+#include <chrono>
+#include <future>
+#include <thread>
 
 namespace lx16a
 {
@@ -88,52 +93,82 @@ namespace lx16a
         filter_add_v_ = nh_.serviceClient<lx16a_msgs::EncoderFilterAddV>("lx16a/encoder_filter/add_v");
         filter_update_v_ = nh_.serviceClient<lx16a_msgs::EncoderFilterUpdateV>("lx16a/encoder_filter/update_v"); 
 
-        // Block until the service is ready...
-        ros::Duration timeout_(20); // [s]
+        // Wait until the service is ready...
+        ros::Duration timeout_(10); // [s]
         bool is_ready = filter_add_v_.waitForExistence(timeout_);
         if (!is_ready)
         {
-            ROS_ERROR("Failed to initialise encoder filter - service not available");
+            throw LX16AException("Encoder service not available");
         }
     }
 
     void LX16AEncoderFilterClient::add(uint8_t servo_id)
     {
-        auto&& service = filter_add_;
-
         lx16a_msgs::EncoderFilterAdd srv;
         srv.request.servo_id = servo_id;
         srv.request.classifier_filename = classifier_filename_;
         srv.request.regressor_filename = regressor_filename_;
         srv.request.window = window_;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::seconds(10);
+        auto start_time = std::chrono::steady_clock::now();
+        auto call_srv = [&]() {  return filter_add_.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
         {
-            ROS_INFO_STREAM("Added encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder update: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder add: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
+        {
+            auto end_time = std::chrono::steady_clock::now();
+            std::chrono::duration<double> elapsed_seconds = end_time - start_time;
+            ROS_INFO_STREAM("Added encoder " << static_cast<int>(servo_id)
+                << ": took " << elapsed_seconds.count() << "s");
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to add encoder filter for servo: "
-                << static_cast<int>(servo_id));
+            throw LX16AException("Encoder add: service call failed");
         }
     }
 
     void LX16AEncoderFilterClient::update(uint8_t servo_id, const ros::Time &ros_time, int16_t duty, int16_t position)
     {
-        auto&& service = filter_update_;
-
         lx16a_msgs::EncoderFilterUpdate srv;
         srv.request.servo_id = servo_id;
         srv.request.time = ros_time;
         srv.request.duty = duty;
         srv.request.position = position;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return filter_update_.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
         {
-            ROS_DEBUG_STREAM("Updated encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
-        }
-        else
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder update failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder update failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (!fut.get())
         {
-            ROS_ERROR_STREAM("Failed to update encoder filter for servo: "
-                << static_cast<int>(servo_id));
+            throw LX16AException("Encoder update failed: invalid service call");
         }
     }
 
@@ -143,15 +178,31 @@ namespace lx16a
 
         lx16a_msgs::EncoderFilterGetRevolutions srv;
         srv.request.servo_id = servo_id;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return service.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
+        {
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder revolutions failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder revolutions failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
         {
             return srv.response.revolutions;
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to get revolutions from encoder filter for servo: "
-                << static_cast<int>(servo_id));
-            return 0;
+            throw LX16AException("Encoder revolutions failed: invalid service call");
         }
     }
 
@@ -161,15 +212,31 @@ namespace lx16a
 
         lx16a_msgs::EncoderFilterGetCount srv;
         srv.request.servo_id = servo_id;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return service.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
+        {
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder count failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder count failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
         {
             return srv.response.count;
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to get count from encoder filter for servo: "
-                << static_cast<int>(servo_id));
-            return 0;
+            throw LX16AException("Encoder count failed: invalid service call");
         }
     }
 
@@ -179,15 +246,31 @@ namespace lx16a
 
         lx16a_msgs::EncoderFilterGetDuty srv;
         srv.request.servo_id = servo_id;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return service.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
+        {
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder duty failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder duty failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
         {
             return srv.response.duty;
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to get duty from encoder filter for servo: "
-                << static_cast<int>(servo_id));
-            return 0;
+            throw LX16AException("Encoder duty failed: invalid service call");
         }
     }
 
@@ -197,15 +280,31 @@ namespace lx16a
 
         lx16a_msgs::EncoderFilterGetAngularPosition srv;
         srv.request.servo_id = servo_id;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return service.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
+        {
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder angular position failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder angular position failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
         {
             return srv.response.position;
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to get angular position from encoder filter for servo: "
-                << static_cast<int>(servo_id));
-            return 0.0;
+            throw LX16AException("Encoder angular position failed: invalid service call");
         }
     }
 
@@ -215,15 +314,32 @@ namespace lx16a
 
         lx16a_msgs::EncoderFilterGetServoPos srv;
         srv.request.servo_id = servo_id;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return service.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
+        {
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder servo position failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder servo position failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
         {
             position = srv.response.position;
             is_valid = srv.response.is_valid;
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to get servo position from encoder filter for servo: "
-                << static_cast<int>(servo_id));
+            throw LX16AException("Encoder servo position failed: invalid service call");
         }
     }
 
@@ -233,58 +349,94 @@ namespace lx16a
 
         lx16a_msgs::EncoderFilterGetInvert srv;
         srv.request.servo_id = servo_id;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return service.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
+        {
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder invert failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder invert failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
         {
             return srv.response.invert;
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to get invert from encoder filter for servo: "
-                << static_cast<int>(servo_id));
-            return 1;
+            throw LX16AException("Encoder invert failed: invalid service call");
         }
     }
 
     void LX16AEncoderFilterClient::setInvert(uint8_t servo_id, bool is_inverted)
     {
-        auto&& service = filter_set_invert_;
-
         lx16a_msgs::EncoderFilterSetInvert srv;
         srv.request.servo_id = servo_id;
         srv.request.is_inverted = is_inverted;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return filter_set_invert_.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
         {
-            ROS_INFO_STREAM("Set invert on encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
-        }
-        else
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder set invert failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder set invert failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (!fut.get())
         {
-            ROS_ERROR_STREAM("Failed to set invert on encoder filter for servo: "
-                << static_cast<int>(servo_id));
+            throw LX16AException("Encoder set invert failed: invalid service call");
         }
     }
 
     void LX16AEncoderFilterClient::reset(uint8_t servo_id, int16_t position)
     {
-        auto&& service = filter_reset_;
-
         lx16a_msgs::EncoderFilterUpdate srv;
         srv.request.servo_id = servo_id;
         srv.request.position = position;
-        if (service.call(srv))
+
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto call_srv = [&]() {  return filter_reset_.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
         {
-            ROS_INFO_STREAM("Reset encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
-        }
-        else
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder reset failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder reset failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (!fut.get())
         {
-            ROS_ERROR_STREAM("Failed to reset encoder filter for servo: "
-                << static_cast<int>(servo_id));
+            throw LX16AException("Encoder reset failed: invalid service call");
         }
     }
 
     void LX16AEncoderFilterClient::add_v(const std::vector<uint8_t> &servo_ids)
     {   
-        auto&& service = filter_add_v_;
-
         std::vector<int8_t> int8_servo_ids(servo_ids.size());
         std::copy(servo_ids.begin(), servo_ids.end(), int8_servo_ids.begin());
 
@@ -294,14 +446,33 @@ namespace lx16a
         srv.request.regressor_filename = regressor_filename_;
         srv.request.window = window_;
         
-        
-        if (service.call(srv))
+        auto timeout = std::chrono::seconds(10);
+        auto start_time = std::chrono::steady_clock::now();
+        auto call_srv = [&]() {  return filter_add_v_.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
         {
-            ROS_INFO_STREAM("Added encoder filter: " << (srv.response.status ? "ERROR" : "OK"));
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder add failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder add failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
+        {
+            auto end_time = std::chrono::steady_clock::now();
+            std::chrono::duration<double> elapsed_seconds = end_time - start_time;
+            ROS_INFO_STREAM("Adding encoders took " << elapsed_seconds.count() << "s");
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to add encoder filter for servos");
+            throw LX16AException("Encoder add failed: invalid service call");
         }
     }
 
@@ -312,8 +483,6 @@ namespace lx16a
         const std::vector<int16_t> &positions,
         std::vector<double> &angular_positions)
     {
-        auto&& service = filter_update_v_;
-
         std::vector<int8_t> int8_servo_ids(servo_ids.size());
         std::copy(servo_ids.begin(), servo_ids.end(), int8_servo_ids.begin());
 
@@ -322,21 +491,41 @@ namespace lx16a
         srv.request.time = ros_time;
         srv.request.duties = duties;
         srv.request.positions = positions;
-        if (service.call(srv))
+
+        // Asynchronos call_srv returns true if the call succeeds, false otherwise.        
+        auto timeout = std::chrono::nanoseconds(timeout_.toNSec());
+        auto start_time = std::chrono::steady_clock::now();
+        auto call_srv = [&]() {  return filter_update_v_.call(srv); };
+        std::future<bool> fut = std::async(std::launch::async, call_srv);
+        std::future_status status;
+        do
         {
-            ROS_DEBUG_STREAM("Updated encoder filter");
+            if (!fut.valid())
+            {
+                throw LX16AException("Encoder update failed: future_errc::no_state");
+            }
+            status = fut.wait_for(timeout);
+            if (status == std::future_status::timeout)
+            {
+                throw LX16AException("Encoder update failed: timeout");
+            }
+        } while (status != std::future_status::ready);
+
+        if (fut.get())
+        {
+            auto end_time = std::chrono::steady_clock::now();
+            std::chrono::duration<double> elapsed_seconds = end_time - start_time;
+            ROS_DEBUG_STREAM("Encoder update took " << elapsed_seconds.count() << "s");
             std::copy(
                 srv.response.angular_positions.begin(),
                 srv.response.angular_positions.end(),
-                angular_positions.begin());
-
+                angular_positions.begin());                
         }
         else
         {
-            ROS_ERROR_STREAM("Failed to update encoder filter");
+            throw LX16AException("Encoder update failed: invalid service call");
         }
     }
-
 
 } // namespace lx16a
 

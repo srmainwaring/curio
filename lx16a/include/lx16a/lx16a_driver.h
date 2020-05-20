@@ -45,19 +45,6 @@
 
 namespace lx16a
 {
-
-    class LX16AException : public std::exception
-    {
-        // Disable copy constructors
-        LX16AException& operator=(const LX16AException&);
-        std::string e_what_;
-    public:
-        LX16AException (const char *description);
-        LX16AException (const LX16AException& other);
-        virtual ~LX16AException() throw();
-        virtual const char* what () const throw ();
-    };
-
     /// Driver for the Lewansoul LX16A bus servos
     ///
     /// Acknowledgments
@@ -139,7 +126,6 @@ namespace lx16a
         /// \param move_time An integer setting the desired time for the servo
         /// to move from its current position to the commanded position, in [0, 30000] ms.
         /// \return Returns true if succesful, false otherwise.
-        ///
         /// \throw lx16a::LX16AException
         ///
         void move(uint8_t servo_id, uint16_t position, uint16_t move_time=0);
@@ -151,7 +137,6 @@ namespace lx16a
         /// \param move_time An integer reference for the desired time for the servo
         /// to move from its current position to the commanded position, in [0, 30000] ms.
         /// \return Returns true if succesful, false otherwise.
-        ///
         /// \throw lx16a::LX16AException
         ///
         void getMove(uint8_t servo_id, int16_t &position, int16_t &move_time);
