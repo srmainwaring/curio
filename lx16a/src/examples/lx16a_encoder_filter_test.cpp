@@ -64,10 +64,7 @@ public:
         stopMotor();
     }
 
-    TestNode(
-        ros::NodeHandle &nh,
-        ros::NodeHandle &private_nh        
-        )
+    TestNode(ros::NodeHandle &nh, ros::NodeHandle &private_nh)
     {
         // Driver parameters
         int baudrate, timeout, servo_id;
@@ -209,7 +206,6 @@ private:
     std::unique_ptr<lx16a::LX16AEncoderFilter>  encoder_filter_;
 };
 
-
 // Entry point
 int main(int argc, char *argv[])
 {
@@ -218,18 +214,33 @@ int main(int argc, char *argv[])
     lx16a::addCmdArgsToSys(argc, argv);
 
     // Initialise node
-    ros::init(argc, argv, "lx16a_encoder_filter_test", ros::init_options::NoSigintHandler);
+    ros::init(argc, argv, "lx16a_encoder_filter_test");
     ROS_INFO("Starting node lx16a_encoder_filter_test...");
 
     ros::NodeHandle nh, private_nh("~");
     TestNode test_node(nh, private_nh);
+    test_node.startMotor();
 
-    // Loop
-    ros::Rate rate(test_node.getControlFrequency());
-    while (ros::ok())
+    // Manage Python GIL 
+    auto loop = [](TestNode& test_node)
     {
-        test_node.update();
-        rate.sleep();
+        py::gil_scoped_acquire gil{};
+        ros::Rate rate(test_node.getControlFrequency());
+        while (ros::ok())
+        {
+            test_node.update();
+            rate.sleep();
+        }
+    };
+    
+    {
+        // Single thread.        
+        // loop(test_node);
+
+        // Worker thread - will deadlock if the GIL is not released
+        py::gil_scoped_release gil_release {};
+        std::thread loop_thread(loop, std::ref(test_node));
+        loop_thread.join();
     }
 
     ros::waitForShutdown();
