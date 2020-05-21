@@ -52,19 +52,20 @@
 #include <thread>
 
 #define USE_ENCODER_SERVICE 0
+#define NOT_USE_ASYNC_SPINNER 0
 
 namespace py = pybind11;
 
-class TestNode
+class EncoderFilterTest
 {
 public:
-    ~TestNode()
+    ~EncoderFilterTest()
     {
         ROS_INFO_STREAM("Stopping motors");
         stopMotor();
     }
 
-    TestNode(ros::NodeHandle &nh, ros::NodeHandle &private_nh)
+    EncoderFilterTest(ros::NodeHandle &nh, ros::NodeHandle &private_nh)
     {
         // Driver parameters
         int baudrate, timeout, servo_id;
@@ -80,7 +81,7 @@ public:
         ROS_INFO_STREAM("baudrate: " << baudrate);
         ROS_INFO_STREAM("timeout: " << timeout);
         ROS_INFO_STREAM("control_frequency: " << control_frequency_);
-        ROS_INFO_STREAM("servo_id: " << servo_id_);
+        ROS_INFO_STREAM("servo_id: " << servo_id);
 
         // Encoder parameters
         int window;
@@ -120,23 +121,21 @@ public:
         ros::Duration(1.0).sleep();
 
         // Encoder filter
-    #if USE_ENCODER_SERVICE
+#if USE_ENCODER_SERVICE
         std::unique_ptr<lx16a::LX16AEncoderFilter>  encoder_filter(
             new lx16a::LX16AEncoderFilterClient(
                 nh,
                 classifier_filename,
                 regressor_filename,
                 window));
-    #else
-
+#else
         std::unique_ptr<lx16a::LX16AEncoderFilterPython> encoder_filter_impl(
             new lx16a::LX16AEncoderFilterPython(
                 classifier_filename,
                 regressor_filename,
                 window));
         encoder_filter_ = std::move(encoder_filter_impl);
-    #endif
-
+#endif
         try
         {
             encoder_filter_->init();
@@ -171,7 +170,7 @@ public:
         ros::Time now = ros::Time::now();
         try
         {       
-            int16_t position = servo_driver_->getPosition(servo_id_); 
+            int16_t position = servo_driver_->getPosition(servo_id_);
             encoder_filter_->update(servo_id_, now, duty_, position);
             int16_t count = encoder_filter_->getCount(servo_id_);
             int16_t revolutions = encoder_filter_->getRevolutions(servo_id_);
@@ -218,12 +217,13 @@ int main(int argc, char *argv[])
     ROS_INFO("Starting node lx16a_encoder_filter_test...");
 
     ros::NodeHandle nh, private_nh("~");
-    TestNode test_node(nh, private_nh);
-    // test_node.startMotor();
+    EncoderFilterTest test_node(nh, private_nh);
+    test_node.startMotor();
 
-#if 1
+#if NOT_USE_ASYNC_SPINNER
+
     // Manage Python GIL 
-    auto loop_callback = [](TestNode& test_node)
+    auto loop_callback = [](EncoderFilterTest& test_node)
     {
         py::gil_scoped_acquire gil{};
         ros::Rate rate(test_node.getControlFrequency());
@@ -243,20 +243,21 @@ int main(int argc, char *argv[])
         std::thread loop_thread(loop_callback, std::ref(test_node));
         loop_thread.join();
     }
-    ros::waitForShutdown();
 
 #else
-    auto loop_callback = [](TestNode& test_node)
+    auto loop_callback = [](EncoderFilterTest& test_node)
     {
-        ROS_INFO("Calling update...");
+        py::gil_scoped_acquire gil{};
 
-        // py::gil_scoped_acquire gil{};
+        auto thread_id = std::this_thread::get_id();
+        ROS_DEBUG_STREAM("Calling update on thread_id: " << thread_id);
         test_node.update();
     };
 
     // Custom callback queue, timer and async spinner.
     {
-        // py::gil_scoped_release gil_release {};        
+        py::gil_scoped_release gil_release {};    
+
         ros::CallbackQueue callback_queue;
         ros::Duration timer_period(1.0 / test_node.getControlFrequency());
         ros::TimerOptions loop_timer_options(
@@ -265,10 +266,16 @@ int main(int argc, char *argv[])
             &callback_queue);
         ros::Timer loop_timer = nh.createTimer(loop_timer_options);
 
+        auto thread_id = std::this_thread::get_id();
+        ROS_DEBUG_STREAM("Starting spinner from thread_id: " << thread_id);
+
+        // ros::SingleThreadedSpinner spinner;
+        // spinner.spin(&callback_queue);
+
         ros::AsyncSpinner spinner(1, &callback_queue);
         spinner.start();
+        ros::waitForShutdown();
     }
-    ros::waitForShutdown();
 
 #endif
     return 0;
