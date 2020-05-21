@@ -35,17 +35,13 @@ class PyLX16AEncoderFilter : public lx16a::LX16AEncoderFilter
 
     void update(uint8_t servo_id, const ros::Time &ros_time, int16_t duty, int16_t position) override
     {
-        // Acquire the GIL while in this scope.
-        pybind11::gil_scoped_acquire gil;
-
         // Convert ros::Time to lx16a::Time for interop.
         lx16a::Time time(ros_time.sec, ros_time.nsec);
 
-        // Try to look up the overloaded method on the Python side.
+        pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "update");
         if (overload)
         {
-            // Call the Python function.
             auto obj = overload(servo_id, time, duty, position); 
         }
     }
@@ -99,14 +95,10 @@ class PyLX16AEncoderFilter : public lx16a::LX16AEncoderFilter
     // will not be modified.
     void getServoPosition(uint8_t servo_id, int16_t &position, bool &is_valid, bool map_position=true) const override
     {
-        // Acquire the GIL while in this scope.
         pybind11::gil_scoped_acquire gil;
-
-        // Try to look up the overloaded method on the Python side.
         pybind11::function overload = pybind11::get_overload(this, "get_servo_position");
         if (overload)
         {
-            // Call the Python function.
             auto obj = overload(servo_id, map_position); 
             if (py::isinstance<py::tuple>(obj))
             {
@@ -171,17 +163,13 @@ class PyLX16AEncoderFilter : public lx16a::LX16AEncoderFilter
         const std::vector<int16_t> &positions,
         std::vector<double> &angular_positions) override
     {
-        // Acquire the GIL while in this scope.
-        pybind11::gil_scoped_acquire gil;
-
         // Convert ros::Time to lx16a::Time for interop.
         lx16a::Time time(ros_time.sec, ros_time.nsec);
 
-        // Try to look up the overloaded method on the Python side.
+        pybind11::gil_scoped_acquire gil;
         pybind11::function overload = pybind11::get_overload(this, "update_v");
         if (overload)
         {
-            // Call the Python function.
             auto obj = overload(servo_ids, time, duties, positions); 
             if (py::isinstance<py::list>(obj))
             {
