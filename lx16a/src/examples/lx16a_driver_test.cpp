@@ -45,7 +45,7 @@
 #include <thread>
 
 // Servo ids
-const uint8_t SERVO_ID = 11;
+uint8_t SERVO_ID = 11;
 
 // Servo driver
 lx16a::LX16ADriver servo_driver;
@@ -144,19 +144,36 @@ int main(int argc, char *argv[])
     signal(SIGINT, sigintHandler);
 
     // Parameters
-    const std::string port("/dev/cu.usbmodem1421201");
-    const uint32_t baudrate = 115200;
-    const uint32_t timeout = 1000;       // [ms]
-    const uint32_t read_rate = 100.0;    // [Hz]
+    int baudrate, timeout, control_frequency, servo_id;
+    std::string port;
+    private_nh.param<std::string>("port", port, "/dev/ttyUSB0");
+    private_nh.param<int>("baudrate", baudrate, 115200);
+    private_nh.param<int>("timeout", timeout, 1000);
+    private_nh.param<int>("control_frequency", control_frequency, 20);
+    private_nh.param<int>("servo_id", servo_id, 11);
+    SERVO_ID = static_cast<uint8_t>(servo_id);
+
+    ROS_INFO_STREAM("port: " << port);
+    ROS_INFO_STREAM("baudrate: " << baudrate);
+    ROS_INFO_STREAM("timeout: " << timeout);
+    ROS_INFO_STREAM("control_frequency: " << control_frequency);
+    ROS_INFO_STREAM("servo_id: " << servo_id);
 
     // Serial
     serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout);
     servo_driver.setPort(port);
     servo_driver.setBaudrate(baudrate);
     servo_driver.setTimeout(serial_timeout);
-    servo_driver.open();
-    ROS_INFO_STREAM("port: " << servo_driver.getPort());
-    ROS_INFO_STREAM("baudrate: " << servo_driver.getBaudrate());
+    try
+    {
+        servo_driver.open();
+    }
+    catch(const serial::IOException & e)
+    {
+        ROS_FATAL_STREAM("LX16A driver: failed to open port: " << port);
+    }        
+
+    // Status
     ROS_INFO_STREAM("is_open: " << servo_driver.isOpen());
 
     // Wait for Arduino bootloader to complete before sending any
@@ -168,7 +185,7 @@ int main(int argc, char *argv[])
     servo_driver.setMotorMode(SERVO_ID, 500);
 
     // Loop
-    ros::Rate rate(read_rate);
+    ros::Rate rate(control_frequency);
     ros::Time start = ros::Time::now();
     uint32_t count = 0;
     while (ros::ok())
