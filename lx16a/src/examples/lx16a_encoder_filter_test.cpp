@@ -219,10 +219,11 @@ int main(int argc, char *argv[])
 
     ros::NodeHandle nh, private_nh("~");
     TestNode test_node(nh, private_nh);
-    test_node.startMotor();
+    // test_node.startMotor();
 
+#if 1
     // Manage Python GIL 
-    auto loop = [](TestNode& test_node)
+    auto loop_callback = [](TestNode& test_node)
     {
         py::gil_scoped_acquire gil{};
         ros::Rate rate(test_node.getControlFrequency());
@@ -232,18 +233,44 @@ int main(int argc, char *argv[])
             rate.sleep();
         }
     };
-    
+
     {
-        // Single thread.        
+        // Single thread.
         // loop(test_node);
 
         // Worker thread - will deadlock if the GIL is not released
         py::gil_scoped_release gil_release {};
-        std::thread loop_thread(loop, std::ref(test_node));
+        std::thread loop_thread(loop_callback, std::ref(test_node));
         loop_thread.join();
     }
-
     ros::waitForShutdown();
+
+#else
+    auto loop_callback = [](TestNode& test_node)
+    {
+        ROS_INFO("Calling update...");
+
+        // py::gil_scoped_acquire gil{};
+        test_node.update();
+    };
+
+    // Custom callback queue, timer and async spinner.
+    {
+        // py::gil_scoped_release gil_release {};        
+        ros::CallbackQueue callback_queue;
+        ros::Duration timer_period(1.0 / test_node.getControlFrequency());
+        ros::TimerOptions loop_timer_options(
+            timer_period,
+            std::bind(loop_callback, std::ref(test_node)),
+            &callback_queue);
+        ros::Timer loop_timer = nh.createTimer(loop_timer_options);
+
+        ros::AsyncSpinner spinner(1, &callback_queue);
+        spinner.start();
+    }
+    ros::waitForShutdown();
+
+#endif
     return 0;
 }
 
