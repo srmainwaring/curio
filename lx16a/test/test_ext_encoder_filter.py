@@ -2,7 +2,6 @@
 
 PKG='lx16a'
 
-from lx16a.ext import LX16AEncoderFilterBase
 from lx16a.ext import LX16AEncoderFilterSklearn
 from lx16a.ext import Time
 
@@ -41,6 +40,8 @@ class TestExtEncoderFilter(unittest.TestCase):
 
         Read the first n lines from the CSV file, update the filter,
         and return the data.
+
+        Use the vector version filter.update_v.
         '''
         
         data = []
@@ -55,8 +56,25 @@ class TestExtEncoderFilter(unittest.TestCase):
                 pos = int(row[2])
                 count = int(row[3])
                 data.append([time, duty, pos, count])
-                filter.update(self.servo_id, time, duty, pos)
+                filter.update_v([self.servo_id], time, [duty], [pos])
         return data
+
+    def test_has_method_attributes(self):
+        filter = LX16AEncoderFilterSklearn(
+            self.classifier_filename, self.regressor_filename, self.window)
+
+        self.assertTrue(hasattr(filter, 'add'), "missing attr 'add'")
+        self.assertTrue(hasattr(filter, 'update'), "missing attr 'update'")
+        self.assertTrue(hasattr(filter, 'get_revolutions'), "missing attr 'get_revolutions'")
+        self.assertTrue(hasattr(filter, 'get_count'), "missing attr 'get_count'")
+        self.assertTrue(hasattr(filter, 'get_duty'), "missing attr 'get_duty'")
+        self.assertTrue(hasattr(filter, 'get_angular_position'), "missing attr 'get_angular_position'")
+        self.assertTrue(hasattr(filter, 'get_servo_position'), "missing attr 'get_servo_position'")
+        self.assertTrue(hasattr(filter, 'get_invert'), "missing attr 'get_invert'")
+        self.assertTrue(hasattr(filter, 'set_invert'), "missing attr 'set_invert'")
+        self.assertTrue(hasattr(filter, 'reset'), "missing attr 'reset'")
+        self.assertTrue(hasattr(filter, 'add_v'), "missing attr 'add_v'")
+        self.assertTrue(hasattr(filter, 'update_v'), "missing attr 'update_v'")
 
     def test_constructor(self):
         # Load the model files
@@ -76,8 +94,24 @@ class TestExtEncoderFilter(unittest.TestCase):
         # Values should initialise to one
         self.assertEquals(filter.get_invert(self.servo_id), 1, 'invert != 1')
 
+    def test_add_v(self):
+        filter = LX16AEncoderFilterSklearn(
+            self.classifier_filename, self.regressor_filename, self.window)
+        filter.add_v([self.servo_id])
+
+        # Values should initialise to zero
+        self.assertEquals(filter.get_revolutions(self.servo_id), 0, 'revolutions != 0')
+        self.assertEquals(filter.get_count(self.servo_id), 0, 'count != 0')
+        self.assertEquals(filter.get_duty(self.servo_id), 0, 'duty != 0')
+        self.assertEquals(filter.get_angular_position(self.servo_id), 0, 'angular_position != 0')
+
+        # Values should initialise to tuple (0, True)
+        self.assertEquals(filter.get_servo_position(self.servo_id), (0, True), 'servo_pos != (0 ,True)')
+
+        # Values should initialise to one
+        self.assertEquals(filter.get_invert(self.servo_id), 1, 'invert != 1')
+
     def test_valid_region(self):
-        # Load the model files
         filter = LX16AEncoderFilterSklearn(
             self.classifier_filename, self.regressor_filename, self.window)
         filter.add(self.servo_id)
@@ -90,7 +124,6 @@ class TestExtEncoderFilter(unittest.TestCase):
         self.assertEquals(filter.get_invert(self.servo_id), 1, 'invert != 1')
 
     def test_invalid_region(self):
-        # Load the model files
         filter = LX16AEncoderFilterSklearn(
             self.classifier_filename, self.regressor_filename, self.window)
         filter.add(self.servo_id)
@@ -100,7 +133,6 @@ class TestExtEncoderFilter(unittest.TestCase):
         self.assertEquals(filter.get_servo_position(self.servo_id), expected, 'servo_pos != {}'.format(expected))
 
     def test_angular_position(self):
-        # Load the model files
         filter = LX16AEncoderFilterSklearn(
             self.classifier_filename, self.regressor_filename, self.window)
         filter.add(self.servo_id)
@@ -111,7 +143,6 @@ class TestExtEncoderFilter(unittest.TestCase):
         self.assertEquals(filter.get_angular_position(self.servo_id), expected, 'angular_position != {}'.format(expected))
 
     def test_duty(self):
-        # Load the model files
         filter = LX16AEncoderFilterSklearn(
             self.classifier_filename, self.regressor_filename, self.window)
         filter.add(self.servo_id)
@@ -122,7 +153,6 @@ class TestExtEncoderFilter(unittest.TestCase):
 
     # Disable this test as it requires a ROS node to be available...
     def notest_reset(self):
-        # Load the model files
         filter = LX16AEncoderFilterSklearn(
             self.classifier_filename, self.regressor_filename, self.window)
         filter.add(self.servo_id)
@@ -142,7 +172,6 @@ class TestExtEncoderFilter(unittest.TestCase):
         self.assertEquals(filter.get_invert(self.servo_id), 1, 'invert != 1')
 
     def test_invert(self):
-        # Load the model files
         filter = LX16AEncoderFilterSklearn(
             self.classifier_filename, self.regressor_filename, self.window)
         filter.add(self.servo_id)

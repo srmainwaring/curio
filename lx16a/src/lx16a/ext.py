@@ -101,7 +101,7 @@ class LX16AEncoderFilterSklearn(LX16AEncoderFilterBase):
         filter.reset(position)
 
     def add_v(self, servo_ids):
-        for id in servo_ids:
+        for servo_id in servo_ids:
             self.add(servo_id)
 
     # Note: the Python overload expects a lx16a.Time and returns a list
@@ -109,9 +109,9 @@ class LX16AEncoderFilterSklearn(LX16AEncoderFilterBase):
         ros_time = rospy.Time(time.sec, time.nsec)
         i = 0
         angular_positions = [0 for x in servo_ids]
-        for id in servo_ids:
+        for servo_id in servo_ids:
             filter = self._encoder_filters[servo_id]
-            filter.update_v(ros_time, duties[i], positions[i])
+            filter.update(ros_time, duties[i], positions[i])
             angular_positions[i] = filter.get_angular_position()
             i = i + 1
         return angular_positions

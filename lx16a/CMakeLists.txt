@@ -139,14 +139,14 @@ if (CATKIN_ENABLE_TESTING)
 
     # C++ tests
     catkin_add_gtest(test_encoder_filter test/test_encoder_filter.cpp)
-    target_link_libraries(test_encoder_filter PRIVATE pybind11::embed lx16a ${catkin_LIBRARIES})
+    target_link_libraries(test_encoder_filter pybind11::embed lx16a ${catkin_LIBRARIES})
 
     # Python tests
     catkin_add_nosetests(test/test_encoder_filter.py)
 
     # rostest tests
     catkin_add_gtest(test_hardware_encoder test/test_hardware_encoder.cpp)
-    target_link_libraries(test_hardware_encoder PRIVATE lx16a ${catkin_LIBRARIES})
+    target_link_libraries(test_hardware_encoder lx16a ${catkin_LIBRARIES})
 
 
 endif()
