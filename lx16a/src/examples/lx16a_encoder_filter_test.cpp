@@ -37,6 +37,7 @@
 #include "lx16a/lx16a_driver.h"
 #include "lx16a/lx16a_encoder_filter_client.h"
 #include "lx16a/lx16a_encoder_filter_python.h"
+#include "lx16a/lx16a_exception.h"
 #include "lx16a/lx16a_pybind11_embed.h"
 
 #include <pybind11/pybind11.h>
@@ -50,13 +51,10 @@
 #include <cstdint>
 #include <thread>
 
-#define USE_PYTHON_SERVICE 0
+#define USE_ENCODER_SERVICE 1
 
 // Servo ids
-const uint8_t SERVO_ID = 21;
-const std::string CLASSIFIER_FILENAME = "./src/curio/lx16a/data/lx16a_tree_classifier.joblib";
-const std::string REGRESSOR_FILENAME = "./src/curio/lx16a/data/lx16a_tree_regressor.joblib";
-const int16_t WINDOW = 10;
+uint8_t SERVO_ID = 11;
 
 // Servo driver
 lx16a::LX16ADriver servo_driver;
@@ -88,30 +86,63 @@ int main(int argc, char *argv[])
     // Register custom interrupt signal handler.
     signal(SIGINT, sigintHandler);
 
-    // Parameters
-    const std::string port("/dev/cu.usbmodem1421201");
-    const uint32_t baudrate = 115200;
-    const uint32_t timeout = 1000;       // [ms]
-    const uint32_t read_rate = 10;       // [Hz]
+    // Driver parameters
+    int baudrate, timeout, control_frequency, servo_id;
+    std::string port;
+    private_nh.param<std::string>("port", port, "/dev/ttyUSB0");
+    private_nh.param<int>("baudrate", baudrate, 115200);
+    private_nh.param<int>("timeout", timeout, 1000);
+    private_nh.param<int>("control_frequency", control_frequency, 20);
+    private_nh.param<int>("servo_id", servo_id, 11);
+    SERVO_ID = static_cast<uint8_t>(servo_id);
 
-    // Servo driver / serial
+    ROS_INFO_STREAM("port: " << port);
+    ROS_INFO_STREAM("baudrate: " << baudrate);
+    ROS_INFO_STREAM("timeout: " << timeout);
+    ROS_INFO_STREAM("control_frequency: " << control_frequency);
+    ROS_INFO_STREAM("servo_id: " << servo_id);
+
+    // Encoder parameters
+    int window;
+    std::string classifier_filename, regressor_filename;
+    private_nh.param<std::string>("classifier_filename", classifier_filename, "lx16a_tree_classifier.joblib");
+    private_nh.param<std::string>("regressor_filename", regressor_filename, "lx16a_tree_regressor.joblib");
+    private_nh.param<int>("window", window, 10);
+
+    ROS_INFO_STREAM("classifier_filename: " << classifier_filename);
+    ROS_INFO_STREAM("regressor_filename: " << regressor_filename);
+    ROS_INFO_STREAM("window: " << window);
+
+    // Driver
     serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout);
     servo_driver.setPort(port);
     servo_driver.setBaudrate(baudrate);
     servo_driver.setTimeout(serial_timeout);
-    servo_driver.open();
-    ROS_INFO_STREAM("port: " << servo_driver.getPort());
-    ROS_INFO_STREAM("baudrate: " << servo_driver.getBaudrate());
+    try
+    {
+        servo_driver.open();
+    }
+    catch(const serial::IOException & e)
+    {
+        ROS_FATAL_STREAM("LX16A driver: failed to open port: " << port);
+    }        
+
+    // Status
     ROS_INFO_STREAM("is_open: " << servo_driver.isOpen());
 
+    // Wait for Arduino bootloader to complete before sending any
+    // data on the serial connection.
+    ROS_INFO_STREAM("Waiting for bootloader to complete...");
+    ros::Duration(1.0).sleep();
+
     // Encoder filter
-#if USE_PYTHON_SERVICE
+#if USE_ENCODER_SERVICE
     std::unique_ptr<lx16a::LX16AEncoderFilter>  encoder_filter(
         new lx16a::LX16AEncoderFilterClient(
             nh,
-            CLASSIFIER_FILENAME,
-            REGRESSOR_FILENAME,
-            WINDOW));
+            classifier_filename,
+            regressor_filename,
+            window));
 #else
     namespace py = pybind11;
 
@@ -121,38 +152,47 @@ int main(int argc, char *argv[])
 
     std::unique_ptr<lx16a::LX16AEncoderFilter>  encoder_filter(
         new lx16a::LX16AEncoderFilterPython(
-            CLASSIFIER_FILENAME,
-            REGRESSOR_FILENAME,
-            WINDOW));
+            classifier_filename,
+            regressor_filename,
+            window));
 #endif
 
-    encoder_filter->init();
-    encoder_filter->add(SERVO_ID);
-
-    // Wait for Arduino bootloader to complete before sending any
-    // data on the serial connection.
-    ROS_INFO_STREAM("Waiting for bootloader to complete...");
-    ros::Duration(1.0).sleep();
-
+    try
+    {
+        encoder_filter->init();
+        encoder_filter->add(SERVO_ID);
+    }
+    catch(const lx16a::LX16AException& e)
+    {
+        ROS_FATAL("%s", e.what());
+    }
+    
     // Start motor
     int16_t duty = 500;
     servo_driver.setMotorMode(SERVO_ID, duty);
 
     // Loop
-    ros::Rate rate(read_rate);
+    ros::Rate rate(control_frequency);
     ros::Time start = ros::Time::now();
     uint32_t read_count = 0;
     while (ros::ok())
     {
         ros::Time now = ros::Time::now();
-        int16_t position = servo_driver.getPosition(SERVO_ID);        
-        encoder_filter->update(SERVO_ID, now, duty, position);
-        int16_t count = encoder_filter->getCount(SERVO_ID);
-        int16_t revolutions = encoder_filter->getRevolutions(SERVO_ID);
+        try
+        {       
+            int16_t position = servo_driver.getPosition(SERVO_ID); 
+            encoder_filter->update(SERVO_ID, now, duty, position);
+            int16_t count = encoder_filter->getCount(SERVO_ID);
+            int16_t revolutions = encoder_filter->getRevolutions(SERVO_ID);
 
-        ROS_INFO_STREAM("pos: " << position
-            << ", count: " << count
-            << ", rev: " << revolutions);
+            ROS_INFO_STREAM("pos: " << position
+                << ", count: " << count
+                << ", rev: " << revolutions);
+        }
+        catch(const lx16a::LX16AException& e)
+        {
+            ROS_FATAL("%s", e.what());
+        }
 
         double sec = (now - start).toSec();
         double cps = read_count/sec;
@@ -163,7 +203,6 @@ int main(int argc, char *argv[])
             read_count = 0;
             start = ros::Time().now();
         }
-
         rate.sleep();
     }
 

@@ -82,7 +82,7 @@ void controlLoop(const ros::TimerEvent& event)
         }
         catch(const lx16a::LX16AException& e)
         {
-            ROS_ERROR_STREAM("" << e.what());
+            ROS_ERROR("%s", e.what());
         }        
     }
     for (int i=0; i<0; ++i)
@@ -95,7 +95,7 @@ void controlLoop(const ros::TimerEvent& event)
         }
         catch(const lx16a::LX16AException& e)
         {
-            ROS_ERROR_STREAM("" << e.what());
+            ROS_ERROR("%s", e.what());
         }        
     }
 
@@ -107,8 +107,16 @@ void controlLoop(const ros::TimerEvent& event)
     int16_t duty = static_cast<int16_t>(cmd_vel_msg.linear.x * 1000); 
     for (int i=0; i<6; ++i)
     {
-        uint8_t id = wheel_servo_ids[i];
-        // servo_driver.setMode(id, 1, duty);    
+        try
+        {
+            uint8_t id = wheel_servo_ids[i];
+            servo_driver.setMotorMode(id, duty);
+            ROS_INFO_STREAM("servo_id: " << static_cast<int>(id) << ", duty: " << duty);    
+        }
+        catch(const lx16a::LX16AException &e)
+        {
+            ROS_ERROR("%s", e.what());
+        }
     }
 }
 
@@ -120,23 +128,40 @@ int main(int argc, char *argv[])
     ros::NodeHandle nh, private_nh("~");
     ROS_INFO("Starting node lx16a_position_publisher...");
 
-    // Read parameters
-    ROS_INFO("Loading parameters...");
-    const std::string port("/dev/cu.usbmodem1421201");
-    const uint32_t baudrate = 115200;
-    const uint32_t timeout = 1000;      // [ms]
-    double control_frequency = 1.0;    // [Hz]
+    // Driver parameters
+    int baudrate, timeout, control_frequency, servo_id;
+    std::string port;
+    private_nh.param<std::string>("port", port, "/dev/ttyUSB0");
+    private_nh.param<int>("baudrate", baudrate, 115200);
+    private_nh.param<int>("timeout", timeout, 1000);
+    private_nh.param<int>("control_frequency", control_frequency, 20);
 
-    // Initialise driver
-    ROS_INFO("Initialising LX-16A servo driver...");
+    ROS_INFO_STREAM("port: " << port);
+    ROS_INFO_STREAM("baudrate: " << baudrate);
+    ROS_INFO_STREAM("timeout: " << timeout);
+    ROS_INFO_STREAM("control_frequency: " << control_frequency);
+
+    // Driver
     serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout);
     servo_driver.setPort(port);
     servo_driver.setBaudrate(baudrate);
     servo_driver.setTimeout(serial_timeout);
-    servo_driver.open();
-    ROS_INFO_STREAM("port: " << servo_driver.getPort());
-    ROS_INFO_STREAM("baudrate: " << servo_driver.getBaudrate());
+    try
+    {
+        servo_driver.open();
+    }
+    catch(const serial::IOException & e)
+    {
+        ROS_FATAL_STREAM("LX16A driver: failed to open port: " << port);
+    }        
+
+    // Status
     ROS_INFO_STREAM("is_open: " << servo_driver.isOpen());
+
+    // Wait for Arduino bootloader to complete before sending any
+    // data on the serial connection.
+    ROS_INFO_STREAM("Waiting for bootloader to complete...");
+    ros::Duration(1.0).sleep();
 
     // Publisher
     position_pub = nh.advertise<std_msgs::Int64>("servos/position", 100);
