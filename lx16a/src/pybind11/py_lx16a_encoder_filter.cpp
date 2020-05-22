@@ -9,6 +9,9 @@ namespace py = pybind11;
 // Helper class to redirect virtual calls back to Python.
 class PyLX16AEncoderFilter : public lx16a::LX16AEncoderFilter
 {
+    // Destructor
+    ~PyLX16AEncoderFilter() override {}
+
     // Inherit constructors
     using lx16a::LX16AEncoderFilter::LX16AEncoderFilter;
 

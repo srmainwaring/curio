@@ -1,7 +1,16 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(curio_base)
 
-## Compile as C++11, supported in ROS Kinetic and newer
+################################################################################
+# Preprocessor options
+option(CURIO_WITH_PYTHON_HAL "Use the Python HAL" OFF)
+
+if(CURIO_WITH_PYTHON_HAL)
+    add_compile_definitions(CURIO_USE_PYTHON_HAL=1)
+endif()
+
+################################################################################
+# Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
 ################################################################################
@@ -95,10 +104,20 @@ add_library(curio_base
     src/rover_base_hal.cpp
     src/rover_base_hal_lx16a.cpp
     src/rover_base_hal_mock.cpp
+    src/rover_base_hal_python.cpp
     src/rover_base_hardware.cpp
 )
 target_link_libraries(curio_base pybind11::embed ${catkin_LIBRARIES})
 add_dependencies(curio_base ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+# Python bindings
+pybind11_add_module(_curio_base
+    src/pybind11/py_curio_base.cpp
+    src/pybind11/py_rover_base_hal.cpp
+    src/pybind11/py_time.cpp
+)
+target_link_libraries(_curio_base PRIVATE curio_base ${catkin_LIBRARIES})
+set_target_properties(_curio_base PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_PYTHON_DESTINATION})
 
 # Nodes
 add_executable(rover_base_controller
