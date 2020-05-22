@@ -350,17 +350,20 @@ namespace curio_base
         ROS_INFO_STREAM("LX16A encoder: regressor_filename: " << regressor_filename);
         ROS_INFO_STREAM("LX16A encoder: classifier_window: " << classifier_window);
 
-        // std::unique_ptr<lx16a::LX16AEncoderFilterClient> filter(
-        //     new lx16a::LX16AEncoderFilterClient(
-        //         nh, classifier_filename, regressor_filename, classifier_window));
-        // ros::Duration encoder_timeout(encoder_service_timeout);
-        // filter->setTimeout(encoder_timeout);
-
+// Select the encoder filter type (service or in-proc)
+#if 0
+        std::unique_ptr<lx16a::LX16AEncoderFilterClient> filter(
+            new lx16a::LX16AEncoderFilterClient(
+                nh, classifier_filename, regressor_filename, classifier_window));
+        ros::Duration encoder_timeout(encoder_service_timeout);
+        filter->setTimeout(encoder_timeout);
+        encoder_filter_ = std::move(filter);
+#else
         std::unique_ptr<lx16a::LX16AEncoderFilterPython> filter(
             new lx16a::LX16AEncoderFilterPython(
                 classifier_filename, regressor_filename, classifier_window));
-
         encoder_filter_ = std::move(filter);
+#endif
 
         try
         {
