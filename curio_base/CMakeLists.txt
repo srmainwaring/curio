@@ -6,7 +6,9 @@ project(curio_base)
 option(CURIO_WITH_PYTHON_HAL "Use the Python HAL" OFF)
 
 if(CURIO_WITH_PYTHON_HAL)
-    add_compile_definitions(CURIO_USE_PYTHON_HAL=1)
+    add_definitions(-DCURIO_USE_PYTHON_HAL=1)
+else()
+    add_definitions(-DCURIO_USE_PYTHON_HAL=0)
 endif()
 
 ################################################################################
