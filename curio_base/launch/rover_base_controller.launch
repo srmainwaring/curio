@@ -23,10 +23,10 @@ Parameters
     <arg name="regressor_filename" default="$(find lx16a)/data/lx16a_tree_regressor.joblib" />
     <arg name="encoder_service_timeout" default="0.005" />
 
-    <!-- LX16A encoder filter server -->
-    <node pkg="lx16a" type="lx16a_encoder_filter_server" name="lx16a_encoder_filter_server"
+    <!-- LX16A encoder filter server (not required when using Python bindings to the encoder filter) -->
+    <!-- <node pkg="lx16a" type="lx16a_encoder_filter_server" name="lx16a_encoder_filter_server"
         respawn="true" output="screen">
-    </node>
+    </node> -->
 
     <!-- Controller for the mobile base  -->
     <node pkg="curio_base" type="rover_base_controller" name="curio_base_controller"

@@ -31,6 +31,8 @@ find_package(catkin REQUIRED COMPONENTS
     tf
 )
 
+find_package(pybind11 REQUIRED)
+
 ################################################################################
 # Setup python modules
 
@@ -95,7 +97,7 @@ add_library(curio_base
     src/rover_base_hal_mock.cpp
     src/rover_base_hardware.cpp
 )
-target_link_libraries(curio_base ${catkin_LIBRARIES})
+target_link_libraries(curio_base pybind11::embed ${catkin_LIBRARIES})
 add_dependencies(curio_base ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 # Nodes
