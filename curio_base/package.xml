@@ -12,6 +12,7 @@
 
     <buildtool_depend>catkin</buildtool_depend>
     <buildtool_depend>message_generation</buildtool_depend>
+    <build_depend>pybind11-dev</build_depend>
 
     <depend>actionlib</depend>
     <depend>actionlib_msgs</depend>

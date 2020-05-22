@@ -37,6 +37,10 @@
 #include "curio_base/rover_base_hal.h"
 #include "curio_base/rover_base_hal_lx16a.h"
 #include "curio_base/rover_base_hardware.h"
+#include <lx16a/lx16a_pybind11_embed.h>
+
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
 
 #include <controller_manager/controller_manager.h>
 #include <ros/ros.h>
@@ -46,13 +50,18 @@
 #include <functional>
 #include <thread>
 
+namespace py = pybind11;
+
 typedef std::chrono::steady_clock time_source;
 
-// Control loop (not realtime safe)
+// Control loop (not realtime - timing scheduled by AsyncSpinner)
 void controlLoop(curio_base::RoverBaseHardware &hardware,
     controller_manager::ControllerManager &controller_manager,
     time_source::time_point &last_time)
 {
+    // Acquire the Python GIL
+    py::gil_scoped_acquire gil{};
+
     // Calculate monotonic time difference
     time_source::time_point this_time = time_source::now();
     std::chrono::duration<double> elapsed_duration = this_time - last_time;
@@ -72,6 +81,10 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "rover_base_controller");
     ros::NodeHandle nh, private_nh("~");
 
+    // Initialise the Python interpreter
+    py::scoped_interpreter guard{};
+    lx16a::addCmdArgsToSys(argc, argv);
+
     // Read parameters
     double control_frequency;
     private_nh.param<double>("control_frequency", control_frequency, 10.0);
@@ -80,9 +93,8 @@ int main(int argc, char *argv[])
     curio_base::RoverBaseHardware rover_base_hardware(nh, private_nh);
     controller_manager::ControllerManager controller_manager(&rover_base_hardware, nh);
 
-    // Custom callback queue (non-threadsafe)
+    // Custom callback queue (non-threadsafe?)
     ros::CallbackQueue callback_queue;
-    ros::AsyncSpinner spinner(1, &callback_queue);
 
     time_source::time_point last_time = time_source::now();
     ros::TimerOptions control_timer(
@@ -93,9 +105,15 @@ int main(int argc, char *argv[])
     ros::Timer control_loop = nh.createTimer(control_timer);
 
     // Process ROS callbacks (controller_manager)
-    spinner.start();
-    ros::spin();
-    ros::waitForShutdown();
+    {
+        // Release the Python GIL from this thread
+        py::gil_scoped_release gil_release {};
+
+        // Async spinner - must only use be called with 1 thread.
+        ros::AsyncSpinner spinner(1, &callback_queue);
+        spinner.start();
+        ros::waitForShutdown();
+    }
 
     return 0;
 }

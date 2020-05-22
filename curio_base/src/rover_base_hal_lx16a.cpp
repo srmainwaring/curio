@@ -36,6 +36,7 @@
 
 #include "curio_base/rover_base_hal_lx16a.h"
 #include "lx16a/lx16a_encoder_filter_client.h"
+#include "lx16a/lx16a_encoder_filter_python.h"
 #include "lx16a/lx16a_exception.h"
 #include <serial/serial.h>
 #include <algorithm>
@@ -348,13 +349,19 @@ namespace curio_base
         ROS_INFO_STREAM("LX16A encoder: classifier_filename: " << classifier_filename);
         ROS_INFO_STREAM("LX16A encoder: regressor_filename: " << regressor_filename);
         ROS_INFO_STREAM("LX16A encoder: classifier_window: " << classifier_window);
-        std::unique_ptr<lx16a::LX16AEncoderFilterClient> filter(
-            new lx16a::LX16AEncoderFilterClient(
-                nh, classifier_filename, regressor_filename, classifier_window));
-        ros::Duration encoder_timeout(encoder_service_timeout);
-        filter->setTimeout(encoder_timeout);
+
+        // std::unique_ptr<lx16a::LX16AEncoderFilterClient> filter(
+        //     new lx16a::LX16AEncoderFilterClient(
+        //         nh, classifier_filename, regressor_filename, classifier_window));
+        // ros::Duration encoder_timeout(encoder_service_timeout);
+        // filter->setTimeout(encoder_timeout);
+
+        std::unique_ptr<lx16a::LX16AEncoderFilterPython> filter(
+            new lx16a::LX16AEncoderFilterPython(
+                classifier_filename, regressor_filename, classifier_window));
 
         encoder_filter_ = std::move(filter);
+
         try
         {
             encoder_filter_->init();
