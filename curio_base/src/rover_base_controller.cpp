@@ -69,6 +69,7 @@ void controlLoop(curio_base::RoverBaseHardware &hardware,
     last_time = this_time;
 
     // Process control loop
+    ROS_DEBUG_STREAM("Duration since last update: " << elapsed_duration.count());
     hardware.read(ros::Time::now(), elapsed);
     controller_manager.update(ros::Time::now(), elapsed);
     hardware.write(ros::Time::now(), elapsed);
@@ -96,6 +97,7 @@ int main(int argc, char *argv[])
     // Custom callback queue (non-threadsafe?)
     ros::CallbackQueue callback_queue;
 
+    // Custom timer for the main control loop.
     time_source::time_point last_time = time_source::now();
     ros::TimerOptions control_timer(
         ros::Duration(1.0 / control_frequency),
@@ -104,14 +106,12 @@ int main(int argc, char *argv[])
         &callback_queue);
     ros::Timer control_loop = nh.createTimer(control_timer);
 
-    // Process ROS callbacks (controller_manager)
-    {
-        // Release the Python GIL from this thread
+    // Release the Python GIL from this thread and start async and main thread spinners
+    {    
         py::gil_scoped_release gil_release {};
-
-        // Async spinner - must only use be called with 1 thread.
         ros::AsyncSpinner spinner(1, &callback_queue);
         spinner.start();
+        ros::spin();
         ros::waitForShutdown();
     }
 
