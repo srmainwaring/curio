@@ -37,6 +37,7 @@
 #include "curio_base/rover_base_hardware.h"
 #include "curio_base/rover_base_hal_lx16a.h"
 #include "curio_base/rover_base_hal_mock.h"
+#include "curio_base/rover_base_hal_python.h"
 
 namespace curio_base
 {
@@ -49,15 +50,18 @@ namespace curio_base
     {
         ROS_INFO_STREAM("Initialising rover base hardware...");
 
-        // @TODO - control switch with parameter / plugin.
-        // LX16A HAL
-        std::unique_ptr<RoverBaseHALLX16A> rover_hal_lx16a(new RoverBaseHALLX16A(nh));
-        rover_hal_ = std::move(rover_hal_lx16a);
-
         // Mock HAL
         // std::unique_ptr<RoverBaseHALMock> rover_hal_mock(new RoverBaseHALMock()); 
         // rover_hal_ = std::move(rover_hal_mock);
-
+#if CURIO_USE_PYTHON_HAL
+        // Python HAL        
+        std::unique_ptr<RoverBaseHALPython> rover_hal_python(new RoverBaseHALPython()); 
+        rover_hal_ = std::move(rover_hal_python);
+#else
+        // LX16A HAL
+        std::unique_ptr<RoverBaseHALLX16A> rover_hal_lx16a(new RoverBaseHALLX16A(nh));
+        rover_hal_ = std::move(rover_hal_lx16a);
+#endif
         // Resize passive joints
         passive_joint_positions_.resize(k_num_passive_joints_, 0.0);
         passive_joint_velocities_.resize(k_num_passive_joints_, 0.0);

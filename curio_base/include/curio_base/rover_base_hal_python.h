@@ -34,29 +34,26 @@
 //  POSSIBILITY OF SUCH DAMAGE.
 //
 
-#ifndef CURIO_BASE_ROVER_BASE_HAL_LX16A_H_
-#define CURIO_BASE_ROVER_BASE_HAL_LX16A_H_
+#ifndef CURIO_BASE_ROVER_BASE_HAL_PYTHON_H_
+#define CURIO_BASE_ROVER_BASE_HAL_PYTHON_H_
 
 #include "curio_base/rover_base_hal.h"
-#include "lx16a/lx16a_driver.h"
-#include "lx16a/lx16a_encoder_filter.h"
 
+#include <pybind11/pybind11.h>
 #include <ros/ros.h>
-
-#include <string>
-#include <memory>
+#include <vector>
 
 namespace curio_base
 {
-    /// \copydoc RoverBaseHAL
-    class RoverBaseHALLX16A : public RoverBaseHAL
+    /// \brief Mock implementation of the rover base hardware abstraction layer for testing.
+    class RoverBaseHALPython : public RoverBaseHAL
     {
     public:
         /// \copydoc RoverBaseHAL::~RoverBaseHAL
-        ~RoverBaseHALLX16A() override;
+        ~RoverBaseHALPython() override;
 
         /// \brief Constructor.
-        RoverBaseHALLX16A(ros::NodeHandle &nh);
+        RoverBaseHALPython();
 
         /// \copydoc RoverBaseHAL::getNumWheels()
         size_t getNumWheels() const override;
@@ -95,32 +92,14 @@ namespace curio_base
         void setSteerAngles(const ros::Time &time, const std::vector<double>& positions) override;
 
     private:
-        /// \brief Set the steering trim for the i-ith steer.
-        void setSteerTrim(int i, int16_t offset);
-
-        // Constants
-        const size_t k_num_wheels_ = 6;
-        const size_t k_num_steers_ = 4;
-
-        // Node handle
-        ros::NodeHandle nh_;
-        
-        // Servo ids
-        std::vector<uint8_t> wheel_servo_ids_;
-        std::vector<uint8_t> steer_servo_ids_;
-
-        // Wheel orientation
-        std::vector<int8_t> wheel_servo_orientations_;
-        std::vector<int8_t> steer_servo_orientations_;
-
-        // Current duty set points
-        std::vector<int16_t> wheel_servo_duties_;
-
-        // Drivers and filters
-        std::unique_ptr<lx16a::LX16ADriver> servo_driver_;
-        std::unique_ptr<lx16a::LX16AEncoderFilter> encoder_filter_;
+        // Store the Python module and class instance objects as well
+        // as a pointer to the C++ type. If the Python objects go out of
+        // scope the pointer is undefined.   
+        pybind11::object py_module_;
+        pybind11::object py_rover_base_hal_;
+        RoverBaseHAL *rover_base_hal_ = nullptr;
     };
 
 } // namespace curio_base
 
-#endif // CURIO_BASE_ROVER_BASE_HAL_LX16A_H_
+#endif // CURIO_BASE_ROVER_BASE_HAL_PYTHON_H_

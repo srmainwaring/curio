@@ -47,46 +47,46 @@ namespace curio_base
     class RoverBaseHALMock : public RoverBaseHAL
     {
     public:
-        /// \brief Destructor.
+        /// \copydoc RoverBaseHAL::~RoverBaseHAL
         ~RoverBaseHALMock() override;
 
         /// \brief Constructor.
         RoverBaseHALMock();
 
-        /// \brief Get the number of wheels.
+        /// \copydoc RoverBaseHAL::getNumWheels()
         size_t getNumWheels() const override;
 
-        /// \brief Get the number of steers.
+        /// \copydoc RoverBaseHAL::getNumSteers()
         size_t getNumSteers() const override;
 
-        /// \brief Get the angular position of the i-th wheel [rad].
+        /// \copydoc RoverBaseHAL::getWheelPosition()
         double getWheelPosition(const ros::Time &time, int i) const override;
 
-        /// \brief Get the angular velocity of the i-th wheel [rad/s].
+        /// \copydoc RoverBaseHAL::getWheelVelocity()
         double getWheelVelocity(const ros::Time &time, int i) const override;
 
-        /// \brief Set the angular velocity of the i-th wheel [rad/s].
+        /// \copydoc RoverBaseHAL::setWheelVelocity()
         void setWheelVelocity(const ros::Time &time, int i, double velocity) override;
 
-        /// \brief Get the steering angle of the i-th steer [rad].
+        /// \copydoc RoverBaseHAL::getSteerAngle()
         double getSteerAngle(const ros::Time &time, int i) const override;
 
-        /// \brief Set the angle of the i-th steer [rad].
+        /// \copydoc RoverBaseHAL::setSteerAngle()
         void setSteerAngle(const ros::Time &time, int i, double angle) override;
 
-        /// \brief Get the wheel angular positions [rad].
+        /// \copydoc RoverBaseHAL::getWheelPositions()
         void getWheelPositions(const ros::Time &time, std::vector<double>& positions) const override;
 
-        /// \brief Get the wheel angular velocities [rad/s].
+        /// \copydoc RoverBaseHAL::getWheelVelocities()
         void getWheelVelocities(const ros::Time &time, std::vector<double>& velocities) const override;
 
-        /// \brief Set the wheel angular velocities [rad/s].
+        /// \copydoc RoverBaseHAL::setWheelVelocities()
         void setWheelVelocities(const ros::Time &time, const std::vector<double>& velocities) override;
 
-        /// \brief Get the steering angles [rad].
+        /// \copydoc RoverBaseHAL::getSteerAngles()
         void getSteerAngles(const ros::Time &time, std::vector<double>& positions) const override;
 
-        /// \brief Set the steering angles [rad].
+        /// \copydoc RoverBaseHAL::setSteerAngles()
         void setSteerAngles(const ros::Time &time, const std::vector<double>& positions) override;
 
     private:
