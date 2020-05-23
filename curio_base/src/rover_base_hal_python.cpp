@@ -48,10 +48,18 @@ namespace curio_base
     {        
     }
 
-    RoverBaseHALPython::RoverBaseHALPython()
+    RoverBaseHALPython::RoverBaseHALPython(ros::NodeHandle &nh, ros::NodeHandle &private_nh) :
+        nh_(nh),
+        private_nh_(private_nh)
     {
+        // Load params
+        std::string hal_module_, hal_class_;
+        ros::param::param<std::string>("~python_hal_module", hal_module_, "curio_base.ext");
+        ros::param::param<std::string>("~python_hal_class", hal_class_, "MockRoverBaseHAL");
+
         // Import derived class and cast from Python to C++.
-        py_module_ = py::module::import("curio_base.ext").attr("MockRoverBaseHAL");
+        ROS_INFO_STREAM("Attempting to load Python RoverBaseHAL module: " << hal_module_ << "." << hal_class_);
+        py_module_ = py::module::import(hal_module_.c_str()).attr(hal_class_.c_str());
         py_rover_base_hal_ = py_module_();
         rover_base_hal_ = py_rover_base_hal_.cast<RoverBaseHAL*>();
     }

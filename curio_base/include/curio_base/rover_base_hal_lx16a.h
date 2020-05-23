@@ -56,7 +56,7 @@ namespace curio_base
         ~RoverBaseHALLX16A() override;
 
         /// \brief Constructor.
-        RoverBaseHALLX16A(ros::NodeHandle &nh);
+        RoverBaseHALLX16A(ros::NodeHandle &nh, ros::NodeHandle &private_nh);
 
         /// \copydoc RoverBaseHAL::getNumWheels()
         size_t getNumWheels() const override;
@@ -102,8 +102,9 @@ namespace curio_base
         const size_t k_num_wheels_ = 6;
         const size_t k_num_steers_ = 4;
 
-        // Node handle
+        // Node handles
         ros::NodeHandle nh_;
+        ros::NodeHandle private_nh_;
         
         // Servo ids
         std::vector<uint8_t> wheel_servo_ids_;

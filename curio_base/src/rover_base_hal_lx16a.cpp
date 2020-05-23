@@ -186,8 +186,9 @@ namespace curio_base
     {        
     }
 
-    RoverBaseHALLX16A::RoverBaseHALLX16A(ros::NodeHandle &nh) :
+    RoverBaseHALLX16A::RoverBaseHALLX16A(ros::NodeHandle &nh, ros::NodeHandle &private_nh) :
         nh_(nh),
+        private_nh_(private_nh),
         wheel_servo_ids_(k_num_wheels_),
         steer_servo_ids_(k_num_steers_),
         wheel_servo_orientations_(k_num_wheels_),

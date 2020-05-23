@@ -42,8 +42,10 @@ namespace curio_base
     {        
     }
 
-    RoverBaseHALMock::RoverBaseHALMock() :
+    RoverBaseHALMock::RoverBaseHALMock(ros::NodeHandle &nh, ros::NodeHandle &private_nh) :
         RoverBaseHAL(),
+        nh_(nh),
+        private_nh_(private_nh),
         wheel_last_times_(k_num_wheels_),
         wheel_last_positions_(k_num_wheels_),
         wheel_velocities_(k_num_wheels_),

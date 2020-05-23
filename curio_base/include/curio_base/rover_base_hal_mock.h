@@ -51,7 +51,7 @@ namespace curio_base
         ~RoverBaseHALMock() override;
 
         /// \brief Constructor.
-        RoverBaseHALMock();
+        RoverBaseHALMock(ros::NodeHandle &nh, ros::NodeHandle &private_nh);
 
         /// \copydoc RoverBaseHAL::getNumWheels()
         size_t getNumWheels() const override;
@@ -93,6 +93,10 @@ namespace curio_base
         // Constants
         const size_t k_num_wheels_ = 6;
         const size_t k_num_steers_ = 4;
+
+        // Node handles
+        ros::NodeHandle nh_;
+        ros::NodeHandle private_nh_;
 
         // Velocity controlled wheels 
         std::vector<ros::Time> wheel_last_times_;
