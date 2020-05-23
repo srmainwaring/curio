@@ -34,9 +34,13 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
-''' Scikit-learn implementation of the _lx16a.LX16AEncoderFilter interface
+''' Extensions for lx16a
+
+    - Driver for LX16A servos
+    - Scikit-learn implementation of the _lx16a.LX16AEncoderFilter interface
 '''
 
+from _lx16a import LX16ADriver
 from _lx16a import LX16AEncoderFilter as LX16AEncoderFilterBase
 from _lx16a import Time
 from .encoder import LX16AEncoderFilter
