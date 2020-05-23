@@ -27,11 +27,13 @@
 
 # Optional: Python Rover HAL 
 # 
-# Defaults:
+# Mock:
 # python_hal_module: 'curio_base.ext'
 # python_hal_class: 'MockRoverBaseHAL'
-python_hal_module: 'curio_base.ext'
-python_hal_class: 'LX16AMinimalRoverBaseHAL'
+# 
+# Minimal using LX16A servos:
+# python_hal_module: 'curio_base.ext'
+# python_hal_class: 'LX16AMinimalRoverBaseHAL'
 
 # Servo driver port settings
 # port: /dev/cu.wchusbserialfd5110
