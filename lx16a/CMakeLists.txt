@@ -1,7 +1,18 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(lx16a)
 
-## Compile as C++11, supported in ROS Kinetic and newer
+################################################################################
+# Preprocessor options
+option(LX16A_WITH_DEBUG "Enable debug settings" OFF)
+
+if(LX16A_WITH_DEBUG)
+    add_definitions(-DLX16A_DEBUG=1)
+else()
+    add_definitions(-DLX16A_DEBUG=0)
+endif()
+
+################################################################################
+# Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
 ################################################################################
@@ -67,6 +78,7 @@ target_link_libraries(lx16a
 # Python bindings
 pybind11_add_module(_lx16a
     src/pybind11/py_lx16a.cpp
+    src/pybind11/py_lx16a_driver.cpp
     src/pybind11/py_lx16a_encoder_filter.cpp
     src/pybind11/py_lx16a_time.cpp
 )
@@ -143,6 +155,11 @@ if (CATKIN_ENABLE_TESTING)
 
     # Python tests
     catkin_add_nosetests(test/test_encoder_filter.py)
+    catkin_add_nosetests(test/test_ext_encoder_filter.py)
+    catkin_add_nosetests(test/test_ext_time.py)
+
+    # Python tests that require hardware configured
+    # catkin_add_nosetests(test/test_ext_driver.py)
 
     # rostest tests
     catkin_add_gtest(test_hardware_encoder test/test_hardware_encoder.cpp)

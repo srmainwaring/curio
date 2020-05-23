@@ -35,6 +35,7 @@
 //
 
 #include "lx16a/lx16a_driver.h"
+#include "lx16a/lx16a_exception.h"
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -149,7 +150,7 @@ int main(int argc, char *argv[])
     private_nh.param<std::string>("port", port, "/dev/ttyUSB0");
     private_nh.param<int>("baudrate", baudrate, 115200);
     private_nh.param<int>("timeout", timeout, 1000);
-    private_nh.param<int>("control_frequency", control_frequency, 20);
+    private_nh.param<int>("control_frequency", control_frequency, 10);
     private_nh.param<int>("servo_id", servo_id, 11);
     SERVO_ID = static_cast<uint8_t>(servo_id);
 
@@ -190,17 +191,23 @@ int main(int argc, char *argv[])
     uint32_t count = 0;
     while (ros::ok())
     {
-        testGetPositionOffset();
-        testGetPositionLimits();
-        testGetVoltageLimits();
-        testGetMaxTemperatureLimit();
-        testGetVoltage();
-        testGetPosition();
-        testGetTemperature();
-        testGetMode();
-        testIsMotorOn();
-        testIsLedOn();
-
+        try
+        {
+            testGetPositionOffset();
+            testGetPositionLimits();
+            testGetVoltageLimits();
+            testGetMaxTemperatureLimit();
+            testGetVoltage();
+            testGetPosition();
+            testGetTemperature();
+            testGetMode();
+            testIsMotorOn();
+            testIsLedOn();
+        }
+        catch(const lx16a::LX16AException &e)
+        {
+            ROS_ERROR("%s", e.what());
+        }
         double sec = (ros::Time::now() - start).toSec();
         double cps = count/sec;
         count++;

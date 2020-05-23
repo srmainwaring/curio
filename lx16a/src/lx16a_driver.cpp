@@ -39,12 +39,11 @@
 
 #include <ros/ros.h>
 
+#include <chrono>
 #include <cstdarg>
 #include <iostream>
 #include <string>
 #include <sstream>
-
-// #define LX16A_DEBUG
 
 namespace lx16a
 {
@@ -138,12 +137,12 @@ namespace lx16a
         serial_.setTimeout(timeout);
     }
 
-    ros::Duration LX16ADriver::getResponseTimeout() const
+    std::chrono::milliseconds LX16ADriver::getResponseTimeout() const
     {
         return response_timeout_;
     }
 
-    void LX16ADriver::setResponseTimeout(const ros::Duration &response_timeout)
+    void LX16ADriver::setResponseTimeout(const std::chrono::milliseconds &response_timeout)
     {
         response_timeout_ = response_timeout;
     }
@@ -578,21 +577,22 @@ namespace lx16a
         // Check port is open
         if (!serial_.isOpen())
         {
-            ROS_WARN_STREAM("Serial port not open");
-            return false;
+            throw LX16AException("Serial port not open");
         }
 
         // Initialise state machine
         ReadState state = READ_WAIT_FOR_RESPONSE;
         std::stringstream error_msg;
         error_msg << "No response";
-        const ros::Time start = ros::Time::now();         
+        auto start = std::chrono::steady_clock::now();
         while (true) 
         {
             // Check for timeout
-            ros::Time time_now = ros::Time::now();
-            if (time_now - start > response_timeout_) 
+            auto time_now = std::chrono::steady_clock::now();
+            if ((time_now - start) > response_timeout_) 
             {
+                ROS_DEBUG_STREAM("READ_TIMED_OUT: "
+                    << std::chrono::duration_cast<std::chrono::milliseconds>(time_now - start).count() << " ms");
                 state = READ_TIMED_OUT;
             }
             
@@ -606,13 +606,13 @@ namespace lx16a
                 {
                     state = READ_HEADER_1; 
                 }
-                // ROS_INFO_STREAM("READ_WAIT_FOR_RESPONSE: " << (time_now - start).toSec());
+                // ROS_DEBUG_STREAM("READ_WAIT_FOR_RESPONSE: " << (time_now - start).count());
                 break;
             }
             case READ_HEADER_1:
             {
                 size_t bytes_read = serial_.read(&byte, 1);
-                // ROS_INFO_STREAM("READ_HEADER_1: 0x" << static_cast<int>(byte));
+                // ROS_DEBUG_STREAM("READ_HEADER_1: 0x" << static_cast<int>(byte));
                 if (bytes_read == 1 && byte == SERVO_BUS_HEADER)
                 {
                     state = READ_HEADER_2;
@@ -629,7 +629,7 @@ namespace lx16a
             case READ_HEADER_2:
             {
                 size_t bytes_read = serial_.read(&byte, 1);
-                // ROS_INFO_STREAM("READ_HEADER_2: 0x" << static_cast<int>(byte));
+                // ROS_DEBUG_STREAM("READ_HEADER_2: 0x" << static_cast<int>(byte));
                 if (bytes_read == 1 && byte == SERVO_BUS_HEADER)
                 {
                     state = READ_SERVO_ID;
@@ -646,7 +646,7 @@ namespace lx16a
             case READ_SERVO_ID:
             {
                 size_t bytes_read = serial_.read(&byte, 1);
-                // ROS_INFO_STREAM("READ_SERVO_ID: 0x" << static_cast<int>(byte));
+                // ROS_DEBUG_STREAM("READ_SERVO_ID: 0x" << static_cast<int>(byte));
                 if (bytes_read == 1 && byte == servo_id)
                 {
                     state = READ_LENGTH;
@@ -663,7 +663,7 @@ namespace lx16a
             case READ_LENGTH:
             {
                 size_t bytes_read = serial_.read(&byte, 1);
-                // ROS_INFO_STREAM("READ_LENGTH: 0x" << static_cast<int>(byte));
+                // ROS_DEBUG_STREAM("READ_LENGTH: 0x" << static_cast<int>(byte));
                 if (bytes_read == 1 && byte == length)
                 {
                     state = READ_COMMAND;
@@ -680,7 +680,7 @@ namespace lx16a
             case READ_COMMAND:
             {
                 size_t bytes_read = serial_.read(&byte, 1);
-                // ROS_INFO_STREAM("READ_COMMAND: 0x" << static_cast<int>(byte));
+                // ROS_DEBUG_STREAM("READ_COMMAND: 0x" << static_cast<int>(byte));
                 if (bytes_read == 1 && byte == command)
                 {
                     state = READ_DATA;
@@ -714,7 +714,7 @@ namespace lx16a
             {
                 cs = checksum(servo_id, length, command, data);
                 size_t bytes_read = serial_.read(&byte, 1);
-                // ROS_INFO_STREAM("READ_CHECKSUM: 0x" << static_cast<int>(byte));
+                // ROS_DEBUG_STREAM("READ_CHECKSUM: 0x" << static_cast<int>(byte));
                 if (bytes_read == 1 && byte == cs)
                 {
                     state = READ_COMPLETE;
@@ -730,7 +730,7 @@ namespace lx16a
             }
             case READ_COMPLETE:
             {
-#if defined(LX16A_DEBUG)
+#if LX16A_DEBUG
                 std::stringstream ss;
                 ss << "RX:";
                 ss << " 0x" << std::hex << static_cast<int>(SERVO_BUS_HEADER);
@@ -743,8 +743,8 @@ namespace lx16a
                     ss  << " 0x" << std::hex << static_cast<int>(d);
                 }
                 ss << " 0x" << std::hex << static_cast<int>(cs);
-                ss << " (" << std::dec << static_cast<int>(1000*(time_now - start).toSec()) << "ms)";
-                ROS_INFO_STREAM(ss.str());
+                ss << " (" << std::dec << std::chrono::duration_cast<std::chrono::microseconds>(time_now - start).count() << "ms)";
+                ROS_DEBUG_STREAM(ss.str());
 #endif
                 return true;
             }
@@ -814,16 +814,15 @@ namespace lx16a
         // Send command
         size_t bytes_sent = serial_.write(packet);
 
-        // DEBUG_INFO
-#if defined(LX16A_DEBUG)
+#if LX16A_DEBUG
         std::stringstream ss;
         ss << "TX:";
         for (uint8_t v: packet)
         {
             ss << " 0x"<<  std::hex << static_cast<int>(v);
         }
-        ROS_INFO_STREAM(ss.str());
-        // ROS_INFO_STREAM("bytes_sent: " << bytes_sent);
+        ROS_DEBUG_STREAM(ss.str());
+        ROS_DEBUG_STREAM("bytes_sent: " << bytes_sent);
 #endif
         return bytes_sent;
     }

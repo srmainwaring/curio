@@ -321,12 +321,12 @@ namespace curio_base
         ROS_INFO("Initialising LX16A servo driver...");
         uint32_t timeout_millis = static_cast<uint32_t>(timeout * 1000);
         serial::Timeout serial_timeout = serial::Timeout::simpleTimeout(timeout_millis);
-        ros::Duration servo_response_timeout(response_timeout);
+        std::chrono::milliseconds response_timeout_millis(static_cast<int>(1000 * response_timeout));
         servo_driver_ = std::unique_ptr<lx16a::LX16ADriver>(new lx16a::LX16ADriver());
         servo_driver_->setPort(port);
         servo_driver_->setBaudrate(baudrate);
         servo_driver_->setTimeout(serial_timeout);
-        servo_driver_->setResponseTimeout(servo_response_timeout);
+        servo_driver_->setResponseTimeout(response_timeout_millis);
         try
         {
             servo_driver_->open();

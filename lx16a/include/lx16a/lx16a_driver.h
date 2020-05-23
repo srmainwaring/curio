@@ -38,8 +38,8 @@
 #define LX16A_DRIVER_H_
 
 #include <serial/serial.h>
-#include <ros/ros.h>
 
+#include <chrono>
 #include <exception>
 #include <cstdint>
 
@@ -107,15 +107,15 @@ namespace lx16a
         ///
         void setTimeout(serial::Timeout &timeout);
 
-        /// \brief A timeout for the duration between sending a command and receiving a response.
-        ros::Duration getResponseTimeout() const;
+        /// \brief A timeout for the elapsed time between sending a command and receiving a response.
+        std::chrono::milliseconds getResponseTimeout() const;
 
-        /// \brief Set the timeout for the duration between sending a command and receiving a response.
+        /// \brief Set the timeout for the elapsed time between sending a command and receiving a response.
         ///
-        /// \param response_timeout A duration in seconds specifying the maximum time to wait
-        /// for a response to a command request, has default (0.01s).
+        /// \param response_timeout A duration in milliseconds specifying the maximum time to wait
+        /// for a response to a command request, has default (10).
         ///        
-        void setResponseTimeout(const ros::Duration &response_timeout);
+        void setResponseTimeout(const std::chrono::milliseconds &response_timeout);
 
         //  Commands
 
@@ -317,7 +317,7 @@ namespace lx16a
 
     private:
         serial::Serial serial_;
-        ros::Duration response_timeout_ = ros::Duration(0.01);  // [s]
+        std::chrono::milliseconds response_timeout_ = std::chrono::milliseconds(20);
 
         // Serial communication protocol
 
