@@ -109,7 +109,7 @@ class LX16AMinimalRoverBaseHAL(RoverBaseHAL):
     Tested to run at control_frequency: 15 Hz with a direct USB connection
     to the Lewansoul BusLinker board.
 
-    Issues:
+    Notes:
         - mock odometry (no encoder filter integration)
         - no adjustment of steering trim
     '''

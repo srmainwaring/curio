@@ -94,9 +94,6 @@ int main(int argc, char *argv[])
     std::string node_namespace = ros::this_node::getNamespace();
     auto pos = node_full_name.find(node_namespace) + node_namespace.length();
     std::string node_name = node_full_name.substr(pos);
-    ROS_INFO_STREAM("Node full name: " << node_full_name);
-    ROS_INFO_STREAM("Node namespace: " << node_namespace);
-    ROS_INFO_STREAM("Node name: " << node_name);
 
     // Call rospy.init_node(...)
     std::string python_node_name(node_name + "_py");
