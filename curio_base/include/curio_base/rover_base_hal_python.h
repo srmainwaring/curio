@@ -53,7 +53,7 @@ namespace curio_base
         ~RoverBaseHALPython() override;
 
         /// \brief Constructor.
-        RoverBaseHALPython();
+        RoverBaseHALPython(ros::NodeHandle &nh, ros::NodeHandle &private_nh);
 
         /// \copydoc RoverBaseHAL::getNumWheels()
         size_t getNumWheels() const override;
@@ -92,6 +92,10 @@ namespace curio_base
         void setSteerAngles(const ros::Time &time, const std::vector<double>& positions) override;
 
     private:
+        // Node handles
+        ros::NodeHandle nh_;
+        ros::NodeHandle private_nh_;
+
         // Store the Python module and class instance objects as well
         // as a pointer to the C++ type. If the Python objects go out of
         // scope the pointer is undefined.   

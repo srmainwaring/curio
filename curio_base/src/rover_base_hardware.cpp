@@ -51,15 +51,15 @@ namespace curio_base
         ROS_INFO_STREAM("Initialising rover base hardware...");
 
         // Mock HAL
-        // std::unique_ptr<RoverBaseHALMock> rover_hal_mock(new RoverBaseHALMock()); 
+        // std::unique_ptr<RoverBaseHALMock> rover_hal_mock(new RoverBaseHALMock(nh, private_nh)); 
         // rover_hal_ = std::move(rover_hal_mock);
 #if CURIO_USE_PYTHON_HAL
         // Python HAL        
-        std::unique_ptr<RoverBaseHALPython> rover_hal_python(new RoverBaseHALPython()); 
+        std::unique_ptr<RoverBaseHALPython> rover_hal_python(new RoverBaseHALPython(nh, private_nh)); 
         rover_hal_ = std::move(rover_hal_python);
 #else
         // LX16A HAL
-        std::unique_ptr<RoverBaseHALLX16A> rover_hal_lx16a(new RoverBaseHALLX16A(nh));
+        std::unique_ptr<RoverBaseHALLX16A> rover_hal_lx16a(new RoverBaseHALLX16A(nh, private_nh));
         rover_hal_ = std::move(rover_hal_lx16a);
 #endif
         // Resize passive joints

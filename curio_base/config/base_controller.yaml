@@ -25,6 +25,14 @@
 #      <- back wheel lat separation ->
 # 
 
+# Optional: Python Rover HAL 
+# 
+# Defaults:
+# python_hal_module: 'curio_base.ext'
+# python_hal_class: 'MockRoverBaseHAL'
+python_hal_module: 'curio_base.ext'
+python_hal_class: 'LX16AMinimalRoverBaseHAL'
+
 # Servo driver port settings
 # port: /dev/cu.wchusbserialfd5110
 port: /dev/ttyACM0
@@ -33,7 +41,7 @@ timeout: 1.0
 response_timeout: 0.015
 
 # Update frequencies: control loop
-control_frequency: 20.0
+control_frequency: 15.0
 
 # Robot dimensions and limits
 max_linear_velocity:  0.37   # [m/s]

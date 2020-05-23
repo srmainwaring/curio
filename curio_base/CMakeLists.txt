@@ -116,7 +116,6 @@ add_dependencies(curio_base ${${PROJECT_NAME}_EXPORTED_TARGETS})
 pybind11_add_module(_curio_base
     src/pybind11/py_curio_base.cpp
     src/pybind11/py_rover_base_hal.cpp
-    src/pybind11/py_time.cpp
 )
 target_link_libraries(_curio_base PRIVATE curio_base ${catkin_LIBRARIES})
 set_target_properties(_curio_base PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_PYTHON_DESTINATION})

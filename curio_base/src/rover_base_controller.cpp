@@ -51,6 +51,7 @@
 #include <thread>
 
 namespace py = pybind11;
+using namespace pybind11::literals;
 
 typedef std::chrono::steady_clock time_source;
 
@@ -85,6 +86,23 @@ int main(int argc, char *argv[])
     // Initialise the Python interpreter
     py::scoped_interpreter guard{};
     lx16a::addCmdArgsToSys(argc, argv);
+
+    // Initialise a ROS Python node (this must disable signals)
+
+    // Get the remapped node name
+    std::string node_full_name = ros::this_node::getName();
+    std::string node_namespace = ros::this_node::getNamespace();
+    auto pos = node_full_name.find(node_namespace) + node_namespace.length();
+    std::string node_name = node_full_name.substr(pos);
+    ROS_INFO_STREAM("Node full name: " << node_full_name);
+    ROS_INFO_STREAM("Node namespace: " << node_namespace);
+    ROS_INFO_STREAM("Node name: " << node_name);
+
+    // Call rospy.init_node(...)
+    std::string python_node_name(node_name + "_py");
+    pybind11::object py_rospy = py::module::import("rospy");
+    pybind11::object py_init = py_rospy.attr("init_node");
+    py_init(python_node_name, "disable_signals"_a = true);
 
     // Read parameters
     double control_frequency;
