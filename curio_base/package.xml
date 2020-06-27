@@ -26,6 +26,7 @@
     <depend>lx16a</depend>
     <depend>lx16a_msgs</depend>
     <depend>nav_msgs</depend>
+    <depend>python-serial</depend>
     <depend>robot_localization</depend>
     <depend>robot_state_publisher</depend>
     <depend>roscpp</depend>

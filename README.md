@@ -603,6 +603,24 @@ the full kinematics so you will see additional links and joints in [Gazebo](http
 that are not present in [`rviz`](http://wiki.ros.org/rviz). These are the two turnbuckle linkages
 with ball joints that connect the rocker assemblies to the differential beam.
 
+## Build Status
+
+### Develop Job Status
+
+|    | Melodic |
+|--- |--- |
+| curio_msgs | [![Build Status](https://travis-ci.org/srmainwaring/curio_msgs.svg?branch=develop)](https://travis-ci.org/srmainwaring/curio_msgs) |
+| curio | [![Build Status](https://travis-ci.org/srmainwaring/curio.svg?branch=develop)](https://travis-ci.org/srmainwaring/curio) |
+
+
+### Release Job Status
+
+|    | Melodic |
+|--- |--- |
+| curio_msgs | [![Build Status](https://travis-ci.org/srmainwaring/curio_msgs.svg?branch=master)](https://travis-ci.org/srmainwaring/curio_msgs) |
+| curio | [![Build Status](https://travis-ci.org/srmainwaring/curio.svg?branch=master)](https://travis-ci.org/srmainwaring/curio) |
+
+
 ## License
 
 This software is licensed under the BSD-3-Clause license found in the LICENSE file
