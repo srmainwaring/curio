@@ -11,13 +11,12 @@
     <author email="rhys.mainwaring@me.com">Rhys Mainwaring</author>
     <buildtool_depend>catkin</buildtool_depend>
     <buildtool_depend>message_generation</buildtool_depend>    
-    <build_depend>pybind11-dev</build_depend>
     <depend>lx16a_msgs</depend>
     <depend>pybind11-dev</depend>
-    <depend>python-numpy</depend>
-    <depend>python-pandas</depend>
-    <depend>python-serial</depend>
-    <depend>python-sklearn</depend>
+    <!-- <depend>python-numpy</depend> -->
+    <!-- <depend>python-pandas</depend> -->
+    <!-- <depend>python-serial</depend> -->
+    <!-- <depend>python-sklearn</depend> -->
     <depend>roscpp</depend>
     <depend>rospy</depend>
     <depend>serial</depend>
