@@ -27,6 +27,14 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(pybind11 REQUIRED)
+message("pybind11_FOUND: ${pybind11_FOUND}")
+message("pybind11_VERSION: ${pybind11_VERSION}")
+message("pybind11_INCLUDE_DIRS: ${pybind11_INCLUDE_DIRS}")
+message("pybind11_INCLUDE_DIR: ${pybind11_INCLUDE_DIR}")
+message("pybind11_DEFINITIONS: ${pybind11_DEFINITIONS}")
+message("pybind11_LIBRARIES: ${pybind11_LIBRARIES}")
+message("pybind11_LIBRARY: ${pybind11_LIBRARY}")
+
 
 ################################################################################
 # Setup python modules
@@ -55,6 +63,7 @@ catkin_package(
 
 include_directories(
     include
+    ${pybind11_INCLUDE_DIRS}
     ${catkin_INCLUDE_DIRS}
 )
 
@@ -72,6 +81,7 @@ add_library(lx16a
 target_link_libraries(lx16a
     PRIVATE
     pybind11::embed
+    ${pybind11_LIBRARIES}
     ${catkin_LIBRARIES}
 )
 
@@ -82,7 +92,7 @@ pybind11_add_module(_lx16a
     src/pybind11/py_lx16a_encoder_filter.cpp
     src/pybind11/py_lx16a_time.cpp
 )
-target_link_libraries(_lx16a PRIVATE lx16a ${catkin_LIBRARIES})
+target_link_libraries(_lx16a PRIVATE lx16a ${pybind11_LIBRARIES} ${catkin_LIBRARIES})
 set_target_properties(_lx16a PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_PYTHON_DESTINATION})
 
 # Examples
@@ -99,7 +109,13 @@ target_link_libraries(lx16a_driver_test PRIVATE lx16a ${catkin_LIBRARIES})
 add_executable(lx16a_encoder_filter_test
     src/examples/lx16a_encoder_filter_test.cpp
 )
-target_link_libraries(lx16a_encoder_filter_test PRIVATE pybind11::embed lx16a ${catkin_LIBRARIES})
+target_link_libraries(lx16a_encoder_filter_test
+  PRIVATE
+  pybind11::embed
+  lx16a
+  ${pybind11_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
 
 ################################################################################
 # Install
