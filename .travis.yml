@@ -4,7 +4,7 @@
 language: generic # optional, just removes the language badge
 
 python:
-  - "3.6"
+  - "3.7"
 
 services:
   - docker
@@ -25,6 +25,7 @@ env:
     - CCACHE_DIR=$HOME/.ccache # enables C/C++ caching in industrial_ci
   matrix: # each line is a job
     - ROS_DISTRO="melodic"
+      ROS_PYTHON_VERSION=3
       BEFORE_INSTALL_TARGET_DEPENDENCIES='
         apt-get remove -y -qq pybind11-dev python-pybind11 python3-pybind11
         && apt-get install -y -qq python3-pip
