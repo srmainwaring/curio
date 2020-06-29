@@ -494,7 +494,7 @@ This package contains launch and [`rviz`](http://wiki.ros.org/rviz) configuratio
 To view the rover in [`rviz`](http://wiki.ros.org/rviz) and manually control the joints run:
 
 ```bash
-roslaunch curio_viz view_model.launch
+roslaunch curio_view view_model.launch
 ```
 
 ![Rviz View Model](https://github.com/srmainwaring/curio/wiki/images/curio_viz_view_model_rviz.jpg)
@@ -561,48 +561,6 @@ See the tutorial
 ["How to Build a Map Using Logged Data"](http://wiki.ros.org/slam_gmapping/Tutorials/MappingFromLoggedData)
 for more detail.
 
-### To create a map of the environment
-
-- If `roscore` isn't aready running, run roscore
-
-        $ roscore
-
-- Open a new terminal and start the simulation:
-
-        $ roslaunch curio_gazebo curio_shapes_world.launch
-
-- Open a new terminal and start `rviz`:
-
-        $ roslaunch curio_viz view_robot.launch
-
-- Open a new terminal and start gmapping:
-
-        $ rosrun gmapping slam_gmapping scan:=sensors/laser
-
-- In the gazebo window, hit the "play" triangle
-
-- In the `rqt_robot_steering` window, drive the robot around till you are happy with the map displayed in rviz.
-
-- In a new terminal, save the developed map:
-
-        $ rosrun map_server map_saver -f <map_name>
-
-### To navigate using an existing map of the environment
-
-- If `roscore` isn't aready running, run roscore
-
-        $ roscore
-
-- Open a new terminal and start the simulation:
-
-        $ roslaunch curio_navigation curio_navigation.launch map_file:=<map_name>.yaml
-
-- In rviz, check to see that the AMCL 'Particle Cloud' surrounds the robot.  If not, select '2D Pose Estimate' from the toolbar and click and drag on the map to give the pose estimator an initial estimate. The current sensor information is overlaid on the map in red to give you (and AMCL) a reference.
-
-![Rviz View map](https://github.com/srmainwaring/curio/wiki/images/curio_navigation_rviz.png)
-
-- In rviz, select `2D Nav Goal` from the toolbar, then click and drag on the map to write that goal to `move_base_simple/goal`.  The rover should move to that location.
-
 ## Other packages
 
 ### `ackermann_drive_controller`
@@ -661,6 +619,7 @@ with ball joints that connect the rocker assemblies to the differential beam.
 |--- |--- |
 | curio_msgs | [![Build Status](https://travis-ci.org/srmainwaring/curio_msgs.svg?branch=master)](https://travis-ci.org/srmainwaring/curio_msgs) |
 | curio | [![Build Status](https://travis-ci.org/srmainwaring/curio.svg?branch=master)](https://travis-ci.org/srmainwaring/curio) |
+
 
 ## License
 
