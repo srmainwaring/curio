@@ -12,7 +12,7 @@
     <buildtool_depend>catkin</buildtool_depend>
     <buildtool_depend>message_generation</buildtool_depend>    
     <depend>lx16a_msgs</depend>
-    <depend>pybind11-dev</depend>
+    <!-- <depend>pybind11-dev</depend> -->
     <!-- <depend>python-numpy</depend> -->
     <!-- <depend>python-pandas</depend> -->
     <!-- <depend>python-serial</depend> -->
