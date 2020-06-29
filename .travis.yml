@@ -3,9 +3,6 @@
 
 language: generic # optional, just removes the language badge
 
-python:
-  - "3.7"
-
 services:
   - docker
 
@@ -25,11 +22,10 @@ env:
     - CCACHE_DIR=$HOME/.ccache # enables C/C++ caching in industrial_ci
   matrix: # each line is a job
     - ROS_DISTRO="melodic"
-      ROS_PYTHON_VERSION=3
       BEFORE_INSTALL_TARGET_DEPENDENCIES='
         apt-get remove -y -qq pybind11-dev python-pybind11 python3-pybind11
-        && apt-get install -y -qq python3-pip
-        && /usr/bin/python3.6 -m pip install joblib pytest
+        && apt-get install -y -qq python-pip
+        && python -m pip install joblib pytest
         && cd $HOME/src
         && git clone https://github.com/pybind/pybind11.git -b v2.5
         && mkdir -p pybind11/build
@@ -39,7 +35,7 @@ env:
         '
       UPSTREAM_WORKSPACE=file
       
-      
+ 
 # clone and run industrial_ci
 install:
   - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
