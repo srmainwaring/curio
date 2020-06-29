@@ -24,7 +24,7 @@ env:
     - ROS_DISTRO="melodic"
       BEFORE_INSTALL_TARGET_DEPENDENCIES='
         apt-get remove -y -qq pybind11-dev python-pybind11 python3-pybind11
-        && apt-get install -y -qq python-pip python-joblib python-pytest
+        && apt-get install -y -qq python3-pip python3-joblib python3-pytest
         && cd $HOME/src
         && git clone https://github.com/pybind/pybind11.git -b v2.5
         && mkdir -p pybind11/build
