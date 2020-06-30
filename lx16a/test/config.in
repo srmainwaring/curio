@@ -16,6 +16,13 @@ namespace lx16a
     {
         return std::string("@DATA_DIR@");
     }
+
+    /// \brief The ROS_PYTHON_VERSION used in the build
+    int getRosPythonVersion()
+    {
+        return static_cast<int>(@ROS_PYTHON_VERSION@);
+    }
+
 }
 
 #endif // LX16A_TEST_CONFIG_H_

@@ -1,9 +1,0 @@
-def get_test_path():
-    '''Path to the package test directory'''
-
-    return '@TEST_DIR@'
-
-def get_data_path():
-    '''Path to the package data directory'''
-
-    return '@DATA_DIR@'

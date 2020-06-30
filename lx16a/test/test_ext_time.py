@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 PKG='lx16a'
 
 from lx16a.ext import Time

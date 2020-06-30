@@ -158,11 +158,17 @@ if (CATKIN_ENABLE_TESTING)
     find_package(rostest REQUIRED)
     find_package(rosunit REQUIRED)
 
-    # Generate test_config.h
+    # Generate test/config.h and test.config.py
     get_filename_component(TEST_DIR "test" ABSOLUTE)
     get_filename_component(DATA_DIR "data" ABSOLUTE)
+    if (DEFINED ENV{ROS_PYTHON_VERSION})
+      set(ROS_PYTHON_VERSION $ENV{ROS_PYTHON_VERSION})
+    else()
+      set(ROS_PYTHON_VERSION 2)
+    endif()
+    message("ROS_PYTHON_VERSION: ${ROS_PYTHON_VERSION}")
+
     configure_file(test/config.in test/config.h)
-    configure_file(test/config_py.in test/config.py)
     include_directories(${CMAKE_CURRENT_BINARY_DIR}/test)
 
     # C++ tests
