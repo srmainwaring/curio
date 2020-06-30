@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 PKG='lx16a'
 
 from lx16a.ext import LX16AEncoderFilterSklearn
@@ -21,19 +19,33 @@ class TestExtEncoderFilter(unittest.TestCase):
         self.servo_id = 11
         self.window = 10
 
-        # Raw data produced by servo and encoder (in lx16a/data)
-        self.data_filename = os.path.join(
-            os.path.dirname(__file__),
-            '..', 'data', 'lx16a_raw_data_05.csv')
+        # Check ROS_PYTHON_VERSION as different joblib files 
+        # are not compatible between versions.
+        self.ros_python_version = 2
+        if os.getenv('ROS_PYTHON_VERSION') is not None:
+            self.ros_python_version = int(os.getenv('ROS_PYTHON_VERSION'))
 
-        # File locations for persisted ML models (in lx16a/data)
+         # Raw data produced by servo and encoder (in lx16a/data)
+        self.data_filename = 'lx16a_raw_data_05.csv'  
+
+         # Python 2 model files (default)
+        self.classifier_filename = 'lx16a_tree_classifier.joblib'
+        self.regressor_filename = 'lx16a_tree_regressor.joblib'
+
+        # Python 3 model files
+        if self.ros_python_version == 3:
+            self.classifier_filename = 'lx16a_tree_classifier_python3.joblib'
+            self.regressor_filename = 'lx16a_tree_regressor_python3.joblib'
+
+        # Fully qualified paths
+        self.data_filename = os.path.join(
+            os.path.dirname(__file__), '..', 'data', self.data_filename)
+
         self.classifier_filename = os.path.join(
-            os.path.dirname(__file__),
-            '..', 'data', 'lx16a_tree_classifier.joblib')
+            os.path.dirname(__file__), '..', 'data', self.classifier_filename)
 
         self.regressor_filename = os.path.join(
-            os.path.dirname(__file__),
-            '..', 'data', 'lx16a_tree_regressor.joblib')
+            os.path.dirname(__file__), '..', 'data', self.regressor_filename)
 
     def read_n(self, filter, n):
         ''' Utility to read the first n lines from a CSV file.

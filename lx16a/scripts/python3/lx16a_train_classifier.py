@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python
 # 
 #   Software License Agreement (BSD-3-Clause)
 #    
