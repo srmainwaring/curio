@@ -494,7 +494,7 @@ This package contains launch and [`rviz`](http://wiki.ros.org/rviz) configuratio
 To view the rover in [`rviz`](http://wiki.ros.org/rviz) and manually control the joints run:
 
 ```bash
-roslaunch curio_view view_model.launch
+roslaunch curio_viz view_model.launch
 ```
 
 ![Rviz View Model](https://github.com/srmainwaring/curio/wiki/images/curio_viz_view_model_rviz.jpg)
