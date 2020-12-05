@@ -1,0 +1,25 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="map_file" default="$(find turtlebot3_navigation)/maps/map.yaml"/>
+  <arg name="open_rviz" default="true"/>
+
+  <!-- Turtlebot3 -->
+  <include file="$(find curio_gazebo)/launch/curio_shapes_world.launch">
+  </include>
+
+  <!-- Map server -->
+  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/>
+
+  <!-- AMCL -->
+  <include file="$(find curio_navigation)/launch/amcl.launch"/>
+
+  <!-- move_base -->
+  <include file="$(find curio_navigation)/launch/move_base.launch">
+  </include>
+
+  <!-- rviz -->
+  <group if="$(arg open_rviz)"> 
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find curio_viz)/rviz/turtlebot3_navigation.rviz"/>
+  </group>
+</launch>
