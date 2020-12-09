@@ -7,6 +7,7 @@
     <arg name="use_sim_time" default="true"/>
     <arg name="headless" default="false"/>
     <arg name="physics" default="ode"/>
+    <arg name="use_rqt_robot_steering" default="true"/>
  
     <!-- Launch Gazebo -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -21,6 +22,7 @@
 
     <!-- Spawn the model -->
     <include file="$(find curio_gazebo)/launch/curio_spawn.launch">        
+        <arg name="use_rqt_robot_steering" value="$(arg use_rqt_robot_steering)"/>
     </include>
 
 </launch>

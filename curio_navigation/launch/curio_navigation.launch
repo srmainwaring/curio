@@ -1,10 +1,12 @@
 <launch>
   <!-- Arguments -->
-  <arg name="map_file" default="$(find turtlebot3_navigation)/maps/map.yaml"/>
+  <arg name="map_file" default="$(find curio_navigation)/doc/curio_shapes_map.yaml"/>
   <arg name="open_rviz" default="true"/>
 
-  <!-- Turtlebot3 -->
+  <!-- gazebo -->
   <include file="$(find curio_gazebo)/launch/curio_shapes_world.launch">
+    <arg name="paused" value="false" /> 
+    <arg name="use_rqt_robot_steering" value="false"/>
   </include>
 
   <!-- Map server -->
@@ -20,6 +22,6 @@
   <!-- rviz -->
   <group if="$(arg open_rviz)"> 
     <node pkg="rviz" type="rviz" name="rviz" required="true"
-          args="-d $(find curio_viz)/rviz/turtlebot3_navigation.rviz"/>
+          args="-d $(find curio_viz)/rviz/curio_navigation.rviz"/>
   </group>
 </launch>

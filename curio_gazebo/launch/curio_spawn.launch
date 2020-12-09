@@ -15,6 +15,7 @@
  -->
 
  <launch>
+    <arg name="use_rqt_robot_steering" default="true"/>
     <arg name="model" default="$(find curio_description)/urdf/curio.urdf.xacro"/>
 
     <!-- Load the robot description -->
@@ -36,9 +37,11 @@
     </node>
 
     <!-- Launch a rqt steering GUI for publishing to /ackermann_drive_controller/cmd_vel -->
+  <group if="$(arg use_rqt_robot_steering)"> 
     <node pkg="rqt_robot_steering" type="rqt_robot_steering" name="rqt_robot_steering" >
         <param name="default_topic" value="/ackermann_drive_controller/cmd_vel"/>
     </node>
+    </group>
 
     <!-- Spawn robot in Gazebo -->
     <node pkg="gazebo_ros" type="spawn_model" name="urdf_spawner" 

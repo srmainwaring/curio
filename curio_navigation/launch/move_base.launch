@@ -22,6 +22,7 @@
         <rosparam
             file="$(find curio_navigation)/config/planner_local.yaml"
             command="load" />
+        <remap from="cmd_vel" to="/ackermann_drive_controller/cmd_vel"/>
     </node>
 
 </launch>
