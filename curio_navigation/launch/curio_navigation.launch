@@ -1,6 +1,6 @@
 <launch>
   <!-- Arguments -->
-  <arg name="map_file" default="$(find curio_navigation)/doc/curio_shapes_map.yaml"/>
+  <arg name="map_file" default="$(find curio_navigation)/maps/curio_shapes_map.yaml"/>
   <arg name="open_rviz" default="true"/>
 
   <!-- gazebo -->
