@@ -651,16 +651,16 @@ with ball joints that connect the rocker assemblies to the differential beam.
 
 |    | Melodic |
 |--- |--- |
-| curio_msgs | [![Build Status](https://travis-ci.org/srmainwaring/curio_msgs.svg?branch=develop)](https://travis-ci.org/srmainwaring/curio_msgs) |
-| curio | [![Build Status](https://travis-ci.org/srmainwaring/curio.svg?branch=develop)](https://travis-ci.org/srmainwaring/curio) |
+| curio_msgs | [![Build Status](https://travis-ci.com/srmainwaring/curio_msgs.svg?branch=develop)](https://travis-ci.com/srmainwaring/curio_msgs) |
+| curio | [![Build Status](https://travis-ci.com/srmainwaring/curio.svg?branch=develop)](https://travis-ci.com/srmainwaring/curio) |
 
 
 ### Release Job Status
 
 |    | Melodic |
 |--- |--- |
-| curio_msgs | [![Build Status](https://travis-ci.org/srmainwaring/curio_msgs.svg?branch=master)](https://travis-ci.org/srmainwaring/curio_msgs) |
-| curio | [![Build Status](https://travis-ci.org/srmainwaring/curio.svg?branch=master)](https://travis-ci.org/srmainwaring/curio) |
+| curio_msgs | [![Build Status](https://travis-ci.com/srmainwaring/curio_msgs.svg?branch=master)](https://travis-ci.com/srmainwaring/curio_msgs) |
+| curio | [![Build Status](https://travis-ci.com/srmainwaring/curio.svg?branch=master)](https://travis-ci.com/srmainwaring/curio) |
 
 ## License
 
