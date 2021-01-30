@@ -911,7 +911,7 @@ class BaseController(object):
 
             # Header
             self._states_msg.header.stamp = time
-            self. _states_msg.header.frame_id = 'base_link'
+            self._states_msg.header.frame_id = 'base_link'
 
             # LX16A state
             self._states_msg.wheel_servo_states = self._wheel_states
