@@ -123,11 +123,34 @@ void sigintHandler(int sig)
     ROS_INFO_STREAM("Stopping node lx16a_driver_test...");
   
     ROS_INFO_STREAM("Stop motor");
-    servo_driver.setMotorMode(SERVO_ID, 0);
 
-    // Wait for serial out to clear.
-    ros::Duration(1.0).sleep();
+    auto stop_motor = []()
+    {
+        try
+        {
+            servo_driver.setMotorMode(SERVO_ID, 0);
+            ros::Duration(0.5).sleep();
 
+            ROS_INFO_STREAM("Checking motor stopped...");
+
+            uint8_t mode;
+            int16_t duty;
+            servo_driver.getMode(SERVO_ID, mode, duty);
+            ros::Duration(0.5).sleep();
+            return (duty == 0);
+        }
+        catch(const lx16a::LX16AException &e)
+        {
+            ROS_WARN_STREAM("" << e.what());
+        }
+        return false;
+    };
+
+    int retries = 3;
+    while (!stop_motor() && retries > 0)
+    {
+        --retries;
+    }
 
     // All the default sigint handler does is call shutdown()
     ros::shutdown();
