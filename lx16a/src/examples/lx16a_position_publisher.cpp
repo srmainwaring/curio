@@ -47,7 +47,8 @@ std::vector<uint8_t> wheel_servo_ids = {
 };
 
 std::vector<uint8_t> steer_servo_ids = {
-    111, 131, 211, 231
+    111, 211
+    // 111, 131, 211, 231
 };
 
 std::vector<uint16_t> wheel_positions(6);
@@ -69,15 +70,21 @@ void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& msg)
 ros::Publisher position_pub;
 
 // Control loop
+bool e_stop = false;
 void controlLoop(const ros::TimerEvent& event)
 {
-    // Read and publish the position 
-    for (int i=0; i<1; ++i)
+    if (e_stop)
     {
-        uint8_t id = wheel_servo_ids[i];
+        return;
+    }
+
+    // Read and publish the position 
+    for (int i=0; i<1 /*wheel_servo_ids.size()*/; ++i)
+    {
+        auto id = wheel_servo_ids[i];
         try
         {
-            int pos = servo_driver.getPosition(id);
+            auto pos = servo_driver.getPosition(id);
             wheel_positions[i] = pos;
         }
         catch(const lx16a::LX16AException& e)
@@ -85,12 +92,12 @@ void controlLoop(const ros::TimerEvent& event)
             ROS_ERROR("%s", e.what());
         }        
     }
-    for (int i=0; i<0; ++i)
+    for (int i=0; i<0 /*steer_servo_ids.size()*/; ++i)
     {
-        uint8_t id = steer_servo_ids[i];
+        auto id = steer_servo_ids[i];
         try
         {
-            int pos = servo_driver.getPosition(id);
+            auto pos = servo_driver.getPosition(id);
             steer_positions[i] = pos;
         }
         catch(const lx16a::LX16AException& e)
@@ -99,17 +106,20 @@ void controlLoop(const ros::TimerEvent& event)
         }        
     }
 
+    // Only publish the position of one wheel...
     std_msgs::Int64 position_msg;
     position_msg.data = wheel_positions[0];
     position_pub.publish(position_msg);
 
     // Send commands
-    int16_t duty = static_cast<int16_t>(cmd_vel_msg.linear.x * 1000); 
-    for (int i=0; i<6; ++i)
+    // scale duty [-1000, 1000]
+    int16_t duty = static_cast<int16_t>(cmd_vel_msg.linear.x * 1000);
+    duty = (duty < -1000) ? -1000 : (1000 < duty) ? 1000 : duty;  
+    for (int i=0; i<wheel_servo_ids.size(); ++i)
     {
         try
         {
-            uint8_t id = wheel_servo_ids[i];
+            auto id = wheel_servo_ids[i];
             servo_driver.setMotorMode(id, duty);
             ROS_INFO_STREAM("servo_id: " << static_cast<int>(id) << ", duty: " << duty);    
         }
@@ -118,6 +128,92 @@ void controlLoop(const ros::TimerEvent& event)
             ROS_ERROR("%s", e.what());
         }
     }
+
+    // scale steering to [0, 1000] 
+    double angle_scaled = 0.5 * (cmd_vel_msg.angular.z / M_PI + 1.0);
+    int16_t pos = static_cast<int16_t>(angle_scaled * 1000); 
+    pos = (pos < 0) ? 0 : (1000 < pos) ? 1000 : pos;  
+    for (int i=0; i<steer_servo_ids.size(); ++i)
+    {
+        try
+        {
+            auto id = steer_servo_ids[i];
+            servo_driver.setServoMode(id);
+            servo_driver.move(id, pos, 100);
+            ROS_INFO_STREAM("servo_id: " << static_cast<int>(id) << ", pos: " << pos);    
+        }
+        catch(const lx16a::LX16AException &e)
+        {
+            ROS_ERROR("%s", e.what());
+        }
+    }
+}
+
+// Custom interrupt signal handler
+void sigintHandler(int sig)
+{
+    // set e-stop to prevent further updates
+    e_stop = true;
+
+    // Do some custom action.
+    ROS_INFO_STREAM("Stopping node lx16a_driver_test...");
+  
+    ROS_INFO_STREAM("Stop motors");
+
+    auto stop_motors = []()
+    {
+        try
+        {
+            for (auto i=0; i<wheel_servo_ids.size(); ++i)
+            {
+                auto id = wheel_servo_ids[i];
+                servo_driver.setMotorMode(id, 0);
+            }
+        }
+        catch(const lx16a::LX16AException &e)
+        {
+            ROS_WARN_STREAM("" << e.what());
+        }
+        return false;
+    };
+
+    auto check_stopped = [](uint8_t servo_id)
+    {
+        try
+        {
+            servo_driver.setMotorMode(servo_id, 0);
+            ros::Duration(0.5).sleep();
+
+            ROS_INFO_STREAM("Checking motor "
+                << static_cast<int>(servo_id)
+                << " has stopped");
+
+            uint8_t mode;
+            int16_t duty;
+            servo_driver.getMode(servo_id, mode, duty);
+            ros::Duration(0.5).sleep();
+            return (duty == 0);
+        }
+        catch(const lx16a::LX16AException &e)
+        {
+            ROS_WARN_STREAM("" << e.what());
+        }
+        return false;
+    };
+
+    stop_motors();
+    for (auto i=0; i<wheel_servo_ids.size(); ++i)
+    {
+        int retries = 3;
+        auto id = wheel_servo_ids[i];
+        while (!check_stopped(id) && retries > 0)
+        {
+            --retries;
+        }
+    }
+
+    // All the default sigint handler does is call shutdown()
+    ros::shutdown();
 }
 
 // Entry point
@@ -127,6 +223,9 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "lx16a_position_publisher");
     ros::NodeHandle nh, private_nh("~");
     ROS_INFO("Starting node lx16a_position_publisher...");
+
+    // Register custom interrupt signal handler.
+    signal(SIGINT, sigintHandler);
 
     // Driver parameters
     int baudrate, timeout, control_frequency, servo_id;
