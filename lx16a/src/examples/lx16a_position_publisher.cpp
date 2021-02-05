@@ -41,6 +41,8 @@
 #include "geometry_msgs/Twist.h"
 #include "std_msgs/Int64.h"
 
+#include <signal.h>
+
 // Servo ids
 std::vector<uint8_t> wheel_servo_ids = {
     11, 12, 13, 21, 22, 23
