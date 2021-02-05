@@ -81,19 +81,22 @@ namespace lx16a
     const uint8_t SERVO_LED_ERROR_WRITE       = 35; // 0x23 getLedErrors
     const uint8_t SERVO_LED_ERROR_READ        = 36; // 0x24 setLedErrors
 
-    int16_t constrain(int16_t value, int16_t lower, int16_t upper)
+    int16_t clamp(int16_t v, int16_t lo, int16_t hi)
     {
-        return std::min(std::max(value, lower), upper);
+        assert(!(hi < lo));
+        return (v < lo) ? lo : (hi < v) ? hi : v;  
     }
 
-    uint8_t constrain(uint8_t value, uint8_t lower, uint8_t upper)
+    uint8_t clamp(uint8_t v, uint8_t lo, uint8_t hi)
     {
-        return std::min(std::max(value, lower), upper);
+        assert(!(hi < lo));
+        return (v < lo) ? lo : (hi < v) ? hi : v;  
     }
 
-    uint16_t constrain(uint16_t value, uint16_t lower, uint16_t upper)
+    uint16_t clamp(uint16_t v, uint16_t lo, uint16_t hi)
     {
-        return std::min(std::max(value, lower), upper);
+        assert(!(hi < lo));
+        return (v < lo) ? lo : (hi < v) ? hi : v;  
     }
 
     LX16ADriver::~LX16ADriver()
@@ -164,8 +167,8 @@ namespace lx16a
 
     void LX16ADriver::move(uint8_t servo_id, uint16_t servo_pos, uint16_t move_time)
     {
-        servo_pos = constrain(servo_pos, 0u, 1000u);
-        move_time = constrain(move_time, 0u, 30000u);
+        servo_pos = clamp(servo_pos, 0u, 1000u);
+        move_time = clamp(move_time, 0u, 30000u);
 
         uint8_t pos_lsb = servo_pos & 0xff;
         uint8_t pos_hsb = (servo_pos >> 8) & 0xff;
@@ -198,8 +201,8 @@ namespace lx16a
 
     void LX16ADriver::setPreparedMove(uint8_t servo_id, uint16_t servo_pos, uint16_t move_time)
     {
-        servo_pos = constrain(servo_pos, 0u, 1000u);
-        move_time = constrain(move_time, 0u, 30000u);
+        servo_pos = clamp(servo_pos, 0u, 1000u);
+        move_time = clamp(move_time, 0u, 30000u);
 
         uint8_t pos_lsb = servo_pos & 0xff;
         uint8_t pos_hsb = (servo_pos >> 8) & 0xff;
@@ -258,7 +261,7 @@ namespace lx16a
 
     void LX16ADriver::setPositionOffset(uint8_t servo_id, int16_t deviation)
     {
-        deviation = constrain(deviation, -125, 125);
+        deviation = clamp(deviation, -125, 125);
 
         uint8_t deviation_lsb = deviation & 0xff;
         std::vector<uint8_t> data = { deviation_lsb };
@@ -294,8 +297,8 @@ namespace lx16a
 
     void LX16ADriver::setPositionLimits(uint8_t servo_id, uint16_t min_angle, uint16_t max_angle)
     {
-        min_angle = constrain(min_angle, 0u, 1000u);
-        max_angle = constrain(max_angle, 0u, 1000u);
+        min_angle = clamp(min_angle, 0u, 1000u);
+        max_angle = clamp(max_angle, 0u, 1000u);
 
         uint8_t min_angle_lsb = min_angle & 0xff;
         uint8_t min_angle_hsb = (min_angle >> 8) & 0xff;
@@ -328,8 +331,8 @@ namespace lx16a
 
     void LX16ADriver::setVoltageLimits(uint8_t servo_id, double min_vin, double max_vin)
     {
-        uint16_t min_vin_int = constrain(static_cast<uint16_t>(min_vin * 1000), 4500u, 12000u);
-        uint16_t max_vin_int = constrain(static_cast<uint16_t>(max_vin * 1000), 4500u, 12000u);
+        uint16_t min_vin_int = clamp(static_cast<uint16_t>(min_vin * 1000), 4500u, 12000u);
+        uint16_t max_vin_int = clamp(static_cast<uint16_t>(max_vin * 1000), 4500u, 12000u);
 
         uint8_t min_vin_lsb = min_vin_int & 0xff;
         uint8_t min_vin_hsb = (min_vin_int >> 8) & 0xff;
@@ -362,7 +365,7 @@ namespace lx16a
 
     void LX16ADriver::setMaxTemperatureLimit(uint8_t servo_id, double max_temp)
     {
-        uint8_t max_temp_int = constrain(static_cast<uint8_t>(max_temp), 50u, 100u);
+        uint8_t max_temp_int = clamp(static_cast<uint8_t>(max_temp), 50u, 100u);
 
         uint8_t max_temp_lsb = max_temp_int & 0xff;
         std::vector<uint8_t> data(max_temp_lsb);
@@ -438,7 +441,7 @@ namespace lx16a
 
     void LX16ADriver::setMotorMode(uint8_t servo_id, int16_t duty)
     {
-        duty = constrain(duty, -1000, 1000);
+        duty = clamp(duty, -1000, 1000);
 
         uint8_t duty_lsb = duty & 0xff;
         uint8_t duty_hsb = (duty >> 8) & 0xff; 
